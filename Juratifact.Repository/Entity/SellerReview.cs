@@ -5,7 +5,7 @@ namespace Juratifact.Repository.Entity;
 public class SellerReview: BaseEntity<Guid>,IAuditableEntity
 {
     public int Rating { get; set; }
-    public required string Comment { get; set; }
+    public string Comment { get; set; }
     
     public Guid SellerId { get; set; }
     public Guid BuyerId { get; set; }

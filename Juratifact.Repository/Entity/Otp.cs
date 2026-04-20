@@ -5,7 +5,7 @@ namespace Juratifact.Repository.Entity;
 
 public class Otp: BaseEntity<Guid>,IAuditableEntity
 {
-    public required string Code { get; set; }
+    public string Code { get; set; }
     public OtpStatus OTPType { get; set; }
     public DateTimeOffset ExprireAt { get; set; }
     

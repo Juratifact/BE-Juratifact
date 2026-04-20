@@ -5,8 +5,8 @@ namespace Juratifact.Repository.Entity;
 
 public class Report: BaseEntity<Guid>,IAuditableEntity
 {
-    public required string Reason { get; set; }
-    public required string Description { get; set; }
+    public string Reason { get; set; }
+    public string Description { get; set; }
     public ReportStatus Status { get; set; }
     
     public Guid UserId { get; set; }

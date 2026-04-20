@@ -5,11 +5,11 @@ namespace Juratifact.Repository.Entity;
 
 public class Order: BaseEntity<Guid>,IAuditableEntity
 {
-    public required string Name { get; set; }
+    public string Name { get; set; }
     public decimal TotalPrice { get; set; }
     public OrderStatus Status { get; set; }
-    public required string ShipperPod1Url { get; set; }
-    public required string ShipperPod2Url { get; set; }
+    public string ShipperPod1Url { get; set; }
+    public string ShipperPod2Url { get; set; }
     public string PaymentMethod { get; set; } = "Banking";
     public PaymentStatus PaymentStatus { get; set; }
     public DateTimeOffset? ExpiresAt { get; set; } 

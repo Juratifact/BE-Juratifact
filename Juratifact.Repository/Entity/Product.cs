@@ -5,12 +5,12 @@ namespace Juratifact.Repository.Entity;
 
 public class Product : BaseEntity<Guid>, IAuditableEntity
 {
-    public required Guid SellerId { get; set; }
-    public required string Title { get; set; }
-    public required string Description { get; set; }
+    public Guid SellerId { get; set; }
+    public string Title { get; set; }
+    public string Description { get; set; }
     public decimal Price { get; set; }
     public ProductStatus Status { get; set; } // trạng thái tin đăng lên
-    public required string Condition { get; set; } // New, Used, Refurbished, etc.
+    public string Condition { get; set; } // New, Used, Refurbished, etc.
     
     public ICollection<Report> Reports { get; set; } = new List<Report>();
     public ICollection<CartDetail> CartDetails { get; set; } = new List<CartDetail>();

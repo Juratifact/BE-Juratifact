@@ -4,7 +4,7 @@ namespace Juratifact.Repository.Entity;
 
 public class Category: BaseEntity<Guid>, IAuditableEntity
 {
-    public required string Name { get; set; }
+    public string Name { get; set; }
     
     public Guid? ParentId { get; set; } 
     public Category? Parent { get; set; }

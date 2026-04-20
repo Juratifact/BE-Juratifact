@@ -1,9 +1,17 @@
+using Juratifact.API.Extensions;
+using Juratifact.API.Middlewares;
 using Juratifact.Repository;
+using Juratifact.Service.CloudinaryService;
+using Juratifact.Service.JwtService;
+using Juratifact.Service.MailService;
+using Juratifact.Service.MediaService;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
+builder.Services.AddControllers();
+builder.Services.AddHttpContextAccessor();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
@@ -14,13 +22,23 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     )
 );
 
+builder.Services.AddJwtServices(builder.Configuration);
+builder.Services.AddSwaggerServices();
+
+
+builder.Services.AddScoped<IMailService, MailService>();
+builder.Services.AddScoped<IMediaService, CloudinaryService>();
+builder.Services.AddScoped<IJwtService, JwtService>();
+
+builder.Services.AddTransient<GlobalExceptionHandlerMiddleware>();
 var app = builder.Build();
 
+app.UseMiddleware<GlobalExceptionHandlerMiddleware>();
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
-    app.UseSwagger();
-    app.UseSwaggerUI();
+    app.UseSwaggerAPI();
+    
 }
 
 app.UseHttpsRedirection();

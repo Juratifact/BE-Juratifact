@@ -5,13 +5,13 @@ namespace Juratifact.Repository.Entity;
 
 public class IdentityDocument: BaseEntity<Guid>,IAuditableEntity
 {
-    public required string IdCardFrontUrl { get; set; }
-    public required string IdCardBackUrl { get; set; }
+    public string IdCardFrontUrl { get; set; }
+    public string IdCardBackUrl { get; set; }
     public DateTimeOffset ExpireAt { get; set; }
     public IdentityStatus Status { get; set; }
-    public required string VerifiedBy { get; set; }
+    public string VerifiedBy { get; set; }
     public DateTimeOffset? VerifiedAt { get; set; }
-    public required string Note { get; set; }
+    public string Note { get; set; }
     
     public Guid UserId { get; set; }
     public User User { get; set; }
