@@ -1,0 +1,28 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Juratifact.API", "Juratifact.API\Juratifact.API.csproj", "{BE6E37DB-BA4D-4A39-A6BE-A50A8D47F584}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Juratifact.Service", "Juratifact.Service\Juratifact.Service.csproj", "{AD8C7522-A529-45A4-83B3-A79F8DE6E670}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Juratifact.Repository", "Juratifact.Repository\Juratifact.Repository.csproj", "{946997FD-DF39-44C5-9CFC-A035CBE07601}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{BE6E37DB-BA4D-4A39-A6BE-A50A8D47F584}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BE6E37DB-BA4D-4A39-A6BE-A50A8D47F584}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BE6E37DB-BA4D-4A39-A6BE-A50A8D47F584}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BE6E37DB-BA4D-4A39-A6BE-A50A8D47F584}.Release|Any CPU.Build.0 = Release|Any CPU
+		{AD8C7522-A529-45A4-83B3-A79F8DE6E670}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AD8C7522-A529-45A4-83B3-A79F8DE6E670}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AD8C7522-A529-45A4-83B3-A79F8DE6E670}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AD8C7522-A529-45A4-83B3-A79F8DE6E670}.Release|Any CPU.Build.0 = Release|Any CPU
+		{946997FD-DF39-44C5-9CFC-A035CBE07601}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{946997FD-DF39-44C5-9CFC-A035CBE07601}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{946997FD-DF39-44C5-9CFC-A035CBE07601}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{946997FD-DF39-44C5-9CFC-A035CBE07601}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal
