@@ -7,6 +7,8 @@ public class Wallet: BaseEntity<Guid>,IAuditableEntity
     public decimal Balance  { get; set; } 
     public decimal PendingBalance { get; set; }
     
+    public Guid UserId { get; set; }
+    public Guid RoleId { get; set; }
     
     public DateTimeOffset CreatedAt { get; set; }
     public DateTimeOffset? UpdatedAt { get; set; }

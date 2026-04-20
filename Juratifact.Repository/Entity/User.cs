@@ -15,6 +15,18 @@ public class User: BaseEntity<Guid>,IAuditableEntity
     public decimal TrustScore { get; set; } = 0;
     
     
+    public Wallet Wallet { get; set; }
+    public Cart Cart { get; set; }
+    
+    public ICollection<Order> Orders { get; set; } =  new List<Order>();
+    public ICollection<UserRole> UserRoles { get; set; }  = new List<UserRole>();
+    public ICollection<Otp>  Otps { get; set; }  = new List<Otp>();
+    public ICollection<IdentityDocument> IdentityDocuments { get; set; }  = new List<IdentityDocument>();
+    public ICollection<Report> Reports { get; set; }  = new List<Report>();
+    public ICollection<SellerReview> SellerReviews { get; set; }  = new List<SellerReview>();
+    
+    
+    
     public DateTimeOffset CreatedAt { get; set; }
     public DateTimeOffset? UpdatedAt { get; set; }
 }
