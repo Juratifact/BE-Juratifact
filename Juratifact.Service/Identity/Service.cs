@@ -63,6 +63,5 @@ public class Service : IService
         };
 
         return result;
-        
     }
 }
