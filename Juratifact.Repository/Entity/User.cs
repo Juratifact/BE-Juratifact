@@ -5,12 +5,12 @@ namespace Juratifact.Repository.Entity;
 public class User: BaseEntity<Guid>,IAuditableEntity
 {
     public string UserName { get; set; }
-    public string Email { get; set; }
-    public string HashedPassword { get; set; }
+    public required string Email { get; set; }
+    public required string HashedPassword { get; set; }
     public string FullName { get; set; }
-    public string PhoneNumber { get; set; }
+    public required string PhoneNumber { get; set; }
     public string? ProfilePicture { get; set; }
-    public string Salt { get; set; }
+    public string GoogleId { get; set; }
     public bool isVerify { get; set; } = false;
     public decimal TrustScore { get; set; } = 0;
     
