@@ -17,18 +17,18 @@ public class ProductController : ControllerBase
         _productService = productService;
     }
     
-    [HttpPost("posting")]
+    [HttpPost("postings")]
     public async Task<IActionResult> CreateProduct([FromForm] ProductRequest.CreateProductRequest request)
     {
         var result = await _productService.CreateProduct(request);
         return Ok(ApiResponseFactory.SuccessResponse(result, "Product created", HttpContext.TraceIdentifier));
     }
 
-    [HttpPost("comment")]
+    [HttpPost("comments")]
     public async Task<IActionResult> CreateComment([FromBody] ProductRequest.ProductCommentRequest request)
     {
+        // Thêm ParentCommentId vào request nếu có, thì là reply luôn
         var result = await _productService.CreateComment(request);
         return Ok(ApiResponseFactory.SuccessResponse(result, "Comment created", HttpContext.TraceIdentifier));
     }
-    
 }
