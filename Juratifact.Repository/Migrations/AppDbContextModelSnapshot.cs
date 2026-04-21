@@ -46,6 +46,15 @@ namespace Juratifact.Repository.Migrations
                         .IsUnique();
 
                     b.ToTable("Carts");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = new Guid("00000000-0000-0000-0004-000000000001"),
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            IsDeleted = false,
+                            UserId = new Guid("00000000-0000-0000-0001-000000000002")
+                        });
                 });
 
             modelBuilder.Entity("Juratifact.Repository.Entity.CartDetail", b =>
@@ -157,6 +166,46 @@ namespace Juratifact.Repository.Migrations
                     b.HasIndex("UserId");
 
                     b.ToTable("IdentityDocuments");
+                });
+
+            modelBuilder.Entity("Juratifact.Repository.Entity.Notification", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Content")
+                        .HasColumnType("text");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsRead")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("RedirectUrl")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Title")
+                        .HasColumnType("text");
+
+                    b.Property<int>("Type")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTimeOffset?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("Notifications");
                 });
 
             modelBuilder.Entity("Juratifact.Repository.Entity.Order", b =>
@@ -524,6 +573,29 @@ namespace Juratifact.Repository.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Roles");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = new Guid("00000000-0000-0000-0000-000000000001"),
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            IsDeleted = false,
+                            Name = "Buyer"
+                        },
+                        new
+                        {
+                            Id = new Guid("00000000-0000-0000-0000-000000000002"),
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            IsDeleted = false,
+                            Name = "Seller"
+                        },
+                        new
+                        {
+                            Id = new Guid("00000000-0000-0000-0000-000000000003"),
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            IsDeleted = false,
+                            Name = "Admin"
+                        });
                 });
 
             modelBuilder.Entity("Juratifact.Repository.Entity.SellerReview", b =>
@@ -686,11 +758,13 @@ namespace Juratifact.Repository.Migrations
 
                     b.Property<string>("FullName")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasMaxLength(150)
+                        .HasColumnType("character varying(150)");
 
                     b.Property<string>("HashedPassword")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)");
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean");
@@ -700,25 +774,30 @@ namespace Juratifact.Repository.Migrations
 
                     b.Property<string>("PhoneNumber")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
 
                     b.Property<string>("ProfilePicture")
-                        .HasColumnType("text");
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
 
                     b.Property<int>("SellerReviewAmount")
                         .HasColumnType("integer");
 
                     b.Property<decimal>("TotalTrustScore")
-                        .HasColumnType("numeric");
+                        .HasPrecision(10, 2)
+                        .HasColumnType("numeric(10,2)");
 
                     b.Property<decimal>("TrustScore")
-                        .HasColumnType("numeric");
+                        .HasPrecision(3, 2)
+                        .HasColumnType("numeric(3,2)");
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("UserName")
-                        .HasColumnType("text");
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
 
                     b.Property<int?>("VerifyCode")
                         .HasColumnType("integer");
@@ -728,7 +807,45 @@ namespace Juratifact.Repository.Migrations
                     b.HasIndex("Email")
                         .IsUnique();
 
-                    b.ToTable("Users");
+                    b.HasIndex("PhoneNumber")
+                        .IsUnique();
+
+                    b.ToTable("Users", t =>
+                        {
+                            t.HasCheckConstraint("CK_User_TrustScore_Range", "\"TrustScore\" >= 0 AND \"TrustScore\" <= 5");
+                        });
+
+                    b.HasData(
+                        new
+                        {
+                            Id = new Guid("00000000-0000-0000-0001-000000000001"),
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            Email = "admin@juratifact.com",
+                            FullName = "System Administrator",
+                            HashedPassword = "$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdyMnd.TdnMH4Oy",
+                            IsDeleted = false,
+                            IsVerify = true,
+                            PhoneNumber = "0000000000",
+                            SellerReviewAmount = 0,
+                            TotalTrustScore = 0m,
+                            TrustScore = 0m,
+                            UserName = "admin"
+                        },
+                        new
+                        {
+                            Id = new Guid("00000000-0000-0000-0001-000000000002"),
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            Email = "buyer@juratifact.com",
+                            FullName = "Default Buyer",
+                            HashedPassword = "$2a$12$K9Wr2x8bRvLmDpTqNzY3OeI1hXsGcAf7JuBvE5MnPd6oQkWyHtZ4.",
+                            IsDeleted = false,
+                            IsVerify = true,
+                            PhoneNumber = "0000000001",
+                            SellerReviewAmount = 0,
+                            TotalTrustScore = 0m,
+                            TrustScore = 0m,
+                            UserName = "buyer"
+                        });
                 });
 
             modelBuilder.Entity("Juratifact.Repository.Entity.UserRole", b =>
@@ -759,6 +876,24 @@ namespace Juratifact.Repository.Migrations
                     b.HasIndex("UserId");
 
                     b.ToTable("UserRoles");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = new Guid("00000000-0000-0000-0003-000000000001"),
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            IsDeleted = false,
+                            RoleId = new Guid("00000000-0000-0000-0000-000000000003"),
+                            UserId = new Guid("00000000-0000-0000-0001-000000000001")
+                        },
+                        new
+                        {
+                            Id = new Guid("00000000-0000-0000-0003-000000000002"),
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            IsDeleted = false,
+                            RoleId = new Guid("00000000-0000-0000-0000-000000000001"),
+                            UserId = new Guid("00000000-0000-0000-0001-000000000002")
+                        });
                 });
 
             modelBuilder.Entity("Juratifact.Repository.Entity.Wallet", b =>
@@ -791,6 +926,17 @@ namespace Juratifact.Repository.Migrations
                         .IsUnique();
 
                     b.ToTable("Wallets");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = new Guid("00000000-0000-0000-0002-000000000002"),
+                            Balance = 0m,
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            IsDeleted = false,
+                            PendingBalance = 0m,
+                            UserId = new Guid("00000000-0000-0000-0001-000000000002")
+                        });
                 });
 
             modelBuilder.Entity("Juratifact.Repository.Entity.Cart", b =>
@@ -839,6 +985,15 @@ namespace Juratifact.Repository.Migrations
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("Juratifact.Repository.Entity.Notification", b =>
+                {
+                    b.HasOne("Juratifact.Repository.Entity.User", "User")
+                        .WithMany("Notifications")
+                        .HasForeignKey("UserId");
 
                     b.Navigation("User");
                 });
@@ -1121,6 +1276,8 @@ namespace Juratifact.Repository.Migrations
                         .IsRequired();
 
                     b.Navigation("IdentityDocuments");
+
+                    b.Navigation("Notifications");
 
                     b.Navigation("Orders");
 

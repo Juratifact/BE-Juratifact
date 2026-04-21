@@ -29,7 +29,7 @@ public class User: BaseEntity<Guid>,IAuditableEntity
     public ICollection<Report> Reports { get; set; }  = new List<Report>();
     public ICollection<ProductComment> ProductComments { get; set; } = new List<ProductComment>();
     public ICollection<UsePromotionSubscription>  UsePromotionSubscriptions { get; set; } = new List<UsePromotionSubscription>();
-    
+    public ICollection<Notification> Notifications { get; set; } = new List<Notification>();
     
     
     public DateTimeOffset CreatedAt { get; set; }

@@ -3,6 +3,8 @@ using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
+#pragma warning disable CA1814 // Prefer jagged arrays over multidimensional
+
 namespace Juratifact.Repository.Migrations
 {
     /// <inheritdoc />
@@ -93,15 +95,15 @@ namespace Juratifact.Repository.Migrations
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
                     Email = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
-                    HashedPassword = table.Column<string>(type: "text", nullable: false),
-                    FullName = table.Column<string>(type: "text", nullable: false),
-                    PhoneNumber = table.Column<string>(type: "text", nullable: false),
-                    UserName = table.Column<string>(type: "text", nullable: true),
-                    ProfilePicture = table.Column<string>(type: "text", nullable: true),
+                    HashedPassword = table.Column<string>(type: "character varying(512)", maxLength: 512, nullable: false),
+                    FullName = table.Column<string>(type: "character varying(150)", maxLength: 150, nullable: false),
+                    PhoneNumber = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
+                    UserName = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
+                    ProfilePicture = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
                     IsVerify = table.Column<bool>(type: "boolean", nullable: false),
                     VerifyCode = table.Column<int>(type: "integer", nullable: true),
-                    TrustScore = table.Column<decimal>(type: "numeric", nullable: false),
-                    TotalTrustScore = table.Column<decimal>(type: "numeric", nullable: false),
+                    TrustScore = table.Column<decimal>(type: "numeric(3,2)", precision: 3, scale: 2, nullable: false),
+                    TotalTrustScore = table.Column<decimal>(type: "numeric(10,2)", precision: 10, scale: 2, nullable: false),
                     SellerReviewAmount = table.Column<int>(type: "integer", nullable: false),
                     CreatedAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
                     UpdatedAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
@@ -110,6 +112,7 @@ namespace Juratifact.Repository.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Users", x => x.Id);
+                    table.CheckConstraint("CK_User_TrustScore_Range", "\"TrustScore\" >= 0 AND \"TrustScore\" <= 5");
                 });
 
             migrationBuilder.CreateTable(
@@ -210,6 +213,31 @@ namespace Juratifact.Repository.Migrations
                         principalTable: "Users",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "Notifications",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    Content = table.Column<string>(type: "text", nullable: true),
+                    Title = table.Column<string>(type: "text", nullable: true),
+                    Type = table.Column<int>(type: "integer", nullable: false),
+                    RedirectUrl = table.Column<string>(type: "text", nullable: true),
+                    IsRead = table.Column<bool>(type: "boolean", nullable: false),
+                    UserId = table.Column<Guid>(type: "uuid", nullable: true),
+                    CreatedAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
+                    UpdatedAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
+                    IsDeleted = table.Column<bool>(type: "boolean", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Notifications", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Notifications_Users_UserId",
+                        column: x => x.UserId,
+                        principalTable: "Users",
+                        principalColumn: "Id");
                 });
 
             migrationBuilder.CreateTable(
@@ -547,6 +575,44 @@ namespace Juratifact.Repository.Migrations
                         onDelete: ReferentialAction.Cascade);
                 });
 
+            migrationBuilder.InsertData(
+                table: "Roles",
+                columns: new[] { "Id", "CreatedAt", "IsDeleted", "Name", "UpdatedAt" },
+                values: new object[,]
+                {
+                    { new Guid("00000000-0000-0000-0000-000000000001"), new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), false, "Buyer", null },
+                    { new Guid("00000000-0000-0000-0000-000000000002"), new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), false, "Seller", null },
+                    { new Guid("00000000-0000-0000-0000-000000000003"), new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), false, "Admin", null }
+                });
+
+            migrationBuilder.InsertData(
+                table: "Users",
+                columns: new[] { "Id", "CreatedAt", "Email", "FullName", "HashedPassword", "IsDeleted", "IsVerify", "PhoneNumber", "ProfilePicture", "SellerReviewAmount", "TotalTrustScore", "TrustScore", "UpdatedAt", "UserName", "VerifyCode" },
+                values: new object[,]
+                {
+                    { new Guid("00000000-0000-0000-0001-000000000001"), new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), "admin@juratifact.com", "System Administrator", "$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdyMnd.TdnMH4Oy", false, true, "0000000000", null, 0, 0m, 0m, null, "admin", null },
+                    { new Guid("00000000-0000-0000-0001-000000000002"), new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), "buyer@juratifact.com", "Default Buyer", "$2a$12$K9Wr2x8bRvLmDpTqNzY3OeI1hXsGcAf7JuBvE5MnPd6oQkWyHtZ4.", false, true, "0000000001", null, 0, 0m, 0m, null, "buyer", null }
+                });
+
+            migrationBuilder.InsertData(
+                table: "Carts",
+                columns: new[] { "Id", "CreatedAt", "IsDeleted", "UpdatedAt", "UserId" },
+                values: new object[] { new Guid("00000000-0000-0000-0004-000000000001"), new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), false, null, new Guid("00000000-0000-0000-0001-000000000002") });
+
+            migrationBuilder.InsertData(
+                table: "UserRoles",
+                columns: new[] { "Id", "CreatedAt", "IsDeleted", "RoleId", "UpdatedAt", "UserId" },
+                values: new object[,]
+                {
+                    { new Guid("00000000-0000-0000-0003-000000000001"), new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), false, new Guid("00000000-0000-0000-0000-000000000003"), null, new Guid("00000000-0000-0000-0001-000000000001") },
+                    { new Guid("00000000-0000-0000-0003-000000000002"), new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), false, new Guid("00000000-0000-0000-0000-000000000001"), null, new Guid("00000000-0000-0000-0001-000000000002") }
+                });
+
+            migrationBuilder.InsertData(
+                table: "Wallets",
+                columns: new[] { "Id", "Balance", "CreatedAt", "IsDeleted", "PendingBalance", "UpdatedAt", "UserId" },
+                values: new object[] { new Guid("00000000-0000-0000-0002-000000000002"), 0m, new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), false, 0m, null, new Guid("00000000-0000-0000-0001-000000000002") });
+
             migrationBuilder.CreateIndex(
                 name: "IX_CartDetails_CartId",
                 table: "CartDetails",
@@ -571,6 +637,11 @@ namespace Juratifact.Repository.Migrations
             migrationBuilder.CreateIndex(
                 name: "IX_IdentityDocuments_UserId",
                 table: "IdentityDocuments",
+                column: "UserId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Notifications_UserId",
+                table: "Notifications",
                 column: "UserId");
 
             migrationBuilder.CreateIndex(
@@ -687,6 +758,12 @@ namespace Juratifact.Repository.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
+                name: "IX_Users_PhoneNumber",
+                table: "Users",
+                column: "PhoneNumber",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Wallets_UserId",
                 table: "Wallets",
                 column: "UserId",
@@ -701,6 +778,9 @@ namespace Juratifact.Repository.Migrations
 
             migrationBuilder.DropTable(
                 name: "IdentityDocuments");
+
+            migrationBuilder.DropTable(
+                name: "Notifications");
 
             migrationBuilder.DropTable(
                 name: "OrderDetails");
