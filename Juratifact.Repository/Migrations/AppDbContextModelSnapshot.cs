@@ -158,7 +158,6 @@ namespace Juratifact.Repository.Migrations
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("VerifiedBy")
-                        .IsRequired()
                         .HasColumnType("text");
 
                     b.HasKey("Id");

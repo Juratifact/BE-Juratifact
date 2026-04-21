@@ -194,7 +194,7 @@ namespace Juratifact.Repository.Migrations
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
                     IdCardFrontUrl = table.Column<string>(type: "text", nullable: false),
                     IdCardBackUrl = table.Column<string>(type: "text", nullable: false),
-                    VerifiedBy = table.Column<string>(type: "text", nullable: false),
+                    VerifiedBy = table.Column<string>(type: "text", nullable: true),
                     ExpireAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
                     Status = table.Column<int>(type: "integer", nullable: false),
                     VerifiedAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),

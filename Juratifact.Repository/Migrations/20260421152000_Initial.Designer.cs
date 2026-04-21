@@ -12,7 +12,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Juratifact.Repository.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260421105257_Initial")]
+    [Migration("20260421152000_Initial")]
     partial class Initial
     {
         /// <inheritdoc />
@@ -161,7 +161,6 @@ namespace Juratifact.Repository.Migrations
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("VerifiedBy")
-                        .IsRequired()
                         .HasColumnType("text");
 
                     b.HasKey("Id");
