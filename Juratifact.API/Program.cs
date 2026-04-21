@@ -5,6 +5,7 @@ using Juratifact.Service.CloudinaryService;
 using Juratifact.Service.JwtService;
 using Juratifact.Service.MailService;
 using Juratifact.Service.MediaService;
+using Juratifact.Service.User;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -29,6 +30,7 @@ builder.Services.AddSwaggerServices();
 builder.Services.AddScoped<IMailService, MailService>();
 builder.Services.AddScoped<IMediaService, CloudinaryService>();
 builder.Services.AddScoped<IJwtService, JwtService>();
+builder.Services.AddScoped<IUserService, UserService>();
 
 builder.Services.AddTransient<GlobalExceptionHandlerMiddleware>();
 var app = builder.Build();
