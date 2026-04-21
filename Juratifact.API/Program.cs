@@ -2,6 +2,7 @@ using Juratifact.API.Extensions;
 using Juratifact.API.Middlewares;
 using Juratifact.Repository;
 using Juratifact.Service.CloudinaryService;
+using Juratifact.Service.Identity;
 using Juratifact.Service.JwtService;
 using Juratifact.Service.MailService;
 using Juratifact.Service.MediaService;
@@ -31,6 +32,7 @@ builder.Services.AddScoped<IMailService, MailService>();
 builder.Services.AddScoped<IMediaService, CloudinaryService>();
 builder.Services.AddScoped<IJwtService, JwtService>();
 builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<IIdentityService, IdentityService>();
 
 builder.Services.AddTransient<GlobalExceptionHandlerMiddleware>();
 var app = builder.Build();
