@@ -25,4 +25,13 @@ public class ProductRequest
         //          Parent2(reply to question): ParentCommentId = Parent1.CommentId
         //          //          Parent3(reply to Parent2): ParentCommentId = Parent2.CommentId
     }
+    
+    public class UpdateProductRequest
+    {
+        public required string Title { get; set; }
+        public required string Description { get; set; }
+        public required string Condition { get; set; }
+        public IFormFile? Image { get; set; }
+        public IFormFile? Video { get; set; }
+    }
 }
