@@ -59,7 +59,32 @@ public class CloudinaryService: IMediaService
 
         throw new ArgumentException("Unsupported file type.");
     }
-    
+
+    public async Task<string> UploadVideoAsync(IFormFile file)
+    {
+        if (file == null || file.Length == 0)
+            throw new ArgumentException("File is empty or null.", nameof(file));
+
+        await using var stream = file.OpenReadStream();
+        
+        if (IsVideoFile(file))
+        {
+            var uploadParams = new VideoUploadParams
+            {
+                File = new FileDescription(file.FileName, stream)
+            };
+
+            var result = await _cloudinary.UploadAsync(uploadParams);
+
+            if (result.Error != null)
+                throw new Exception(result.Error.Message);
+
+            return result.SecureUrl.ToString();
+        }
+
+        throw new ArgumentException("Unsupported file type.");
+    }
+
     private bool IsImageFile(IFormFile file)
     {
         var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".gif", ".webp" };
