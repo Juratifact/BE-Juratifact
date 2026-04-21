@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using Juratifact.Repository;
 using Juratifact.Service.JwtService;
+using Juratifact.Service.Util;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 
@@ -32,12 +33,12 @@ public class IdentityService: IIdentityService
         }
         
         // // Kiểm tra mật khẩu bằng Argon2
-        // bool isPasswordValid = Argon2Hasher.VerifyHash(password, user.HashedPassword);
-        //
-        // if (!isPasswordValid) //user.HashedPassword != password
-        // {
-        //     throw new Exception("Invalid password");
-        // }
+        bool isPasswordValid = Argon2Hasher.VerifyHash(password, user.HashedPassword);
+        
+        if (!isPasswordValid) //user.HashedPassword != password
+        {
+            throw new Exception("Invalid password");
+        }
         
         var claims = new List<Claim>
         {

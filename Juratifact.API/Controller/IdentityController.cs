@@ -1,4 +1,5 @@
 using Juratifact.Service.Identity;
+using Juratifact.Service.Models;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Juratifact.API.Controller;
@@ -14,10 +15,10 @@ public class IdentityController : ControllerBase
         _indentityService = indentityService;
     }
 
-    [HttpGet("")]
+    [HttpGet("login")]
     public async Task<IActionResult> Login(string  email, string password)
     {
         var result = await _indentityService.Login(email, password);
-        return Ok(result);
+        return Ok(ApiResponseFactory.SuccessResponse(result, "Login successful", HttpContext.TraceIdentifier));
     }
 }
