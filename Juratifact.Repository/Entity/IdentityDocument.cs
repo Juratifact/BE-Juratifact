@@ -7,7 +7,7 @@ public class IdentityDocument: BaseEntity<Guid>,IAuditableEntity
 {
     public required string IdCardFrontUrl { get; set; }
     public required string IdCardBackUrl { get; set; }
-    public required string VerifiedBy { get; set; }
+    public string? VerifiedBy { get; set; }
     
     public DateTimeOffset ExpireAt { get; set; }
     public IdentityStatus Status { get; set; }
