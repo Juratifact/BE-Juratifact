@@ -4,7 +4,6 @@ namespace Juratifact.Repository.Entity;
 
 public class CartDetail: BaseEntity<Guid>,IAuditableEntity
 {
-    
     public Guid CartId { get; set; }
     public Cart Cart { get; set; }
     

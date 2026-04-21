@@ -16,10 +16,9 @@ public class AppDbContext : DbContext
     public DbSet<IdentityDocument> IdentityDocuments { get; set; }
     public DbSet<Order> Orders { get; set; }
     public DbSet<OrderDetail> OrderDetails { get; set; }
-    public DbSet<Otp> Otps { get; set; }
     public DbSet<Product> Products { get; set; }
     public DbSet<ProductCategory> ProductCategories { get; set; }
-    public DbSet<ProductMedia> ProductMediae { get; set; }
+    public DbSet<ProductMedia> ProductMedia { get; set; }
     public DbSet<ProductPromotion> ProductPromotions { get; set; }
     public DbSet<PromotionPackage> PromotionPackages { get; set; }
     public DbSet<Report> Reports { get; set; }
@@ -29,6 +28,8 @@ public class AppDbContext : DbContext
     public DbSet<User> Users { get; set; }
     public DbSet<UserRole> UserRoles { get; set; }
     public DbSet<Wallet> Wallets { get; set; }
+    public DbSet<ProductComment> ProductComments { get; set; }
+    public DbSet<UsePromotionSubscription> UsePromotionSubscriptions { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
