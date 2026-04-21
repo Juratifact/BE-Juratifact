@@ -39,4 +39,5 @@ public class ProductController : ControllerBase
         return Ok(ApiResponseFactory.SuccessResponse(result, "Product updated", HttpContext.TraceIdentifier));
     }
     
+    
 }
