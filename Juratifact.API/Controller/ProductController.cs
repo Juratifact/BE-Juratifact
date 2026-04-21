@@ -38,4 +38,5 @@ public class ProductController : ControllerBase
         var result = await _productService.UpdateProductPostingById(id, request);
         return Ok(ApiResponseFactory.SuccessResponse(result, "Product updated", HttpContext.TraceIdentifier));
     }
+    
 }
