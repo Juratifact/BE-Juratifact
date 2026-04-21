@@ -4,10 +4,10 @@ namespace Juratifact.Repository.Entity;
 
 public class ProductComment  : BaseEntity<Guid>, IAuditableEntity
 {
-    public required string Content { get; set; }
+    public required string Content { get; set; } //question
     
     public Guid? ParentCommentId { get; set; } 
-    public ProductComment? Parent { get; set; }
+    public ProductComment? Parent { get; set; } //reply
     
     public Guid ProductId { get; set; }
     public Product Product { get; set; }

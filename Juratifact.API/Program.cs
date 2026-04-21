@@ -7,6 +7,7 @@ using Juratifact.Service.IdentityDocumentService;
 using Juratifact.Service.JwtService;
 using Juratifact.Service.MailService;
 using Juratifact.Service.MediaService;
+using Juratifact.Service.Product;
 using Juratifact.Service.User;
 using Microsoft.EntityFrameworkCore;
 
@@ -34,6 +35,7 @@ builder.Services.AddScoped<IMediaService, CloudinaryService>();
 builder.Services.AddScoped<IJwtService, JwtService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IIdentityService, IdentityService>();
+builder.Services.AddScoped<IProductService, ProductService>();
 builder.Services.AddScoped<IIdentityDocumentService, IdentityDocumentService>();
 
 builder.Services.AddTransient<GlobalExceptionHandlerMiddleware>();
