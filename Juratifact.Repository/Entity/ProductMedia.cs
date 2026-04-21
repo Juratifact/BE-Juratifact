@@ -4,11 +4,12 @@ namespace Juratifact.Repository.Entity;
 
 public class ProductMedia : BaseEntity<Guid>, IAuditableEntity
 {
+    public required string ImageUrl { get; set; }
+    public string? Video { get; set; } // Optional
+    
     public Guid ProductId { get; set; }
     public Product Product { get; set; }
     
-    public string ImageUrl { get; set; }
-    public string? Video { get; set; } // Optional
     
     public DateTimeOffset CreatedAt { get; set; }
     public DateTimeOffset? UpdatedAt { get; set; }

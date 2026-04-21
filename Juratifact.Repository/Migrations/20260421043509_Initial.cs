@@ -39,10 +39,10 @@ namespace Juratifact.Repository.Migrations
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
                     SellerId = table.Column<Guid>(type: "uuid", nullable: false),
                     Title = table.Column<string>(type: "text", nullable: false),
-                    Description = table.Column<string>(type: "text", nullable: false),
+                    Condition = table.Column<string>(type: "text", nullable: false),
+                    Description = table.Column<string>(type: "text", nullable: true),
                     Price = table.Column<decimal>(type: "numeric", nullable: false),
                     Status = table.Column<int>(type: "integer", nullable: false),
-                    Condition = table.Column<string>(type: "text", nullable: false),
                     CreatedAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
                     UpdatedAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     IsDeleted = table.Column<bool>(type: "boolean", nullable: false)
@@ -50,6 +50,26 @@ namespace Juratifact.Repository.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Products", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "PromotionPackages",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    PackageName = table.Column<string>(type: "text", nullable: false),
+                    Description = table.Column<string>(type: "text", nullable: true),
+                    Price = table.Column<decimal>(type: "numeric", nullable: false),
+                    DurationDay = table.Column<int>(type: "integer", nullable: false),
+                    Type = table.Column<string>(type: "text", nullable: true),
+                    PostingDayCount = table.Column<int>(type: "integer", nullable: false),
+                    CreatedAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
+                    UpdatedAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
+                    IsDeleted = table.Column<bool>(type: "boolean", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_PromotionPackages", x => x.Id);
                 });
 
             migrationBuilder.CreateTable(
@@ -72,15 +92,17 @@ namespace Juratifact.Repository.Migrations
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    UserName = table.Column<string>(type: "text", nullable: false),
                     Email = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
                     HashedPassword = table.Column<string>(type: "text", nullable: false),
                     FullName = table.Column<string>(type: "text", nullable: false),
                     PhoneNumber = table.Column<string>(type: "text", nullable: false),
+                    UserName = table.Column<string>(type: "text", nullable: true),
                     ProfilePicture = table.Column<string>(type: "text", nullable: true),
-                    Salt = table.Column<string>(type: "text", nullable: false),
-                    isVerify = table.Column<bool>(type: "boolean", nullable: false),
+                    IsVerify = table.Column<bool>(type: "boolean", nullable: false),
+                    VerifyCode = table.Column<int>(type: "integer", nullable: true),
                     TrustScore = table.Column<decimal>(type: "numeric", nullable: false),
+                    TotalTrustScore = table.Column<decimal>(type: "numeric", nullable: false),
+                    SellerReviewAmount = table.Column<int>(type: "integer", nullable: false),
                     CreatedAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
                     UpdatedAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     IsDeleted = table.Column<bool>(type: "boolean", nullable: false)
@@ -119,22 +141,22 @@ namespace Juratifact.Repository.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "ProductMediae",
+                name: "ProductMedia",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    ProductId = table.Column<Guid>(type: "uuid", nullable: false),
                     ImageUrl = table.Column<string>(type: "text", nullable: false),
                     Video = table.Column<string>(type: "text", nullable: true),
+                    ProductId = table.Column<Guid>(type: "uuid", nullable: false),
                     CreatedAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
                     UpdatedAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     IsDeleted = table.Column<bool>(type: "boolean", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_ProductMediae", x => x.Id);
+                    table.PrimaryKey("PK_ProductMedia", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_ProductMediae_Products_ProductId",
+                        name: "FK_ProductMedia_Products_ProductId",
                         column: x => x.ProductId,
                         principalTable: "Products",
                         principalColumn: "Id",
@@ -169,11 +191,11 @@ namespace Juratifact.Repository.Migrations
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
                     IdCardFrontUrl = table.Column<string>(type: "text", nullable: false),
                     IdCardBackUrl = table.Column<string>(type: "text", nullable: false),
+                    VerifiedBy = table.Column<string>(type: "text", nullable: false),
                     ExpireAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
                     Status = table.Column<int>(type: "integer", nullable: false),
-                    VerifiedBy = table.Column<string>(type: "text", nullable: false),
                     VerifiedAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    Note = table.Column<string>(type: "text", nullable: false),
+                    Note = table.Column<string>(type: "text", nullable: true),
                     UserId = table.Column<Guid>(type: "uuid", nullable: false),
                     CreatedAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
                     UpdatedAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
@@ -191,13 +213,19 @@ namespace Juratifact.Repository.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "Otps",
+                name: "Orders",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    Code = table.Column<string>(type: "text", nullable: false),
-                    OTPType = table.Column<int>(type: "integer", nullable: false),
-                    ExprireAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
+                    Name = table.Column<string>(type: "text", nullable: false),
+                    TotalPrice = table.Column<decimal>(type: "numeric", nullable: false),
+                    ShippingPee = table.Column<decimal>(type: "numeric", nullable: false),
+                    ShipperPod1Url = table.Column<string>(type: "text", nullable: true),
+                    ShipperPod2Url = table.Column<string>(type: "text", nullable: true),
+                    PaymentMethod = table.Column<string>(type: "text", nullable: false),
+                    Status = table.Column<int>(type: "integer", nullable: false),
+                    PaymentStatus = table.Column<int>(type: "integer", nullable: false),
+                    ExpiresAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     UserId = table.Column<Guid>(type: "uuid", nullable: false),
                     CreatedAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
                     UpdatedAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
@@ -205,9 +233,45 @@ namespace Juratifact.Repository.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Otps", x => x.Id);
+                    table.PrimaryKey("PK_Orders", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_Otps_Users_UserId",
+                        name: "FK_Orders_Users_UserId",
+                        column: x => x.UserId,
+                        principalTable: "Users",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "ProductComments",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    Content = table.Column<string>(type: "text", nullable: false),
+                    ParentCommentId = table.Column<Guid>(type: "uuid", nullable: true),
+                    ParentId = table.Column<Guid>(type: "uuid", nullable: true),
+                    ProductId = table.Column<Guid>(type: "uuid", nullable: false),
+                    UserId = table.Column<Guid>(type: "uuid", nullable: false),
+                    CreatedAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
+                    UpdatedAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
+                    IsDeleted = table.Column<bool>(type: "boolean", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_ProductComments", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_ProductComments_ProductComments_ParentId",
+                        column: x => x.ParentId,
+                        principalTable: "ProductComments",
+                        principalColumn: "Id");
+                    table.ForeignKey(
+                        name: "FK_ProductComments_Products_ProductId",
+                        column: x => x.ProductId,
+                        principalTable: "Products",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_ProductComments_Users_UserId",
                         column: x => x.UserId,
                         principalTable: "Users",
                         principalColumn: "Id",
@@ -220,7 +284,7 @@ namespace Juratifact.Repository.Migrations
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
                     Reason = table.Column<string>(type: "text", nullable: false),
-                    Description = table.Column<string>(type: "text", nullable: false),
+                    Description = table.Column<string>(type: "text", nullable: true),
                     Status = table.Column<int>(type: "integer", nullable: false),
                     UserId = table.Column<Guid>(type: "uuid", nullable: false),
                     ProductId = table.Column<Guid>(type: "uuid", nullable: false),
@@ -246,24 +310,33 @@ namespace Juratifact.Repository.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "SellerReviews",
+                name: "UsePromotionSubscriptions",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    Rating = table.Column<int>(type: "integer", nullable: false),
-                    Comment = table.Column<string>(type: "text", nullable: false),
-                    SellerId = table.Column<Guid>(type: "uuid", nullable: false),
-                    BuyerId = table.Column<Guid>(type: "uuid", nullable: false),
+                    TotalSlot = table.Column<decimal>(type: "numeric", nullable: false),
+                    UsedSlot = table.Column<decimal>(type: "numeric", nullable: false),
+                    StartTime = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
+                    EndTime = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
+                    paymentStatus = table.Column<int>(type: "integer", nullable: false),
                     UserId = table.Column<Guid>(type: "uuid", nullable: false),
+                    PackageId = table.Column<Guid>(type: "uuid", nullable: false),
+                    PromotionPackageId = table.Column<Guid>(type: "uuid", nullable: false),
                     CreatedAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
                     UpdatedAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     IsDeleted = table.Column<bool>(type: "boolean", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_SellerReviews", x => x.Id);
+                    table.PrimaryKey("PK_UsePromotionSubscriptions", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_SellerReviews_Users_UserId",
+                        name: "FK_UsePromotionSubscriptions_PromotionPackages_PromotionPackag~",
+                        column: x => x.PromotionPackageId,
+                        principalTable: "PromotionPackages",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_UsePromotionSubscriptions_Users_UserId",
                         column: x => x.UserId,
                         principalTable: "Users",
                         principalColumn: "Id",
@@ -306,7 +379,6 @@ namespace Juratifact.Repository.Migrations
                     Balance = table.Column<decimal>(type: "numeric", nullable: false),
                     PendingBalance = table.Column<decimal>(type: "numeric", nullable: false),
                     UserId = table.Column<Guid>(type: "uuid", nullable: false),
-                    RoleId = table.Column<Guid>(type: "uuid", nullable: false),
                     CreatedAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
                     UpdatedAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     IsDeleted = table.Column<bool>(type: "boolean", nullable: false)
@@ -352,42 +424,6 @@ namespace Juratifact.Repository.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "Orders",
-                columns: table => new
-                {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    Name = table.Column<string>(type: "text", nullable: false),
-                    TotalPrice = table.Column<decimal>(type: "numeric", nullable: false),
-                    Status = table.Column<int>(type: "integer", nullable: false),
-                    ShipperPod1Url = table.Column<string>(type: "text", nullable: false),
-                    ShipperPod2Url = table.Column<string>(type: "text", nullable: false),
-                    PaymentMethod = table.Column<string>(type: "text", nullable: false),
-                    PaymentStatus = table.Column<int>(type: "integer", nullable: false),
-                    ExpiresAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    UserId = table.Column<Guid>(type: "uuid", nullable: false),
-                    SellerReviewId = table.Column<Guid>(type: "uuid", nullable: false),
-                    CreatedAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    UpdatedAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    IsDeleted = table.Column<bool>(type: "boolean", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_Orders", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_Orders_SellerReviews_SellerReviewId",
-                        column: x => x.SellerReviewId,
-                        principalTable: "SellerReviews",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_Orders_Users_UserId",
-                        column: x => x.UserId,
-                        principalTable: "Users",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
                 name: "OrderDetails",
                 columns: table => new
                 {
@@ -417,62 +453,26 @@ namespace Juratifact.Repository.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "Transactions",
+                name: "SellerReviews",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    SepayId = table.Column<string>(type: "text", nullable: false),
-                    Amount = table.Column<decimal>(type: "numeric", nullable: false),
-                    TransactionType = table.Column<int>(type: "integer", nullable: false),
-                    ExternalTransactionId = table.Column<string>(type: "text", nullable: false),
-                    Description = table.Column<string>(type: "text", nullable: false),
-                    ReferenceCode = table.Column<string>(type: "text", nullable: false),
-                    FeeAmount = table.Column<decimal>(type: "numeric", nullable: false),
-                    Status = table.Column<int>(type: "integer", nullable: false),
-                    WalletId = table.Column<Guid>(type: "uuid", nullable: true),
-                    OrderId = table.Column<Guid>(type: "uuid", nullable: true),
+                    Rating = table.Column<int>(type: "integer", nullable: false),
+                    Comment = table.Column<string>(type: "text", nullable: true),
+                    OrderId = table.Column<Guid>(type: "uuid", nullable: false),
                     CreatedAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
                     UpdatedAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     IsDeleted = table.Column<bool>(type: "boolean", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Transactions", x => x.Id);
+                    table.PrimaryKey("PK_SellerReviews", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_Transactions_Orders_OrderId",
+                        name: "FK_SellerReviews_Orders_OrderId",
                         column: x => x.OrderId,
                         principalTable: "Orders",
-                        principalColumn: "Id");
-                    table.ForeignKey(
-                        name: "FK_Transactions_Wallets_WalletId",
-                        column: x => x.WalletId,
-                        principalTable: "Wallets",
-                        principalColumn: "Id");
-                });
-
-            migrationBuilder.CreateTable(
-                name: "PromotionPackages",
-                columns: table => new
-                {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    PackageName = table.Column<string>(type: "text", nullable: false),
-                    Description = table.Column<string>(type: "text", nullable: false),
-                    Price = table.Column<decimal>(type: "numeric", nullable: false),
-                    DurationDay = table.Column<int>(type: "integer", nullable: false),
-                    Type = table.Column<string>(type: "text", nullable: true),
-                    CreatedAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    UpdatedAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    TransactionId = table.Column<Guid>(type: "uuid", nullable: true),
-                    IsDeleted = table.Column<bool>(type: "boolean", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_PromotionPackages", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_PromotionPackages_Transactions_TransactionId",
-                        column: x => x.TransactionId,
-                        principalTable: "Transactions",
-                        principalColumn: "Id");
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
@@ -480,13 +480,9 @@ namespace Juratifact.Repository.Migrations
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    IsActive = table.Column<bool>(type: "boolean", nullable: false),
+                    UsePromotionSubscriptionId = table.Column<Guid>(type: "uuid", nullable: false),
                     ProductId = table.Column<Guid>(type: "uuid", nullable: false),
-                    PackageId = table.Column<Guid>(type: "uuid", nullable: false),
-                    TransactionId = table.Column<Guid>(type: "uuid", nullable: false),
-                    PaymentCode = table.Column<string>(type: "text", nullable: false),
-                    PaymentStatus = table.Column<string>(type: "text", nullable: false),
-                    StartDate = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    EndDate = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     CreatedAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
                     UpdatedAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     IsDeleted = table.Column<bool>(type: "boolean", nullable: false)
@@ -501,15 +497,52 @@ namespace Juratifact.Repository.Migrations
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "FK_ProductPromotions_PromotionPackages_PackageId",
-                        column: x => x.PackageId,
-                        principalTable: "PromotionPackages",
+                        name: "FK_ProductPromotions_UsePromotionSubscriptions_UsePromotionSub~",
+                        column: x => x.UsePromotionSubscriptionId,
+                        principalTable: "UsePromotionSubscriptions",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "Transactions",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    SepayId = table.Column<string>(type: "text", nullable: false),
+                    Amount = table.Column<decimal>(type: "numeric", nullable: false),
+                    ExternalTransactionId = table.Column<string>(type: "text", nullable: false),
+                    Description = table.Column<string>(type: "text", nullable: false),
+                    ReferenceCode = table.Column<string>(type: "text", nullable: false),
+                    FeeAmount = table.Column<decimal>(type: "numeric", nullable: false),
+                    TransactionType = table.Column<int>(type: "integer", nullable: false),
+                    Status = table.Column<int>(type: "integer", nullable: false),
+                    WalletId = table.Column<Guid>(type: "uuid", nullable: false),
+                    OrderId = table.Column<Guid>(type: "uuid", nullable: false),
+                    UsePromotionSubscriptionId = table.Column<Guid>(type: "uuid", nullable: false),
+                    CreatedAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
+                    UpdatedAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
+                    IsDeleted = table.Column<bool>(type: "boolean", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Transactions", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Transactions_Orders_OrderId",
+                        column: x => x.OrderId,
+                        principalTable: "Orders",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "FK_ProductPromotions_Transactions_TransactionId",
-                        column: x => x.TransactionId,
-                        principalTable: "Transactions",
+                        name: "FK_Transactions_UsePromotionSubscriptions_UsePromotionSubscrip~",
+                        column: x => x.UsePromotionSubscriptionId,
+                        principalTable: "UsePromotionSubscriptions",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_Transactions_Wallets_WalletId",
+                        column: x => x.WalletId,
+                        principalTable: "Wallets",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
@@ -551,18 +584,8 @@ namespace Juratifact.Repository.Migrations
                 column: "ProductId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Orders_SellerReviewId",
-                table: "Orders",
-                column: "SellerReviewId");
-
-            migrationBuilder.CreateIndex(
                 name: "IX_Orders_UserId",
                 table: "Orders",
-                column: "UserId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_Otps_UserId",
-                table: "Otps",
                 column: "UserId");
 
             migrationBuilder.CreateIndex(
@@ -576,14 +599,24 @@ namespace Juratifact.Repository.Migrations
                 column: "ProductId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_ProductMediae_ProductId",
-                table: "ProductMediae",
+                name: "IX_ProductComments_ParentId",
+                table: "ProductComments",
+                column: "ParentId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_ProductComments_ProductId",
+                table: "ProductComments",
                 column: "ProductId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_ProductPromotions_PackageId",
-                table: "ProductPromotions",
-                column: "PackageId");
+                name: "IX_ProductComments_UserId",
+                table: "ProductComments",
+                column: "UserId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_ProductMedia_ProductId",
+                table: "ProductMedia",
+                column: "ProductId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_ProductPromotions_ProductId",
@@ -591,14 +624,9 @@ namespace Juratifact.Repository.Migrations
                 column: "ProductId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_ProductPromotions_TransactionId",
+                name: "IX_ProductPromotions_UsePromotionSubscriptionId",
                 table: "ProductPromotions",
-                column: "TransactionId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_PromotionPackages_TransactionId",
-                table: "PromotionPackages",
-                column: "TransactionId");
+                column: "UsePromotionSubscriptionId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Reports_ProductId",
@@ -611,9 +639,10 @@ namespace Juratifact.Repository.Migrations
                 column: "UserId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_SellerReviews_UserId",
+                name: "IX_SellerReviews_OrderId",
                 table: "SellerReviews",
-                column: "UserId");
+                column: "OrderId",
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_Transactions_OrderId",
@@ -621,9 +650,25 @@ namespace Juratifact.Repository.Migrations
                 column: "OrderId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_Transactions_UsePromotionSubscriptionId",
+                table: "Transactions",
+                column: "UsePromotionSubscriptionId",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Transactions_WalletId",
                 table: "Transactions",
                 column: "WalletId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_UsePromotionSubscriptions_PromotionPackageId",
+                table: "UsePromotionSubscriptions",
+                column: "PromotionPackageId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_UsePromotionSubscriptions_UserId",
+                table: "UsePromotionSubscriptions",
+                column: "UserId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_UserRoles_RoleId",
@@ -661,19 +706,25 @@ namespace Juratifact.Repository.Migrations
                 name: "OrderDetails");
 
             migrationBuilder.DropTable(
-                name: "Otps");
-
-            migrationBuilder.DropTable(
                 name: "ProductCategories");
 
             migrationBuilder.DropTable(
-                name: "ProductMediae");
+                name: "ProductComments");
+
+            migrationBuilder.DropTable(
+                name: "ProductMedia");
 
             migrationBuilder.DropTable(
                 name: "ProductPromotions");
 
             migrationBuilder.DropTable(
                 name: "Reports");
+
+            migrationBuilder.DropTable(
+                name: "SellerReviews");
+
+            migrationBuilder.DropTable(
+                name: "Transactions");
 
             migrationBuilder.DropTable(
                 name: "UserRoles");
@@ -685,25 +736,22 @@ namespace Juratifact.Repository.Migrations
                 name: "Categories");
 
             migrationBuilder.DropTable(
-                name: "PromotionPackages");
-
-            migrationBuilder.DropTable(
                 name: "Products");
-
-            migrationBuilder.DropTable(
-                name: "Roles");
-
-            migrationBuilder.DropTable(
-                name: "Transactions");
 
             migrationBuilder.DropTable(
                 name: "Orders");
 
             migrationBuilder.DropTable(
+                name: "UsePromotionSubscriptions");
+
+            migrationBuilder.DropTable(
                 name: "Wallets");
 
             migrationBuilder.DropTable(
-                name: "SellerReviews");
+                name: "Roles");
+
+            migrationBuilder.DropTable(
+                name: "PromotionPackages");
 
             migrationBuilder.DropTable(
                 name: "Users");

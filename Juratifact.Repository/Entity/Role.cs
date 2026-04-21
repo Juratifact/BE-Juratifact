@@ -4,7 +4,7 @@ namespace Juratifact.Repository.Entity;
 
 public class Role: BaseEntity<Guid>,IAuditableEntity
 {
-    public string Name { get; set; }
+    public required string Name { get; set; }
     
     public ICollection<UserRole> UserRoles { get; set; } =  new List<UserRole>();
     
