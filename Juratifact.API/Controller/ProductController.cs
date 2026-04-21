@@ -23,4 +23,12 @@ public class ProductController : ControllerBase
         var result = await _productService.CreateProduct(request);
         return Ok(ApiResponseFactory.SuccessResponse(result, "Product created", HttpContext.TraceIdentifier));
     }
+
+    [HttpPost("comment")]
+    public async Task<IActionResult> CreateComment([FromBody] ProductRequest.ProductCommentRequest request)
+    {
+        var result = await _productService.CreateComment(request);
+        return Ok(ApiResponseFactory.SuccessResponse(result, "Comment created", HttpContext.TraceIdentifier));
+    }
+    
 }

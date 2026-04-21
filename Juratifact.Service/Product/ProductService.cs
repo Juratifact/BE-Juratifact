@@ -18,7 +18,7 @@ public class ProductService : IProductService
         _mediaService = mediaService;
         _httpContext = httpContext;
     }
-    
+
     public async Task<string> CreateProduct(ProductRequest.CreateProductRequest request)
     {
         var userId = _httpContext.HttpContext.User.Claims.FirstOrDefault(x => x.Type == "UserId")?.Value;
@@ -86,7 +86,9 @@ public class ProductService : IProductService
             Condition = request.Condition,
             Description = request.Description,
             Price = request.Price,
-            Status = Enum.TryParse<Juratifact.Repository.Enum.ProductStatus>(request.Status, out var status) ? status : throw new ArgumentException("Invalid product status."),
+            Status = Enum.TryParse<Juratifact.Repository.Enum.ProductStatus>(request.Status, out var status)
+                ? status
+                : throw new ArgumentException("Invalid product status."),
             CreatedAt = DateTimeOffset.UtcNow
         };
 
@@ -119,5 +121,74 @@ public class ProductService : IProductService
         await _dbContext.SaveChangesAsync();
 
         return "Product created successfully! User now has both Buyer and Seller roles.";
+    }
+
+    public async Task<ProductResponse.ProductCommentResponse> CreateComment(ProductRequest.ProductCommentRequest request)
+    {
+        // Get authenticated user
+        var userId = _httpContext.HttpContext.User.Claims.FirstOrDefault(x => x.Type == "UserId")?.Value;
+
+        if (string.IsNullOrEmpty(userId))
+        {
+            throw new UnauthorizedAccessException("User not authenticated.");
+        }
+
+        var userIdGuid = Guid.Parse(userId);
+
+        // Check if product exists
+        var product = await _dbContext.Products.FindAsync(request.ProductId);
+
+        if (product == null)
+        {
+            throw new ArgumentException("Product not found.");
+        }
+
+        // Check if user exists
+        var user = await _dbContext.Users.FindAsync(userIdGuid);
+
+        if (user == null)
+        {
+            throw new ArgumentException("User not found.");
+        }
+
+        // If ParentCommentId is provided, check if parent comment exists and belongs to the same product
+        if (request.ParentCommentId.HasValue)
+        {
+            var parentComment = await _dbContext.ProductComments.FindAsync(request.ParentCommentId.Value);
+
+            if (parentComment == null)
+            {
+                throw new ArgumentException("Parent comment not found.");
+            }
+
+            if (parentComment.ProductId != request.ProductId)
+            {
+                throw new ArgumentException("Parent comment does not belong to this product.");
+            }
+        }
+
+        var newComment = new Repository.Entity.ProductComment()
+        {
+            ProductId = request.ProductId,
+            UserId = userIdGuid,
+            Content = request.Content,
+            ParentCommentId = request.ParentCommentId,
+            CreatedAt = DateTimeOffset.UtcNow
+        };
+
+        _dbContext.Add(newComment);
+        await _dbContext.SaveChangesAsync();
+
+        var commentResponse = new ProductResponse.ProductCommentResponse()
+        {
+            CommentId = newComment.Id,
+            ProductId = newComment.ProductId,
+            ProductName = product.Title,
+            Content = newComment.Content,
+            UserName = user.FullName,
+            ParentCommentId = newComment.ParentCommentId
+        };
+
+        return commentResponse;
     }
 }

@@ -14,4 +14,15 @@ public class ProductRequest
         public IFormFile? Image { get; set; }
         public IFormFile? Video { get; set; }
     }
+
+    public class ProductCommentRequest
+    {
+        public required Guid ProductId { get; set; }
+        public required string Content { get; set; }
+        public Guid? ParentCommentId { get; set; } // For replies/answers
+        
+        //Logic: Parent1(question): 
+        //          Parent2(reply to question): ParentCommentId = Parent1.CommentId
+        //          //          Parent3(reply to Parent2): ParentCommentId = Parent2.CommentId
+    }
 }
