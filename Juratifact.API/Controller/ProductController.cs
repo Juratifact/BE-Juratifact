@@ -38,6 +38,11 @@ public class ProductController : ControllerBase
         var result = await _productService.UpdateProductPostingById(id, request);
         return Ok(ApiResponseFactory.SuccessResponse(result, "Product updated", HttpContext.TraceIdentifier));
     }
-    
-    
+
+    [HttpDelete("postings/{id}")]
+    public async Task<IActionResult> SoftDeleteProductPostingById(Guid id)
+    {
+        var result = await _productService.SoftDeleteProductPostingById(id);
+        return Ok(ApiResponseFactory.SuccessResponse(result, "Product removed", HttpContext.TraceIdentifier));
+    }
 }

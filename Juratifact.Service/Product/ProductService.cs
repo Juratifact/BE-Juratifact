@@ -287,5 +287,50 @@ public class ProductService : IProductService
 
         return "Product updated successfully!";
     }
-    
+
+    public async Task<string> SoftDeleteProductPostingById(Guid productId)
+    {
+        var userId = _httpContext.HttpContext.User.Claims.FirstOrDefault(x => x.Type == "UserId")?.Value;
+
+        if (string.IsNullOrEmpty(userId))
+        {
+            throw new UnauthorizedAccessException("User not authenticated.");
+        }
+
+        var userIdGuid = Guid.Parse(userId);
+
+        // Check if user has Seller role
+        var user = await _dbContext.Users
+            .Include(u => u.UserRoles)
+            .ThenInclude(ur => ur.Role)
+            .FirstOrDefaultAsync(u => u.Id == userIdGuid);
+
+        if (user == null)
+        {
+            throw new ArgumentException("User not found.");
+        }
+
+        var hasSellerRole = user.UserRoles.Any(ur => ur.Role.Name == "Seller");
+        if (!hasSellerRole)
+        {
+            throw new ArgumentException("User must have Seller role to update products.");
+        }
+
+        // Get existing product - must belong to the authenticated user
+        var product = await _dbContext.Products
+            .FirstOrDefaultAsync(x => x.Id == productId && x.SellerId == userIdGuid);
+
+        if (product == null)
+        {
+            throw new ArgumentException("Product not found or you don't have permission to update it.");
+        }
+        
+        product.IsDeleted = true;
+        product.UpdatedAt = DateTimeOffset.UtcNow;
+        
+        _dbContext.Products.Update(product);
+        await _dbContext.SaveChangesAsync();
+        
+        return "Product deleted successfully!";
+    }
 }
