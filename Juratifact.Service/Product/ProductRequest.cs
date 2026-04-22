@@ -1,3 +1,4 @@
+using Juratifact.Repository.Enum;
 using Microsoft.AspNetCore.Http;
 
 namespace Juratifact.Service.Product;
@@ -10,7 +11,7 @@ public class ProductRequest
         public required string Condition { get; set; }
         public string Description { get; set; } = null!;
         public decimal Price { get; set; }
-        public required string Status { get; set; }
+        public required ProductStatus Status { get; set; }
         public IFormFile? Image { get; set; }
         public IFormFile? Video { get; set; }
     }
@@ -33,5 +34,7 @@ public class ProductRequest
         public required string Condition { get; set; }
         public IFormFile? Image { get; set; }
         public IFormFile? Video { get; set; }
+        public decimal Price { get; set; }
+        public ProductStatus Status { get; set; }
     }
 }

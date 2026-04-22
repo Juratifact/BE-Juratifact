@@ -86,9 +86,7 @@ public class ProductService : IProductService
             Condition = request.Condition,
             Description = request.Description,
             Price = request.Price,
-            Status = Enum.TryParse<Juratifact.Repository.Enum.ProductStatus>(request.Status, out var status)
-                ? status
-                : throw new ArgumentException("Invalid product status."),
+            Status = request.Status,
             CreatedAt = DateTimeOffset.UtcNow
         };
 
@@ -233,6 +231,8 @@ public class ProductService : IProductService
         product.Title = request.Title;
         product.Condition = request.Condition;
         product.Description = request.Description;
+        product.Price = request.Price;
+        product.Status = request.Status;
         product.UpdatedAt = DateTimeOffset.UtcNow;
 
         _dbContext.Products.Update(product);
