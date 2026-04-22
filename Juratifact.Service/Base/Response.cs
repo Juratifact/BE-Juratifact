@@ -1,3 +1,10 @@
+namespace Juratifact.Service.Base;
+
+public class Response
+{
+    public class  PageResult<T>
+    {
+        public List<T>? Items { get; set; } = new List<T>();
 ﻿namespace Juratifact.Service.Base;
 
 public class Response
