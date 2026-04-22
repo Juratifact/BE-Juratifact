@@ -7,15 +7,13 @@ public class Request
 {
     public class UploadIdentityDocumentRequest
     {
-        public string IdCardFrontUrl { get; set; }
-        public string IdCardBackUrl { get; set; }  
+        public IFormFile IdCardFrontUrl { get; set; }
+        public IFormFile IdCardBackUrl { get; set; }  
     }
     
-    public class ReUploadIdentityDocumentRequest
+    public class ReUploadIdentityDocumentRequest: UploadIdentityDocumentRequest
     {
         public Guid DocumentId { get; set; }
-        public string IdCardFrontUrl { get; set; }
-        public string IdCardBackUrl { get; set; }  
     }
 
 
