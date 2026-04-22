@@ -2,11 +2,11 @@ namespace Juratifact.Service.Product;
 
 public interface IProductService
 {
-    public Task<string> CreateProduct(ProductRequest.CreateProductRequest request);
+    public Task<string> CreateProduct(Request.CreateProductRequest request);
     
-    public Task<ProductResponse.ProductCommentResponse> CreateComment(ProductRequest.ProductCommentRequest request);
+    public Task<Response.ProductCommentResponse> CreateComment(Request.ProductCommentRequest request);
     
-    public Task<string> UpdateProductPostingById(Guid productId, ProductRequest.UpdateProductRequest request);
+    public Task<string> UpdateProductPostingById(Guid productId, Request.UpdateProductRequest request);
     
     public Task<string> SoftDeleteProductPostingById(Guid productId);
 }
