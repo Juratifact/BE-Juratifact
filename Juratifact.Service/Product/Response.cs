@@ -11,6 +11,8 @@ public class Response
         public string Condition { get; set; }
         public decimal? Price { get; set; }
         public ProductStatus Status { get; set; }
+    }
+
     public class ProductCommentResponse
     {
         public Guid CommentId { get; set; }

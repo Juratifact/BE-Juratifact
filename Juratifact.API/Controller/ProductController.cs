@@ -31,13 +31,15 @@ public class ProductController : ControllerBase
         var product = await _productService.GetByTitle(searchTerm,pageSize, pageIndex);
         return Ok(ApiResponseFactory.SuccessResponse(product,HttpContext.TraceIdentifier));
     }
-    
+
     [HttpGet("Condition")]
-    public async Task<IActionResult> GetByCondition(string? searchTerm,int pageSize = 10, int pageIndex = 1)
+    public async Task<IActionResult> GetByCondition(string? searchTerm, int pageSize = 10, int pageIndex = 1)
     {
-        var product = await _productService.GetByCondition(searchTerm,pageSize, pageIndex);
-        return Ok(ApiResponseFactory.SuccessResponse(product,HttpContext.TraceIdentifier));
-    
+        var product = await _productService.GetByCondition(searchTerm, pageSize, pageIndex);
+        return Ok(ApiResponseFactory.SuccessResponse(product, HttpContext.TraceIdentifier));
+
+    }
+
     [Authorize(Policy = JwtExtensions.BuyerPolicy)]
     [HttpPost("posts")]
     public async Task<IActionResult> CreateProduct([FromForm] Request.CreateProductRequest request)

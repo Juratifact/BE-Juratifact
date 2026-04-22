@@ -9,12 +9,15 @@ namespace Juratifact.Service.Product;
 public class ProductService: IProductService
 {
     private readonly AppDbContext _dbContext;
+    private readonly IMediaService _mediaService;
+    private readonly IHttpContextAccessor _httpContext;
 
 
-    public ProductService(AppDbContext dbContext)
+    public ProductService(AppDbContext dbContext, IMediaService mediaService, IHttpContextAccessor httpContext)
     {
         _dbContext = dbContext;
-  
+        _mediaService = mediaService;
+        _httpContext = httpContext;
     }
 
     public async Task<Base.Response.PageResult<Response.ProductRespone>> GetAll(int pageSize, int pageIndex)
@@ -112,19 +115,6 @@ public class ProductService: IProductService
     }
 
     
-public class ProductService : IProductService
-{
-    private readonly AppDbContext _dbContext;
-    private readonly IMediaService _mediaService;
-    private readonly IHttpContextAccessor _httpContext;
-
-
-    public ProductService(AppDbContext dbContext, IMediaService mediaService, IHttpContextAccessor httpContext)
-    {
-        _dbContext = dbContext;
-        _mediaService = mediaService;
-        _httpContext = httpContext;
-    }
 
     public async Task<string> CreateProduct(Request.CreateProductRequest request)
     {
