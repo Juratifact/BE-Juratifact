@@ -21,8 +21,8 @@ jobs:
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
-          context: . # Đường dẫn đến thư mục chứa Dockerfile
-          file: ./Dockerfile
+          context: .                # Phải là dấu chấm (thư mục gốc)
+          file: ./Dockerfile        # Dockerfile nằm ngay tại gốc
           push: true
           tags: ${{ secrets.DOCKERHUB_USERNAME }}/juratifact:latest
 
