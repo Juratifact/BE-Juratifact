@@ -11,7 +11,6 @@ public class ProductRequest
         public required string Condition { get; set; }
         public string Description { get; set; } = null!;
         public decimal Price { get; set; }
-        public required ProductStatus Status { get; set; }
         public IFormFile? Image { get; set; }
         public IFormFile? Video { get; set; }
     }

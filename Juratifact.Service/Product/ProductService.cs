@@ -1,4 +1,5 @@
 using Juratifact.Repository;
+using Juratifact.Repository.Enum;
 using Juratifact.Service.MediaService;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
@@ -86,7 +87,7 @@ public class ProductService : IProductService
             Condition = request.Condition,
             Description = request.Description,
             Price = request.Price,
-            Status = request.Status,
+            Status = ProductStatus.Available,
             CreatedAt = DateTimeOffset.UtcNow
         };
 
@@ -310,10 +311,11 @@ public class ProductService : IProductService
             throw new ArgumentException("User not found.");
         }
 
-        var hasSellerRole = user.UserRoles.Any(ur => ur.Role.Name == "Seller");
+        var hasSellerRole = user.UserRoles.Any(ur => ur.Role.Name == "Seller" || 
+                                                     ur.Role.Name == "Admin");
         if (!hasSellerRole)
         {
-            throw new ArgumentException("User must have Seller role to update products.");
+            throw new ArgumentException("User must have Seller or Admin role to delete products.");
         }
 
         // Get existing product - must belong to the authenticated user
@@ -322,7 +324,7 @@ public class ProductService : IProductService
 
         if (product == null)
         {
-            throw new ArgumentException("Product not found or you don't have permission to update it.");
+            throw new ArgumentException("Product not found or you don't have permission to delete it.");
         }
         
         product.IsDeleted = true;
