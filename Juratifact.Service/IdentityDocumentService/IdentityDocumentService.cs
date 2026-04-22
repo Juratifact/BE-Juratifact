@@ -1,6 +1,7 @@
 using Juratifact.Repository;
 using Juratifact.Repository.Entity;
 using Juratifact.Repository.Enum;
+using Juratifact.Service.MediaService;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 
@@ -10,11 +11,13 @@ public class IdentityDocumentService : IIdentityDocumentService
 {
     private readonly AppDbContext _dbContext;
     private readonly IHttpContextAccessor _httpContext;
+    private readonly IMediaService _mediaService;
 
-    public IdentityDocumentService(AppDbContext dbContext,  IHttpContextAccessor httpContext)
+    public IdentityDocumentService(AppDbContext dbContext,  IHttpContextAccessor httpContext,  IMediaService mediaService)
     {
         _dbContext = dbContext;
         _httpContext = httpContext;
+        _mediaService = mediaService;
     }
         
     public async Task<string> SubmitIdentityDocumentAsync(Request.UploadIdentityDocumentRequest request)
@@ -22,12 +25,25 @@ public class IdentityDocumentService : IIdentityDocumentService
         var userId = _httpContext.HttpContext.User.Claims.FirstOrDefault(x => x.Type == "UserId")?.Value;
         
         var userIdGuid = Guid.Parse(userId!);
+        
+        var frontIdUrl = string.Empty;
+        var backIdUrl = string.Empty;
+        if (request.IdCardFrontUrl != null)
+        {
+            frontIdUrl = await _mediaService.UploadAsync(request.IdCardFrontUrl);
+        }
+
+        if (request.IdCardBackUrl != null)
+        {
+            backIdUrl = await _mediaService.UploadAsync(request.IdCardBackUrl);
+        }
+        
         var identityDocument = new IdentityDocument()
         {
             Id = Guid.NewGuid(),
             UserId = userIdGuid,
-            IdCardFrontUrl = request.IdCardFrontUrl,
-            IdCardBackUrl = request.IdCardBackUrl,
+            IdCardFrontUrl = frontIdUrl,
+            IdCardBackUrl = backIdUrl,
             Status = IdentityStatus.Pending,
             CreatedAt = DateTimeOffset.UtcNow
         };
@@ -52,9 +68,21 @@ public class IdentityDocumentService : IIdentityDocumentService
         {
             return "Identity document not found";
         }
+        
+        var frontIdUrl = string.Empty;
+        var backIdUrl = string.Empty;
+        if (request.IdCardFrontUrl != null)
+        {
+            frontIdUrl = await _mediaService.UploadAsync(request.IdCardFrontUrl);
+        }
 
-        identityDocument.IdCardFrontUrl = request.IdCardFrontUrl;
-        identityDocument.IdCardBackUrl = request.IdCardBackUrl;
+        if (request.IdCardBackUrl != null)
+        {
+            backIdUrl = await _mediaService.UploadAsync(request.IdCardBackUrl);
+        }
+
+        identityDocument.IdCardFrontUrl = frontIdUrl;
+        identityDocument.IdCardBackUrl = backIdUrl;
         identityDocument.Status = IdentityStatus.Pending;
         identityDocument.UpdatedAt = DateTimeOffset.UtcNow;
 
