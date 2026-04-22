@@ -30,6 +30,17 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 builder.Services.AddJwtServices(builder.Configuration);
 builder.Services.AddSwaggerServices();
 
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowFrontend",
+        policy =>
+        {
+            policy.WithOrigins("http://localhost:5173")
+                .AllowAnyHeader()
+                .AllowAnyMethod()
+                .AllowCredentials(); // Quan trọng: Để sửa lỗi credentials trong hình image_60b6c6.jpg
+        });
+});
 
 builder.Services.AddScoped<IMailService, MailService>();
 builder.Services.AddScoped<IMediaService, CloudinaryService>();
@@ -48,6 +59,7 @@ app.UseMiddleware<GlobalExceptionHandlerMiddleware>();
 
 app.UseSwaggerAPI();
     
+app.UseCors("AllowFrontend");
 
 
 app.UseAuthentication();
