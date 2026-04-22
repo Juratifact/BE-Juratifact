@@ -21,9 +21,13 @@ RUN dotnet build "Juratifact.API.csproj" -c Release -o /app/build
 FROM build AS publish
 RUN dotnet publish "Juratifact.API.csproj" -c Release -o /app/publish /p:UseAppHost=false
 
-# Stage 3: Chạy ứng dụng
+# Stage 3: Final
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS final
 WORKDIR /app
 EXPOSE 8080
+
+# THÊM DÒNG NÀY: Tạo thư mục wwwroot nếu nó chưa tồn tại
+RUN mkdir -p /app/wwwroot
+
 COPY --from=publish /app/publish .
 ENTRYPOINT ["dotnet", "Juratifact.API.dll"]
