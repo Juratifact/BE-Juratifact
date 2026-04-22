@@ -1,6 +1,6 @@
 namespace Juratifact.Service.Product;
 
-public class ProductResponse
+public class Response
 {
     public class ProductCommentResponse
     {

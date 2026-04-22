@@ -20,7 +20,7 @@ public class ProductService : IProductService
         _httpContext = httpContext;
     }
 
-    public async Task<string> CreateProduct(ProductRequest.CreateProductRequest request)
+    public async Task<string> CreateProduct(Request.CreateProductRequest request)
     {
         var userId = _httpContext.HttpContext.User.Claims.FirstOrDefault(x => x.Type == "UserId")?.Value;
 
@@ -122,7 +122,7 @@ public class ProductService : IProductService
         return "Product created successfully! User now has both Buyer and Seller roles.";
     }
 
-    public async Task<ProductResponse.ProductCommentResponse> CreateComment(ProductRequest.ProductCommentRequest request)
+    public async Task<Response.ProductCommentResponse> CreateComment(Request.ProductCommentRequest request)
     {
         // Get authenticated user
         var userId = _httpContext.HttpContext.User.Claims.FirstOrDefault(x => x.Type == "UserId")?.Value;
@@ -178,7 +178,7 @@ public class ProductService : IProductService
         _dbContext.Add(newComment);
         await _dbContext.SaveChangesAsync();
 
-        var commentResponse = new ProductResponse.ProductCommentResponse()
+        var commentResponse = new Response.ProductCommentResponse()
         {
             CommentId = newComment.Id,
             ProductId = newComment.ProductId,
@@ -191,7 +191,7 @@ public class ProductService : IProductService
         return commentResponse;
     }
 
-    public async Task<string> UpdateProductPostingById(Guid productId, ProductRequest.UpdateProductRequest request)
+    public async Task<string> UpdateProductPostingById(Guid productId, Request.UpdateProductRequest request)
     {
         var userId = _httpContext.HttpContext.User.Claims.FirstOrDefault(x => x.Type == "UserId")?.Value;
 

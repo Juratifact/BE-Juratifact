@@ -1,6 +1,6 @@
 namespace Juratifact.Service.User;
 
-public class UserResponse
+public class Response
 {
     
 }

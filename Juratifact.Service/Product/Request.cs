@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Http;
 
 namespace Juratifact.Service.Product;
 
-public class ProductRequest
+public class Request
 {
     public class CreateProductRequest
     {

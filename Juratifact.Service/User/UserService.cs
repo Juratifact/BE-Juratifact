@@ -19,7 +19,7 @@ public class UserService : IUserService
         _mailService = mailService;
         _mediaService = mediaService;
     }
-    public async Task<string> CreateUser(UserRequest.CreateUserRequest request)
+    public async Task<string> CreateUser(Request.CreateUserRequest request)
     {
         string secureHashedPassword = Argon2Hasher.HashPassword(request.Password);
         
