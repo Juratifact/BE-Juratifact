@@ -277,7 +277,6 @@ namespace Juratifact.Repository.Migrations
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
                     Content = table.Column<string>(type: "text", nullable: false),
                     ParentCommentId = table.Column<Guid>(type: "uuid", nullable: true),
-                    ParentId = table.Column<Guid>(type: "uuid", nullable: true),
                     ProductId = table.Column<Guid>(type: "uuid", nullable: false),
                     UserId = table.Column<Guid>(type: "uuid", nullable: false),
                     CreatedAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
@@ -288,10 +287,11 @@ namespace Juratifact.Repository.Migrations
                 {
                     table.PrimaryKey("PK_ProductComments", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_ProductComments_ProductComments_ParentId",
-                        column: x => x.ParentId,
+                        name: "FK_ProductComments_ProductComments_ParentCommentId",
+                        column: x => x.ParentCommentId,
                         principalTable: "ProductComments",
-                        principalColumn: "Id");
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
                         name: "FK_ProductComments_Products_ProductId",
                         column: x => x.ProductId,
@@ -670,9 +670,9 @@ namespace Juratifact.Repository.Migrations
                 column: "ProductId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_ProductComments_ParentId",
+                name: "IX_ProductComments_ParentCommentId",
                 table: "ProductComments",
-                column: "ParentId");
+                column: "ParentCommentId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_ProductComments_ProductId",
