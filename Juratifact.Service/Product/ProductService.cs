@@ -86,9 +86,7 @@ public class ProductService : IProductService
             Condition = request.Condition,
             Description = request.Description,
             Price = request.Price,
-            Status = Enum.TryParse<Juratifact.Repository.Enum.ProductStatus>(request.Status, out var status)
-                ? status
-                : throw new ArgumentException("Invalid product status."),
+            Status = request.Status,
             CreatedAt = DateTimeOffset.UtcNow
         };
 
@@ -191,4 +189,103 @@ public class ProductService : IProductService
 
         return commentResponse;
     }
+
+    public async Task<string> UpdateProductPostingById(Guid productId, ProductRequest.UpdateProductRequest request)
+    {
+        var userId = _httpContext.HttpContext.User.Claims.FirstOrDefault(x => x.Type == "UserId")?.Value;
+
+        if (string.IsNullOrEmpty(userId))
+        {
+            throw new UnauthorizedAccessException("User not authenticated.");
+        }
+
+        var userIdGuid = Guid.Parse(userId);
+
+        // Check if user has Seller role
+        var user = await _dbContext.Users
+            .Include(u => u.UserRoles)
+            .ThenInclude(ur => ur.Role)
+            .FirstOrDefaultAsync(u => u.Id == userIdGuid);
+
+        if (user == null)
+        {
+            throw new ArgumentException("User not found.");
+        }
+
+        var hasSellerRole = user.UserRoles.Any(ur => ur.Role.Name == "Seller");
+        if (!hasSellerRole)
+        {
+            throw new ArgumentException("User must have Seller role to update products.");
+        }
+
+        // Get existing product - must belong to the authenticated user
+        var product = await _dbContext.Products
+            .FirstOrDefaultAsync(x => x.Id == productId && x.SellerId == userIdGuid);
+
+        if (product == null)
+        {
+            throw new ArgumentException("Product not found or you don't have permission to update it.");
+        }
+
+        // Update product fields
+        product.Title = request.Title;
+        product.Condition = request.Condition;
+        product.Description = request.Description;
+        product.Price = request.Price;
+        product.Status = request.Status;
+        product.UpdatedAt = DateTimeOffset.UtcNow;
+
+        _dbContext.Products.Update(product);
+        await _dbContext.SaveChangesAsync();
+
+        // Update ProductMedia
+        var existingProductMedia = await _dbContext.ProductMedia
+            .FirstOrDefaultAsync(pm => pm.ProductId == productId);
+
+        if (request.Image != null || request.Video != null)
+        {
+            string? imageUrl = null;
+            string? videoUrl = null;
+
+            if (request.Image != null)
+            {
+                imageUrl = await _mediaService.UploadAsync(request.Image);
+            }
+
+            if (request.Video != null)
+            {
+                videoUrl = await _mediaService.UploadVideoAsync(request.Video);
+            }
+
+            if (existingProductMedia != null)
+            {
+                // Update existing ProductMedia
+                if (imageUrl != null)
+                    existingProductMedia.ImageUrl = imageUrl;
+
+                if (videoUrl != null)
+                    existingProductMedia.Video = videoUrl;
+
+                existingProductMedia.UpdatedAt = DateTimeOffset.UtcNow;
+                _dbContext.ProductMedia.Update(existingProductMedia);
+            }
+            else
+            {
+                // Create new ProductMedia if it doesn't exist
+                var newProductMedia = new Repository.Entity.ProductMedia()
+                {
+                    ImageUrl = imageUrl ?? "",
+                    Video = videoUrl,
+                    ProductId = productId,
+                    CreatedAt = DateTimeOffset.UtcNow
+                };
+                _dbContext.ProductMedia.Add(newProductMedia);
+            }
+
+            await _dbContext.SaveChangesAsync();
+        }
+
+        return "Product updated successfully!";
+    }
+    
 }
