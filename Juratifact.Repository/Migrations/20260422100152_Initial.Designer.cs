@@ -12,7 +12,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Juratifact.Repository.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260421152000_Initial")]
+    [Migration("20260422100152_Initial")]
     partial class Initial
     {
         /// <inheritdoc />
@@ -386,9 +386,6 @@ namespace Juratifact.Repository.Migrations
                     b.Property<Guid?>("ParentCommentId")
                         .HasColumnType("uuid");
 
-                    b.Property<Guid?>("ParentId")
-                        .HasColumnType("uuid");
-
                     b.Property<Guid>("ProductId")
                         .HasColumnType("uuid");
 
@@ -400,7 +397,7 @@ namespace Juratifact.Repository.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("ParentId");
+                    b.HasIndex("ParentCommentId");
 
                     b.HasIndex("ProductId");
 
@@ -1053,7 +1050,8 @@ namespace Juratifact.Repository.Migrations
                 {
                     b.HasOne("Juratifact.Repository.Entity.ProductComment", "Parent")
                         .WithMany("Children")
-                        .HasForeignKey("ParentId");
+                        .HasForeignKey("ParentCommentId")
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("Juratifact.Repository.Entity.Product", "Product")
                         .WithMany("ProductComments")
