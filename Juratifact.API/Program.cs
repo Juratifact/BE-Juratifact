@@ -8,6 +8,7 @@ using Juratifact.Service.JwtService;
 using Juratifact.Service.MailService;
 using Juratifact.Service.MediaService;
 using Juratifact.Service.Product;
+using Juratifact.Service.Report;
 using Juratifact.Service.User;
 using Microsoft.EntityFrameworkCore;
 
@@ -29,6 +30,17 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 builder.Services.AddJwtServices(builder.Configuration);
 builder.Services.AddSwaggerServices();
 
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowFrontend",
+        policy =>
+        {
+            policy.WithOrigins("http://localhost:5173")
+                .AllowAnyHeader()
+                .AllowAnyMethod()
+                .AllowCredentials(); // Quan trọng: Để sửa lỗi credentials trong hình image_60b6c6.jpg
+        });
+});
 
 builder.Services.AddScoped<IMailService, MailService>();
 builder.Services.AddScoped<IMediaService, CloudinaryService>();
@@ -36,6 +48,7 @@ builder.Services.AddScoped<IJwtService, JwtService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IIdentityService, IdentityService>();
 builder.Services.AddScoped<IProductService, ProductService>();
+builder.Services.AddScoped<IReportService, ReportService>();
 builder.Services.AddScoped<IIdentityDocumentService, IdentityDocumentService>();
 
 builder.Services.AddTransient<GlobalExceptionHandlerMiddleware>();
@@ -46,6 +59,7 @@ app.UseMiddleware<GlobalExceptionHandlerMiddleware>();
 
 app.UseSwaggerAPI();
     
+app.UseCors("AllowFrontend");
 
 
 app.UseAuthentication();
