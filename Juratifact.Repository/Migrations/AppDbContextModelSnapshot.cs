@@ -158,7 +158,6 @@ namespace Juratifact.Repository.Migrations
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("VerifiedBy")
-                        .IsRequired()
                         .HasColumnType("text");
 
                     b.HasKey("Id");
@@ -384,9 +383,6 @@ namespace Juratifact.Repository.Migrations
                     b.Property<Guid?>("ParentCommentId")
                         .HasColumnType("uuid");
 
-                    b.Property<Guid?>("ParentId")
-                        .HasColumnType("uuid");
-
                     b.Property<Guid>("ProductId")
                         .HasColumnType("uuid");
 
@@ -398,7 +394,7 @@ namespace Juratifact.Repository.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("ParentId");
+                    b.HasIndex("ParentCommentId");
 
                     b.HasIndex("ProductId");
 
@@ -1051,7 +1047,8 @@ namespace Juratifact.Repository.Migrations
                 {
                     b.HasOne("Juratifact.Repository.Entity.ProductComment", "Parent")
                         .WithMany("Children")
-                        .HasForeignKey("ParentId");
+                        .HasForeignKey("ParentCommentId")
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("Juratifact.Repository.Entity.Product", "Product")
                         .WithMany("ProductComments")

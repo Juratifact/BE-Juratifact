@@ -2,7 +2,7 @@ using Microsoft.AspNetCore.Http;
 
 namespace Juratifact.Service.User;
 
-public class UserRequest
+public class Request
 {
     public class CreateUserRequest
     {
