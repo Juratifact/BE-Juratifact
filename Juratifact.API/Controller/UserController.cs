@@ -16,7 +16,7 @@ public class UserController : ControllerBase
     }
 
     [HttpPost("register")]
-    public async Task<IActionResult> CreateUser([FromForm] UserRequest.CreateUserRequest request)
+    public async Task<IActionResult> CreateUser([FromForm] Request.CreateUserRequest request)
     {
         var result =  await _userService.CreateUser(request);
         return Ok(ApiResponseFactory.SuccessResponse(result, "User created", HttpContext.TraceIdentifier));

@@ -37,6 +37,12 @@ public class AppDbContext : DbContext
         // ==================== USER ====================
         modelBuilder.Entity<User>(builder =>
         {
+            modelBuilder.Entity<ProductComment>()
+                .HasOne(pc => pc.Parent)
+                .WithMany(pc => pc.Children)
+                .HasForeignKey(pc => pc.ParentCommentId)
+                .OnDelete(DeleteBehavior.Restrict);
+            
             builder.Property(u => u.Email)
                 .IsRequired()
                 .HasMaxLength(255);
