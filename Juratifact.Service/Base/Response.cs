@@ -1,4 +1,6 @@
-﻿namespace Juratifact.Service.Base;
+namespace Juratifact.Service.Base;
+
+
 
 public class Response
 {
