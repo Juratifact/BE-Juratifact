@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Juratifact.API.Controller;
 
-[Authorize(Policy = JwtExtensions.BuyerPolicy)]
+
 [ApiController]
 [Route("[controller]")]
 public class ProductController : ControllerBase
@@ -17,6 +17,7 @@ public class ProductController : ControllerBase
         _productService = productService;
     }
     
+    [Authorize(Policy = JwtExtensions.BuyerPolicy)]
     [HttpPost("postings")]
     public async Task<IActionResult> CreateProduct([FromForm] ProductRequest.CreateProductRequest request)
     {
@@ -24,6 +25,7 @@ public class ProductController : ControllerBase
         return Ok(ApiResponseFactory.SuccessResponse(result, "Product created", HttpContext.TraceIdentifier));
     }
 
+    [Authorize(Policy = JwtExtensions.BuyerPolicy)]
     [HttpPost("comments")]
     public async Task<IActionResult> CreateComment([FromBody] ProductRequest.ProductCommentRequest request)
     {
@@ -32,6 +34,7 @@ public class ProductController : ControllerBase
         return Ok(ApiResponseFactory.SuccessResponse(result, "Comment created", HttpContext.TraceIdentifier));
     }
 
+    [Authorize(Policy = JwtExtensions.BuyerPolicy)]
     [HttpPut("postings/{id}")]
     public async Task<IActionResult> UpdateProductPostingById(Guid id, [FromForm] ProductRequest.UpdateProductRequest request)
     {
@@ -39,6 +42,7 @@ public class ProductController : ControllerBase
         return Ok(ApiResponseFactory.SuccessResponse(result, "Product updated", HttpContext.TraceIdentifier));
     }
 
+    [Authorize(Policy = JwtExtensions.AdminOrSellerPolicy)]
     [HttpDelete("postings/{id}")]
     public async Task<IActionResult> SoftDeleteProductPostingById(Guid id)
     {
