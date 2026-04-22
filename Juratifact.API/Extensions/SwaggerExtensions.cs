@@ -9,7 +9,7 @@ public static class SwaggerExtensions
     {
         services.AddSwaggerGen(options =>
         {
-            options.SwaggerDoc("v1", new OpenApiInfo() { Title = "TetPee APIs", Version = "v1" });
+            options.SwaggerDoc("v1", new OpenApiInfo() { Title = "Juratifact APIs", Version = "v1" });
             // Tạo version cho phiên bản API
 
             // Add cấu hình cho phép nhập token JWT vào Swagger UI để thử nghiệm các endpoint có bảo vệ bằng JWT
