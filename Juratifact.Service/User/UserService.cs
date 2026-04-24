@@ -4,6 +4,7 @@ using Juratifact.Service.MediaService;
 using Microsoft.EntityFrameworkCore;
 using System.Text.RegularExpressions;
 using Juratifact.Service.Util;
+using Microsoft.AspNetCore.Http;
 
 namespace Juratifact.Service.User;
 
@@ -11,12 +12,15 @@ public class UserService : IUserService
 {
     private readonly AppDbContext _dbContext;
     private readonly IMailService _mailService;
+    private readonly IHttpContextAccessor _httpContext;
     private readonly IMediaService _mediaService;
     
-    public UserService(AppDbContext dbContext, IMailService mailService, IMediaService mediaService)
+    
+    public UserService(AppDbContext dbContext, IMailService mailService, IHttpContextAccessor httpContext, IMediaService mediaService)
     {
         _dbContext = dbContext;
         _mailService = mailService;
+        _httpContext = httpContext;
         _mediaService = mediaService;
     }
     public async Task<string> CreateUser(Request.CreateUserRequest request)
@@ -63,16 +67,9 @@ public class UserService : IUserService
             HashedPassword = secureHashedPassword, 
             FullName = request.FullName,
             PhoneNumber = request.PhoneNumber,
-            UserName = request.UserName,
             IsVerify = true,
             CreatedAt = DateTimeOffset.UtcNow
         };
-        
-        if (request.ProfilePicture != null)
-        {
-            var media = await _mediaService.UploadAsync(request.ProfilePicture);
-            user.ProfilePicture = media;
-        }
         
         _dbContext.Add(user);
         await _dbContext.SaveChangesAsync();
@@ -155,7 +152,128 @@ public class UserService : IUserService
         }
         return "User registered successfully!";
     }
-    
+
+    public async Task<string> UpdateUser(Guid id, Request.UpdateUserRequest request)
+    {
+        var user = await _dbContext.Users.FirstOrDefaultAsync(x => x.Id == id);
+        
+        if (user == null)
+        {
+            throw new ArgumentException("User not found.");
+        }
+        
+        if (!string.IsNullOrWhiteSpace(request.FullName))
+        {
+            user.FullName = request.FullName;
+        }
+
+        if (!string.IsNullOrWhiteSpace(request.PhoneNumber))
+        {
+            // Check PhoneNumber
+            if (!IsValidPhoneNumber(request.PhoneNumber))
+            {
+                throw new ArgumentException("Invalid phone number format.");
+            }
+        
+            // Check duplicate phone number
+            var existingPhoneQuery = _dbContext.Users
+                .Where(x => x.PhoneNumber == request.PhoneNumber);
+        
+            bool isPhoneExist = await existingPhoneQuery.AnyAsync();
+        
+            if (isPhoneExist)
+            {
+                throw new ArgumentException("Phone number already exists.");
+            }
+            user.PhoneNumber = request.PhoneNumber;
+        }
+        
+
+        if (!string.IsNullOrWhiteSpace(request.Address))
+        {
+            user.Address = request.Address;
+        }
+        
+        if (!string.IsNullOrWhiteSpace(request.UserName))
+        {
+            user.UserName = request.UserName;
+        }
+        
+        if (!string.IsNullOrWhiteSpace(request.Password))
+        {
+            user.HashedPassword = Argon2Hasher.HashPassword(request.Password);
+        }
+        
+        if (request.ProfilePicture != null)
+        {
+            var imageUrl = await _mediaService.UploadAsync(request.ProfilePicture);
+            user.ProfilePicture = imageUrl;
+        }
+        
+        await _dbContext.SaveChangesAsync();
+        
+        return "User updated successfully";
+    }
+
+    public async Task<string> SoftDeleteUser(Guid id)
+    {
+        var userId = _httpContext.HttpContext.User.Claims.FirstOrDefault(x => x.Type == "UserId")?.Value;
+
+        if (string.IsNullOrEmpty(userId))
+        {
+            throw new UnauthorizedAccessException("User not authenticated.");
+        }
+        
+        var userIdGuid = Guid.Parse(userId);
+
+        // Get current user with roles to check if admin
+        var currentUser = await _dbContext.Users
+            .Include(u => u.UserRoles)
+            .ThenInclude(ur => ur.Role)
+            .FirstOrDefaultAsync(u => u.Id == userIdGuid);
+
+        if (currentUser == null)
+        {
+            throw new ArgumentException("User not found.");
+        }
+
+        // Check if current user is admin
+        bool isAdmin = currentUser.UserRoles.Any(ur => ur.Role.Name == "Admin");
+
+        // Check authorization
+        if (!isAdmin && id != userIdGuid)
+        {
+            throw new UnauthorizedAccessException("You can only delete your own account. Only admin can delete other users.");
+        }
+
+        // Get user to delete
+        var userToDelete = await _dbContext.Users
+            .Include(u => u.UserRoles)
+            .FirstOrDefaultAsync(u => u.Id == id);
+
+        if (userToDelete == null)
+        {
+            throw new ArgumentException("User to delete not found.");
+        }
+
+        // If current user is admin and deleting another user, delete all their roles
+        if (isAdmin && id != userIdGuid)
+        {
+            var userRolesToDelete = await _dbContext.UserRoles
+                .Where(ur => ur.UserId == id)
+                .ToListAsync();
+            
+            _dbContext.UserRoles.RemoveRange(userRolesToDelete);
+            await _dbContext.SaveChangesAsync();
+        }
+        
+        userToDelete.IsDeleted = true;
+        _dbContext.Update(userToDelete);
+        await _dbContext.SaveChangesAsync();
+        
+        return "User deleted successfully";
+    }
+
     private bool IsValidEmail(string email)
     {
         try

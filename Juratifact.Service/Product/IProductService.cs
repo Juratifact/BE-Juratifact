@@ -2,14 +2,14 @@ namespace Juratifact.Service.Product;
 
 public interface IProductService
 {
-    public Task<Base.Response.PageResult<Response.ProductRespone>> GetAll(
+    public Task<Base.Response.PageResult<Response.ProductResponse>> GetAll(
         int pageSize,
         int pageIndex);
-    public Task<Base.Response.PageResult<Response.ProductRespone>> GetByTitle(
+    public Task<Base.Response.PageResult<Response.ProductResponse>> GetByTitle(
         string? searchTerm,
         int pageSize,
         int pageIndex);
-    public Task<Base.Response.PageResult<Response.ProductRespone>> GetByCondition(
+    public Task<Base.Response.PageResult<Response.ProductResponse>> GetByCondition(
         string? searchTerm,
         int pageSize,
         int pageIndex);
@@ -20,4 +20,16 @@ public interface IProductService
     public Task<string> UpdateProductPostingById(Guid productId, Request.UpdateProductRequest request);
     
     public Task<string> SoftDeleteProductPostingById(Guid productId);
+    
+    
+    public Task<Base.Response.PageResult<Response.ProductResponse>> GetByPrice(
+        decimal? searchTerm,
+        int pageSize,
+        int pageIndex);
+    
+    // public Task<Base.Response.PageResult<Response.ProductResponse>> GetCategory(
+    //     string? searchTerm,
+    //     int pageSize,
+    //     int pageIndex);
+    
 }
