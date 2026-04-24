@@ -64,6 +64,9 @@ public class AppDbContext : DbContext
 
             builder.Property(u => u.ProfilePicture)
                 .HasMaxLength(500);
+            
+            builder.Property(u => u.Address)
+                .HasMaxLength(500);
 
             // TrustScore = TotalTrustScore / SellerReviewAmount, giá trị từ 0.00 đến 5.00
             builder.Property(u => u.TrustScore)
