@@ -41,7 +41,7 @@ public class ProductController : ControllerBase
     }
 
     [Authorize(Policy = JwtExtensions.BuyerPolicy)]
-    [HttpPost("posts")]
+    [HttpPost("Post")]
     public async Task<IActionResult> CreateProduct([FromForm] Request.CreateProductRequest request)
     {
         var result = await _productService.CreateProduct(request);
@@ -49,7 +49,7 @@ public class ProductController : ControllerBase
     }
 
     [Authorize(Policy = JwtExtensions.BuyerPolicy)]
-    [HttpPost("comments")]
+    [HttpPost("Comment")]
     public async Task<IActionResult> CreateComment([FromBody] Request.ProductCommentRequest request)
     {
         // Thêm ParentCommentId vào request nếu có, thì là reply luôn
@@ -58,7 +58,7 @@ public class ProductController : ControllerBase
     }
 
     [Authorize(Policy = JwtExtensions.BuyerPolicy)]
-    [HttpPut("posts/{id}")]
+    [HttpPut("Post/{id}")]
     public async Task<IActionResult> UpdateProductPostingById(Guid id, [FromForm] Request.UpdateProductRequest request)
     {
         var result = await _productService.UpdateProductPostingById(id, request);
@@ -66,10 +66,12 @@ public class ProductController : ControllerBase
     }
 
     [Authorize(Policy = JwtExtensions.AdminOrSellerPolicy)]
-    [HttpDelete("posts/{id}")]
+    [HttpDelete("Post/{id}")]
     public async Task<IActionResult> SoftDeleteProductPostingById(Guid id)
     {
         var result = await _productService.SoftDeleteProductPostingById(id);
         return Ok(ApiResponseFactory.SuccessResponse(result, "Product removed", HttpContext.TraceIdentifier));
     }
+    
+    
 }
