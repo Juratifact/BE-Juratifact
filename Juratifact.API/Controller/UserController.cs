@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Juratifact.API.Controller;
 
+
 [ApiController]
 [Route("[controller]")]
 public class UserController : ControllerBase
@@ -38,4 +39,32 @@ public class UserController : ControllerBase
         var result = await _userService.SoftDeleteUser(id);
         return Ok(ApiResponseFactory.SuccessResponse(result, "User removed", HttpContext.TraceIdentifier));
     }
+
+    [Authorize]
+    [HttpGet("MyProfile")]
+    public async Task<IActionResult> GetUserProfile(Guid userId)
+    {
+        var user = await _userService.GetUserProfile(userId);
+        return Ok(ApiResponseFactory.SuccessResponse(user, "Get user profile successfully", HttpContext.TraceIdentifier));
+
+    }
+    
+    [Authorize]
+    [HttpGet("GetAll")]
+    public async Task<IActionResult> GetAllUser(string? searchTerm, int pageIndex = 1, int pageSize = 10)
+    {
+        var user = await _userService.GetAllUser(searchTerm, pageIndex, pageSize);
+        return Ok(ApiResponseFactory.SuccessResponse(user, "Get user profile successfully", HttpContext.TraceIdentifier));
+
+    }
+    
+   [Authorize]
+    [HttpGet("GetUserByName")]
+    public async Task<IActionResult> GetUserByName(string userName)
+    {
+        var user = await _userService.GetUserByName(userName);
+        return Ok(ApiResponseFactory.SuccessResponse(user, "Get user profile successfully", HttpContext.TraceIdentifier));
+
+    }
+    
 }

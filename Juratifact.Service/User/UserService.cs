@@ -274,6 +274,94 @@ public class UserService : IUserService
         return "User deleted successfully";
     }
 
+    public async Task<Response.GetUserResponse> GetUserProfile(Guid userId)
+    {
+        var query = _dbContext.Users.Where (x => x.Id == userId);
+
+        if (query == null)
+        {
+            throw new ArgumentException("User not found");
+        }
+    
+        var selectedQuery = query.Select(x => new Response.GetUserResponse()
+        {
+            UserName = x.UserName!,
+            FullName = x.FullName,
+            Email = x.Email,
+            PhoneNumber = x.PhoneNumber,
+            Address = x.Address!,
+            ProfilePicture = x.ProfilePicture!,
+            TrustScore = x.TrustScore,
+        });
+        var result = await selectedQuery.FirstOrDefaultAsync();
+        
+        return result!;
+        
+        
+
+    }
+
+    public async Task<Response.GetUserResponse> GetUserByName(string userName)
+    {
+        var query = _dbContext.Users.Where (x => x.UserName == userName);
+
+        if (query == null)
+        {
+            throw new ArgumentException("User not found");
+        }
+    
+        var selectedQuery = query.Select(x => new Response.GetUserResponse()
+        {
+            UserName = x.UserName!,
+            FullName = x.FullName,
+            Email = x.Email,
+            PhoneNumber = x.PhoneNumber,
+            Address = x.Address!,
+            ProfilePicture = x.ProfilePicture!,
+        });
+        var result = await selectedQuery.FirstOrDefaultAsync();
+        
+        return result!;
+    }
+
+    public async Task<Base.Response.PageResult<Response.GetUserResponse>> GetAllUser(string? searchTerm, int pageIndex, int pageSize)
+    {
+        var query = _dbContext.Users.Where(x => true);
+        if (searchTerm != null)
+        {
+            query = query.Where(x => x.UserName!.Contains(searchTerm) ||
+                                     x.Email.Contains(searchTerm) ||
+                                     x.PhoneNumber.Contains(searchTerm));
+        }
+        
+        query = query.Skip((pageIndex - 1) * pageSize).Take(pageSize);
+
+        var selectedQuery = query.Select(x => new Response.GetUserResponse()
+        {
+            UserName = x.UserName!,
+            FullName = x.FullName,
+            Email = x.Email,
+            PhoneNumber = x.PhoneNumber,
+            Address = x.Address!,
+            ProfilePicture = x.ProfilePicture!,
+            TrustScore = x.TrustScore,
+        });
+        
+        var listResult = await selectedQuery.ToListAsync();
+        var totalItems = listResult.Count;
+ 
+        var result = new Base.Response.PageResult<Response.GetUserResponse>()
+        {
+            Items = listResult,
+            PageIndex = pageIndex,
+            PageSize = pageSize,
+            TotalItems = totalItems,
+        };
+        return result;
+        
+
+    }
+
     private bool IsValidEmail(string email)
     {
         try
