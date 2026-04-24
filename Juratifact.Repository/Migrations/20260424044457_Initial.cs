@@ -98,6 +98,7 @@ namespace Juratifact.Repository.Migrations
                     HashedPassword = table.Column<string>(type: "character varying(512)", maxLength: 512, nullable: false),
                     FullName = table.Column<string>(type: "character varying(150)", maxLength: 150, nullable: false),
                     PhoneNumber = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
+                    Address = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
                     UserName = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
                     ProfilePicture = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
                     IsVerify = table.Column<bool>(type: "boolean", nullable: false),
@@ -587,11 +588,11 @@ namespace Juratifact.Repository.Migrations
 
             migrationBuilder.InsertData(
                 table: "Users",
-                columns: new[] { "Id", "CreatedAt", "Email", "FullName", "HashedPassword", "IsDeleted", "IsVerify", "PhoneNumber", "ProfilePicture", "SellerReviewAmount", "TotalTrustScore", "TrustScore", "UpdatedAt", "UserName", "VerifyCode" },
+                columns: new[] { "Id", "Address", "CreatedAt", "Email", "FullName", "HashedPassword", "IsDeleted", "IsVerify", "PhoneNumber", "ProfilePicture", "SellerReviewAmount", "TotalTrustScore", "TrustScore", "UpdatedAt", "UserName", "VerifyCode" },
                 values: new object[,]
                 {
-                    { new Guid("00000000-0000-0000-0001-000000000001"), new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), "admin@juratifact.com", "System Administrator", "$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdyMnd.TdnMH4Oy", false, true, "0000000000", null, 0, 0m, 0m, null, "admin", null },
-                    { new Guid("00000000-0000-0000-0001-000000000002"), new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), "buyer@juratifact.com", "Default Buyer", "$2a$12$K9Wr2x8bRvLmDpTqNzY3OeI1hXsGcAf7JuBvE5MnPd6oQkWyHtZ4.", false, true, "0000000001", null, 0, 0m, 0m, null, "buyer", null }
+                    { new Guid("00000000-0000-0000-0001-000000000001"), null, new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), "admin@juratifact.com", "System Administrator", "$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdyMnd.TdnMH4Oy", false, true, "0000000000", null, 0, 0m, 0m, null, "admin", null },
+                    { new Guid("00000000-0000-0000-0001-000000000002"), null, new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), "buyer@juratifact.com", "Default Buyer", "$2a$12$K9Wr2x8bRvLmDpTqNzY3OeI1hXsGcAf7JuBvE5MnPd6oQkWyHtZ4.", false, true, "0000000001", null, 0, 0m, 0m, null, "buyer", null }
                 });
 
             migrationBuilder.InsertData(
