@@ -20,13 +20,13 @@ public class ProductService: IProductService
         _httpContext = httpContext;
     }
 
-    public async Task<Base.Response.PageResult<Response.ProductRespone>> GetAll(int pageSize, int pageIndex)
+    public async Task<Base.Response.PageResult<Response.ProductResponse>> GetAll(int pageSize, int pageIndex)
      {
          var query = _dbContext.Products.Where(x => x.Status == ProductStatus.Available);
          
          query = query.Skip((pageIndex - 1) * pageSize)
              .Take(pageSize);
-         var selected = query.Select(x => new Response.ProductRespone()
+         var selected = query.Select(x => new Response.ProductResponse()
          {
              Title = x.Title,
              Description = x.Description,
@@ -39,7 +39,7 @@ public class ProductService: IProductService
          var listResult = await selected.ToListAsync();
          var totalItems = listResult.Count;
  
-         var result = new Base.Response.PageResult<Response.ProductRespone>()
+         var result = new Base.Response.PageResult<Response.ProductResponse>()
          {
              Items = listResult,
              PageIndex = pageIndex,
@@ -50,7 +50,7 @@ public class ProductService: IProductService
  
      }
 
-    public async Task<Base.Response.PageResult<Response.ProductRespone>> GetByTitle(string? searchTerm, int pageSize, int pageIndex)
+    public async Task<Base.Response.PageResult<Response.ProductResponse>> GetByTitle(string? searchTerm, int pageSize, int pageIndex)
     {
         var query = _dbContext.Products.Where(x => x.Status == ProductStatus.Available);
 
@@ -61,7 +61,7 @@ public class ProductService: IProductService
         query = query.OrderBy(x => x.Title);
         query = query.Skip((pageIndex - 1) * pageSize)
             .Take(pageSize);
-        var selected = query.Select(x => new Response.ProductRespone()
+        var selected = query.Select(x => new Response.ProductResponse()
         {
             Title = x.Title,
             Description = x.Description,
@@ -74,7 +74,7 @@ public class ProductService: IProductService
         var listResult = await selected.ToListAsync();
         var totalItems = listResult.Count;
  
-        var result = new Base.Response.PageResult<Response.ProductRespone>()
+        var result = new Base.Response.PageResult<Response.ProductResponse>()
         {
             Items = listResult,
             PageIndex = pageIndex,
@@ -85,7 +85,7 @@ public class ProductService: IProductService
  
     }
 
-    public async Task<Base.Response.PageResult<Response.ProductRespone>> GetByCondition(string? searchTerm, int pageSize, int pageIndex)
+    public async Task<Base.Response.PageResult<Response.ProductResponse>> GetByCondition(string? searchTerm, int pageSize, int pageIndex)
     {
 
         var query = _dbContext.Products
@@ -98,7 +98,7 @@ public class ProductService: IProductService
         query = query.OrderBy(x => x.Condition);
         query = query.Skip((pageIndex - 1) * pageSize)
             .Take(pageSize);
-        var selected = query.Select(x => new Response.ProductRespone()
+        var selected = query.Select(x => new Response.ProductResponse()
         {
             Title = x.Title,
             Description = x.Description,
@@ -111,7 +111,7 @@ public class ProductService: IProductService
         var listResult = await selected.ToListAsync();
         var totalItems = listResult.Count;
  
-        var result = new Base.Response.PageResult<Response.ProductRespone>()
+        var result = new Base.Response.PageResult<Response.ProductResponse>()
         {
             Items = listResult,
             PageIndex = pageIndex,
@@ -438,4 +438,41 @@ public class ProductService: IProductService
         
         return "Product deleted successfully!";
     }
+
+    public async Task<Base.Response.PageResult<Response.ProductResponse>> GetByPrice(decimal? searchTerm, int pageSize, int pageIndex)
+    {
+        var query = _dbContext.Products.Where(x => x.Status == ProductStatus.Available);
+
+        if (searchTerm != null)
+        {
+            query = query.Where(x => x.Price <= searchTerm);
+        }
+        
+        query = query.OrderBy(x => x.Price);
+        
+        query = query.Skip((pageIndex - 1) * pageSize)
+            .Take(pageSize);
+        var selected = query.Select(x => new Response.ProductResponse()
+        {
+            Title = x.Title,
+            Description = x.Description,
+            Price = x.Price,
+            Status = x.Status,
+            Condition = x.Condition,
+            Video = x.ProductMedias.Select(m => m.Video!).ToList(),
+            ImageUrl = x.ProductMedias.Select(m =>m.ImageUrl).ToList(),
+        });
+        var listResult = await selected.ToListAsync();
+        var totalItems = listResult.Count;
+ 
+        var result = new Base.Response.PageResult<Response.ProductResponse>()
+        {
+            Items = listResult,
+            PageIndex = pageIndex,
+            PageSize = pageSize,
+            TotalItems = totalItems,
+        };
+        return result;
+    }
+    
 }
