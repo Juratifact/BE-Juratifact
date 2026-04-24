@@ -33,6 +33,8 @@ public class ProductService: IProductService
              Price = x.Price,
              Status = x.Status,
              Condition = x.Condition,
+             Video = x.ProductMedias.Select(m => m.Video!).ToList(),
+             ImageUrl = x.ProductMedias.Select(m =>m.ImageUrl).ToList(),
          });
          var listResult = await selected.ToListAsync();
          var totalItems = listResult.Count;
@@ -66,6 +68,8 @@ public class ProductService: IProductService
             Price = x.Price,
             Status = x.Status,
             Condition = x.Condition,
+            Video = x.ProductMedias.Select(m => m.Video!).ToList(),
+            ImageUrl = x.ProductMedias.Select(m =>m.ImageUrl).ToList(),
         });
         var listResult = await selected.ToListAsync();
         var totalItems = listResult.Count;
@@ -83,7 +87,9 @@ public class ProductService: IProductService
 
     public async Task<Base.Response.PageResult<Response.ProductRespone>> GetByCondition(string? searchTerm, int pageSize, int pageIndex)
     {
-        var query = _dbContext.Products.Where(x => x.Status == ProductStatus.Available);
+
+        var query = _dbContext.Products
+            .Where(x => x.Status == ProductStatus.Available);
 
         if (searchTerm != null)
         {
@@ -97,9 +103,10 @@ public class ProductService: IProductService
             Title = x.Title,
             Description = x.Description,
             Price = x.Price,
-            
             Status = x.Status,
             Condition = x.Condition,
+            Video = x.ProductMedias.Select(m => m.Video!).ToList(),
+            ImageUrl = x.ProductMedias.Select(m =>m.ImageUrl).ToList(),
         });
         var listResult = await selected.ToListAsync();
         var totalItems = listResult.Count;
