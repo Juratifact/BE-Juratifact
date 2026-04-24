@@ -12,5 +12,7 @@ public class Request
         public required string Password { get; set; }
         public required string PhoneNumber { get; set; }
         public string UserName { get; set; }
+        
+        
     }
 }
