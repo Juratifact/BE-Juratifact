@@ -35,10 +35,12 @@ builder.Services.AddCors(options =>
     options.AddPolicy("AllowFrontend",
         policy =>
         {
-            policy.WithOrigins("http://localhost:5173")
+            policy.WithOrigins("http://localhost:5173", 
+                                "https://juratifact.id.vn",        
+                                "https://www.juratifact.id.vn")
                 .AllowAnyHeader()
                 .AllowAnyMethod()
-                .AllowCredentials(); // Quan trọng: Để sửa lỗi credentials trong hình image_60b6c6.jpg
+                .AllowCredentials(); 
         });
 });
 
