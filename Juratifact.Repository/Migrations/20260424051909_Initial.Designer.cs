@@ -12,7 +12,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Juratifact.Repository.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260424044457_Initial")]
+    [Migration("20260424051909_Initial")]
     partial class Initial
     {
         /// <inheritdoc />
