@@ -23,6 +23,12 @@ public class Response
     }
 
 
+    public class ProductMedia
+    {
+        public List<string> ImageUrl { get; set; }
+        public List<string> Video { get; set; }
+    }
+
     public class ProductCommentResponse
     {
         public Guid CommentId { get; set; }

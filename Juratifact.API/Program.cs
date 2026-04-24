@@ -8,6 +8,7 @@ using Juratifact.Service.JwtService;
 using Juratifact.Service.MailService;
 using Juratifact.Service.MediaService;
 using Juratifact.Service.Product;
+using Juratifact.Service.Profile;
 using Juratifact.Service.Report;
 using Juratifact.Service.User;
 using Microsoft.EntityFrameworkCore;
@@ -35,10 +36,12 @@ builder.Services.AddCors(options =>
     options.AddPolicy("AllowFrontend",
         policy =>
         {
-            policy.WithOrigins("http://localhost:5173")
+            policy.WithOrigins("http://localhost:5173", 
+                                "https://juratifact.id.vn",        
+                                "https://www.juratifact.id.vn")
                 .AllowAnyHeader()
                 .AllowAnyMethod()
-                .AllowCredentials(); // Quan trọng: Để sửa lỗi credentials trong hình image_60b6c6.jpg
+                .AllowCredentials(); 
         });
 });
 
@@ -50,6 +53,7 @@ builder.Services.AddScoped<IIdentityService, IdentityService>();
 builder.Services.AddScoped<IProductService, ProductService>();
 builder.Services.AddScoped<IReportService, ReportService>();
 builder.Services.AddScoped<IIdentityDocumentService, IdentityDocumentService>();
+builder.Services.AddScoped<IProfileService, ProfileService>();
 
 builder.Services.AddTransient<GlobalExceptionHandlerMiddleware>();
 var app = builder.Build();
