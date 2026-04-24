@@ -8,7 +8,6 @@ public class User: BaseEntity<Guid>,IAuditableEntity
     public required string HashedPassword { get; set; }
     public required string FullName { get; set; }
     public required string PhoneNumber { get; set; }
-    public required string Address { get; set; }
     
     public string? UserName { get; set; } // ko bắt buộc
     public string? ProfilePicture { get; set; }

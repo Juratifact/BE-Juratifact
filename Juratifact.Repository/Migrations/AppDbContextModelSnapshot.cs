@@ -744,11 +744,6 @@ namespace Juratifact.Repository.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<string>("Address")
-                        .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)");
-
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -820,7 +815,6 @@ namespace Juratifact.Repository.Migrations
                         new
                         {
                             Id = new Guid("00000000-0000-0000-0001-000000000001"),
-                            Address = "123 Admin Street, Hometown, Country",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             Email = "admin@juratifact.com",
                             FullName = "System Administrator",
@@ -836,7 +830,6 @@ namespace Juratifact.Repository.Migrations
                         new
                         {
                             Id = new Guid("00000000-0000-0000-0001-000000000002"),
-                            Address = "123 Main Street, Hometown, Country",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             Email = "buyer@juratifact.com",
                             FullName = "Default Buyer",
