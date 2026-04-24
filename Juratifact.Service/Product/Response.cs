@@ -22,12 +22,7 @@ public class Response
         public List<string> Video { get; set; }
     }
 
-
-    public class ProductMedia
-    {
-        public List<string> ImageUrl { get; set; }
-        public List<string> Video { get; set; }
-    }
+    
 
     public class ProductCommentResponse
     {

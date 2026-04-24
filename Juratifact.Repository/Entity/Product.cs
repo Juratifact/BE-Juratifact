@@ -11,6 +11,7 @@ public class Product : BaseEntity<Guid>, IAuditableEntity
     
     public string? Description { get; set; }
     public decimal Price { get; set; }
+    
     public ProductStatus Status { get; set; } // trạng thái tin đăng lên
     
     public ICollection<Report> Reports { get; set; } = new List<Report>();
