@@ -64,7 +64,6 @@ public class UserService : IUserService
             FullName = request.FullName,
             PhoneNumber = request.PhoneNumber,
             UserName = request.UserName,
-            Address = request.Address,
             IsVerify = true,
             CreatedAt = DateTimeOffset.UtcNow
         };

@@ -58,15 +58,14 @@ public class AppDbContext : DbContext
             builder.Property(u => u.PhoneNumber)
                 .IsRequired()
                 .HasMaxLength(20);
-            
-            builder.Property(u => u.Address)
-                .IsRequired()
-                .HasMaxLength(500);
 
             builder.Property(u => u.UserName)
                 .HasMaxLength(100);
 
             builder.Property(u => u.ProfilePicture)
+                .HasMaxLength(500);
+            
+            builder.Property(u => u.Address)
                 .HasMaxLength(500);
 
             // TrustScore = TotalTrustScore / SellerReviewAmount, giá trị từ 0.00 đến 5.00
@@ -129,7 +128,6 @@ public class AppDbContext : DbContext
                 TrustScore         = 0,
                 TotalTrustScore    = 0,
                 SellerReviewAmount = 0,
-                Address = "123 Admin Street, Hometown, Country",
                 IsDeleted          = false,
                 CreatedAt          = now
             }
@@ -166,7 +164,6 @@ public class AppDbContext : DbContext
                 TrustScore         = 0,
                 TotalTrustScore    = 0,
                 SellerReviewAmount = 0,
-                Address = "123 Main Street, Hometown, Country",
                 IsDeleted          = false,
                 CreatedAt          = now
             }
