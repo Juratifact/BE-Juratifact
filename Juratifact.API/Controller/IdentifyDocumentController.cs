@@ -28,7 +28,7 @@ public class IdentifyDocumentController: ControllerBase
     }
     
     [Authorize(Policy = JwtExtensions.BuyerPolicy)]
-    [HttpPut("Re-Submit")]
+    [HttpPost("Re-Submit")]
     public async Task<IActionResult> ReSubmitIdentityDocument(Request.ReUploadIdentityDocumentRequest request)
     {
         await _identityDocumentService.ReSubmitIdentityDocumentAsync(request);
@@ -62,7 +62,7 @@ public class IdentifyDocumentController: ControllerBase
 
     
     [Authorize(Policy = JwtExtensions.AdminPolicy)]
-    [HttpPut("Approve")]
+    [HttpPost("Approve")]
     public async Task<IActionResult> Approve(Guid documentId)
     {
         await _identityDocumentService.ApproveAsync(documentId);
@@ -70,7 +70,7 @@ public class IdentifyDocumentController: ControllerBase
     }
     
     [Authorize(Policy = JwtExtensions.AdminPolicy)]
-    [HttpPut("Reject")]
+    [HttpPost("Reject")]
     public async Task<IActionResult> Reject(Guid documentId, string reason)
     {
         await _identityDocumentService.RejectAsync(documentId, reason);
