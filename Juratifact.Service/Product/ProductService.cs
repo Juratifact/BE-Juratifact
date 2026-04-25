@@ -28,6 +28,8 @@ public class ProductService: IProductService
              .Take(pageSize);
          var selected = query.Select(x => new Response.ProductResponse()
          {
+             ProductId = x.Id,
+             SellerId = x.SellerId,
              Title = x.Title,
              Description = x.Description,
              Price = x.Price,
@@ -63,6 +65,8 @@ public class ProductService: IProductService
             .Take(pageSize);
         var selected = query.Select(x => new Response.ProductResponse()
         {
+            ProductId = x.Id,
+            SellerId = x.SellerId,
             Title = x.Title,
             Description = x.Description,
             Price = x.Price,
@@ -100,6 +104,8 @@ public class ProductService: IProductService
             .Take(pageSize);
         var selected = query.Select(x => new Response.ProductResponse()
         {
+            ProductId = x.Id,
+            SellerId = x.SellerId,
             Title = x.Title,
             Description = x.Description,
             Price = x.Price,
@@ -144,7 +150,24 @@ public class ProductService: IProductService
         {
             throw new ArgumentException("User not found.");
         }
+        
+        // Format condition input to match DB values (case-insensitive)
+        var validConditions = new Dictionary<string, string>
+        {
+            { "new", "New" },
+            { "like new", "Like new" },
+            { "good", "Good" }
+        };
 
+        var key = request.Condition.ToLower().Trim();
+
+        if (!validConditions.ContainsKey(key))
+        {
+            throw new ArgumentException("Condition must be either 'New', 'Like new' or 'Good'.");
+        }
+
+        request.Condition = validConditions[key]; // lưu đúng format vào DB
+        
         // Check if user has Buyer role
         var hasBuyerRole = user.UserRoles.Any(ur => ur.Role.Name == "Buyer");
         if (!hasBuyerRole)
