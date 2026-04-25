@@ -7,6 +7,8 @@ public class Response
 {
     public class ProductResponse : ProductMedia
     {
+        public Guid ProductId { get; set; }
+        public Guid SellerId { get; set; }
         public string Title { get; set; }
         public string? Description { get; set; }
         public string Condition { get; set; }
