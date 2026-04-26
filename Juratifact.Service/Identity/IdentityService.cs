@@ -63,7 +63,8 @@ public class IdentityService: IIdentityService
         
         var result = new Response.IdentityResponse()
         {
-            Access_token = token
+            Access_token = token,
+            UserId = user.Id
         };
 
         return result;
