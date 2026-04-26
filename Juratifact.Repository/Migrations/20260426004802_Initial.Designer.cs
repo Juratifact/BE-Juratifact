@@ -12,7 +12,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Juratifact.Repository.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260424051909_Initial")]
+    [Migration("20260426004802_Initial")]
     partial class Initial
     {
         /// <inheritdoc />
@@ -146,6 +146,10 @@ namespace Juratifact.Repository.Migrations
                         .HasColumnType("boolean");
 
                     b.Property<string>("Note")
+                        .HasColumnType("text");
+
+                    b.Property<string>("SelfieUrl")
+                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<int>("Status")

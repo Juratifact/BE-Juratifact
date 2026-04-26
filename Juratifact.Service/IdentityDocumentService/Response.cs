@@ -10,6 +10,7 @@ public class Response
         public Guid   Id             { get; set; }
         public string IdCardFrontUrl { get; set; }
         public string IdCardBackUrl  { get; set; }
+        public string SelfieUrl { get; set; }
         public IdentityStatus Status { get; set; }
         public string? Note          { get; set; } 
         public DateTimeOffset? VerifiedAt { get; set; }
