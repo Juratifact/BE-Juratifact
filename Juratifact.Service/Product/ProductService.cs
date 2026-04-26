@@ -127,7 +127,38 @@ public class ProductService: IProductService
         return result;
     }
 
-    
+    public async Task<Response.ProductCommentResponseFull> GetCommentsByProductId(Guid productId)
+    {
+        var result = await _dbContext.Products
+            .Where(x => x.Id == productId && x.Status == ProductStatus.Available)
+            .Select(x => new Response.ProductCommentResponseFull()
+            {
+                ProductId = x.Id,
+                SellerId = x.SellerId,
+                Title = x.Title,
+                Description = x.Description,
+                Price = x.Price,
+                Status = x.Status,
+                Condition = x.Condition,
+                Video = x.ProductMedias.Select(m => m.Video!).ToList(),
+                ImageUrl = x.ProductMedias.Select(m => m.ImageUrl).ToList(),
+                Comments = x.ProductComments
+                    .Where(c => c.ParentCommentId == null)
+                    .Select(c => c.Content).ToList(),
+                Replies = x.ProductComments
+                    .Where(c => c.ParentCommentId != null)
+                    .Select(c => c.Content).ToList()
+            })
+            .FirstOrDefaultAsync();
+
+        if (result == null)
+        {
+            throw new ArgumentException("Product not found.");
+        }
+
+        return result;
+    }
+
 
     public async Task<string> CreateProduct(Request.CreateProductRequest request)
     {

@@ -13,18 +13,18 @@ public class Response
         public string? Description { get; set; }
         public string Condition { get; set; }
         public decimal? Price { get; set; }
+
         public ProductStatus Status { get; set; }
         // public string ImageUrl { get; set; }
         // public string VideoUrl { get; set; }
     }
-    
+
     public class ProductMedia
     {
         public List<string> ImageUrl { get; set; }
         public List<string> Video { get; set; }
     }
 
-    
 
     public class ProductCommentResponse
     {
@@ -34,5 +34,11 @@ public class Response
         public required string Content { get; set; } //Comment
         public string? UserName { get; set; }
         public Guid? ParentCommentId { get; set; } // If this is a reply
+    }
+
+    public class ProductCommentResponseFull : ProductResponse
+    {
+        public List<string> Comments { get; set; }
+        public List<string> Replies { get; set; }
     }
 }
