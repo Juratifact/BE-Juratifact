@@ -29,7 +29,7 @@ public class User: BaseEntity<Guid>,IAuditableEntity
     public ICollection<IdentityDocument> IdentityDocuments { get; set; }  = new List<IdentityDocument>();
     public ICollection<Report> Reports { get; set; }  = new List<Report>();
     public ICollection<ProductComment> ProductComments { get; set; } = new List<ProductComment>();
-    public ICollection<UsePromotionSubscription>  UsePromotionSubscriptions { get; set; } = new List<UsePromotionSubscription>();
+    public ICollection<UserPromotionSubscription>  UsePromotionSubscriptions { get; set; } = new List<UserPromotionSubscription>();
     public ICollection<Notification> Notifications { get; set; } = new List<Notification>();
     
     
