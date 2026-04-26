@@ -13,6 +13,9 @@ public interface IProductService
         string? searchTerm,
         int pageSize,
         int pageIndex);
+    
+    public Task<Response.ProductCommentResponseFull> GetCommentsByProductId(Guid productId);
+    
     public Task<string> CreateProduct(Request.CreateProductRequest request);
     
     public Task<Response.ProductCommentResponse> CreateComment(Request.ProductCommentRequest request);

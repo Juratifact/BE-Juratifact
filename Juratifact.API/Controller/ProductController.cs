@@ -39,6 +39,14 @@ public class ProductController : ControllerBase
         return Ok(ApiResponseFactory.SuccessResponse(product, HttpContext.TraceIdentifier));
 
     }
+    
+    [HttpGet("{productId}/comments")]
+    public async Task<IActionResult> GetCommentsByProductId(Guid productId)
+    {
+        var comments = await _productService.GetCommentsByProductId(productId);
+        return Ok(ApiResponseFactory.SuccessResponse(comments, HttpContext.TraceIdentifier));
+    }
+    
 
     [Authorize(Policy = JwtExtensions.BuyerPolicy)]
     [HttpPost("Post")]
