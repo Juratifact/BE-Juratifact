@@ -3,7 +3,7 @@ using Juratifact.Repository.Enum;
 
 namespace Juratifact.Repository.Entity;
 
-public class UsePromotionSubscription : BaseEntity<Guid>,IAuditableEntity
+public class UserPromotionSubscription : BaseEntity<Guid>,IAuditableEntity
 {
     public decimal TotalSlot { get; set; }
     public decimal UsedSlot { get; set; }
@@ -18,6 +18,7 @@ public class UsePromotionSubscription : BaseEntity<Guid>,IAuditableEntity
     public Guid PackageId { get; set; }
     public PromotionPackage  PromotionPackage { get; set; }
     
+    public Guid TransactionId { get; set; }
     public Transaction Transaction { get; set; }
     
     public ICollection<ProductPromotion> ProductPromotions { get; set; } = new List<ProductPromotion>();

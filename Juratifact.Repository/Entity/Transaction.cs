@@ -22,7 +22,7 @@ public class Transaction: BaseEntity<Guid>,IAuditableEntity
     public Order Order { get; set; }
     
     public Guid UsePromotionSubscriptionId { get; set; }
-    public UsePromotionSubscription UsePromotionSubscription { get; set; }
+    public UserPromotionSubscription UserPromotionSubscription { get; set; }
     
     public DateTimeOffset CreatedAt { get; set; }
     public DateTimeOffset? UpdatedAt { get; set; }

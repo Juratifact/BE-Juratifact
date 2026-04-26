@@ -12,7 +12,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Juratifact.Repository.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260426004802_Initial")]
+    [Migration("20260426190024_Initial")]
     partial class Initial
     {
         /// <inheritdoc />
@@ -448,7 +448,13 @@ namespace Juratifact.Repository.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<DateTimeOffset?>("ActiveAt")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTimeOffset?>("ExpiresAt")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<bool>("IsActive")
@@ -466,11 +472,14 @@ namespace Juratifact.Repository.Migrations
                     b.Property<Guid>("UsePromotionSubscriptionId")
                         .HasColumnType("uuid");
 
+                    b.Property<Guid>("UserPromotionSubscriptionId")
+                        .HasColumnType("uuid");
+
                     b.HasKey("Id");
 
                     b.HasIndex("ProductId");
 
-                    b.HasIndex("UsePromotionSubscriptionId");
+                    b.HasIndex("UserPromotionSubscriptionId");
 
                     b.ToTable("ProductPromotions");
                 });
@@ -481,33 +490,39 @@ namespace Juratifact.Repository.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<DateTimeOffset?>("AvailableFrom")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTimeOffset?>("AvailableTo")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Description")
                         .HasColumnType("text");
 
-                    b.Property<int>("DurationDay")
-                        .HasColumnType("integer");
-
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean");
+
+                    b.Property<int?>("MaxProductCount")
+                        .HasColumnType("integer");
 
                     b.Property<string>("PackageName")
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<int>("PostingDayCount")
-                        .HasColumnType("integer");
-
                     b.Property<decimal>("Price")
                         .HasColumnType("numeric");
 
-                    b.Property<string>("Type")
-                        .HasColumnType("text");
+                    b.Property<int?>("PromotionDaysPerSlot")
+                        .HasColumnType("integer");
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<int?>("UsageLimitDays")
+                        .HasColumnType("integer");
 
                     b.HasKey("Id");
 
@@ -689,60 +704,9 @@ namespace Juratifact.Repository.Migrations
 
                     b.HasIndex("OrderId");
 
-                    b.HasIndex("UsePromotionSubscriptionId")
-                        .IsUnique();
-
                     b.HasIndex("WalletId");
 
                     b.ToTable("Transactions");
-                });
-
-            modelBuilder.Entity("Juratifact.Repository.Entity.UsePromotionSubscription", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTimeOffset>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<DateTimeOffset>("EndTime")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("boolean");
-
-                    b.Property<Guid>("PackageId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("PromotionPackageId")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTimeOffset>("StartTime")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<decimal>("TotalSlot")
-                        .HasColumnType("numeric");
-
-                    b.Property<DateTimeOffset?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<decimal>("UsedSlot")
-                        .HasColumnType("numeric");
-
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uuid");
-
-                    b.Property<int>("paymentStatus")
-                        .HasColumnType("integer");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("PromotionPackageId");
-
-                    b.HasIndex("UserId");
-
-                    b.ToTable("UsePromotionSubscriptions");
                 });
 
             modelBuilder.Entity("Juratifact.Repository.Entity.User", b =>
@@ -853,6 +817,60 @@ namespace Juratifact.Repository.Migrations
                             TrustScore = 0m,
                             UserName = "buyer"
                         });
+                });
+
+            modelBuilder.Entity("Juratifact.Repository.Entity.UserPromotionSubscription", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTimeOffset>("EndTime")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<Guid>("PackageId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("PromotionPackageId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("StartTime")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<decimal>("TotalSlot")
+                        .HasColumnType("numeric");
+
+                    b.Property<Guid>("TransactionId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<decimal>("UsedSlot")
+                        .HasColumnType("numeric");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("paymentStatus")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PromotionPackageId");
+
+                    b.HasIndex("TransactionId")
+                        .IsUnique();
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("UsePromotionSubscriptions");
                 });
 
             modelBuilder.Entity("Juratifact.Repository.Entity.UserRole", b =>
@@ -1099,15 +1117,15 @@ namespace Juratifact.Repository.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("Juratifact.Repository.Entity.UsePromotionSubscription", "UsePromotionSubscription")
+                    b.HasOne("Juratifact.Repository.Entity.UserPromotionSubscription", "UserPromotionSubscription")
                         .WithMany("ProductPromotions")
-                        .HasForeignKey("UsePromotionSubscriptionId")
+                        .HasForeignKey("UserPromotionSubscriptionId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("Product");
 
-                    b.Navigation("UsePromotionSubscription");
+                    b.Navigation("UserPromotionSubscription");
                 });
 
             modelBuilder.Entity("Juratifact.Repository.Entity.Report", b =>
@@ -1148,12 +1166,6 @@ namespace Juratifact.Repository.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("Juratifact.Repository.Entity.UsePromotionSubscription", "UsePromotionSubscription")
-                        .WithOne("Transaction")
-                        .HasForeignKey("Juratifact.Repository.Entity.Transaction", "UsePromotionSubscriptionId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
                     b.HasOne("Juratifact.Repository.Entity.Wallet", "Wallet")
                         .WithMany("Transactions")
                         .HasForeignKey("WalletId")
@@ -1162,16 +1174,20 @@ namespace Juratifact.Repository.Migrations
 
                     b.Navigation("Order");
 
-                    b.Navigation("UsePromotionSubscription");
-
                     b.Navigation("Wallet");
                 });
 
-            modelBuilder.Entity("Juratifact.Repository.Entity.UsePromotionSubscription", b =>
+            modelBuilder.Entity("Juratifact.Repository.Entity.UserPromotionSubscription", b =>
                 {
                     b.HasOne("Juratifact.Repository.Entity.PromotionPackage", "PromotionPackage")
                         .WithMany("UsePromotionSubscriptions")
                         .HasForeignKey("PromotionPackageId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Juratifact.Repository.Entity.Transaction", "Transaction")
+                        .WithOne("UserPromotionSubscription")
+                        .HasForeignKey("Juratifact.Repository.Entity.UserPromotionSubscription", "TransactionId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -1182,6 +1198,8 @@ namespace Juratifact.Repository.Migrations
                         .IsRequired();
 
                     b.Navigation("PromotionPackage");
+
+                    b.Navigation("Transaction");
 
                     b.Navigation("User");
                 });
@@ -1270,11 +1288,9 @@ namespace Juratifact.Repository.Migrations
                     b.Navigation("UserRoles");
                 });
 
-            modelBuilder.Entity("Juratifact.Repository.Entity.UsePromotionSubscription", b =>
+            modelBuilder.Entity("Juratifact.Repository.Entity.Transaction", b =>
                 {
-                    b.Navigation("ProductPromotions");
-
-                    b.Navigation("Transaction")
+                    b.Navigation("UserPromotionSubscription")
                         .IsRequired();
                 });
 
@@ -1299,6 +1315,11 @@ namespace Juratifact.Repository.Migrations
 
                     b.Navigation("Wallet")
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("Juratifact.Repository.Entity.UserPromotionSubscription", b =>
+                {
+                    b.Navigation("ProductPromotions");
                 });
 
             modelBuilder.Entity("Juratifact.Repository.Entity.Wallet", b =>

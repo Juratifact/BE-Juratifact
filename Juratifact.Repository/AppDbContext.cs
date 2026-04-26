@@ -29,7 +29,7 @@ public class AppDbContext : DbContext
     public DbSet<UserRole> UserRoles { get; set; }
     public DbSet<Wallet> Wallets { get; set; }
     public DbSet<ProductComment> ProductComments { get; set; }
-    public DbSet<UsePromotionSubscription> UsePromotionSubscriptions { get; set; }
+    public DbSet<UserPromotionSubscription> UsePromotionSubscriptions { get; set; }
     public DbSet<Notification> Notifications { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
