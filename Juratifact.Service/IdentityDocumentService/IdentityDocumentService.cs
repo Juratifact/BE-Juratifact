@@ -28,6 +28,7 @@ public class IdentityDocumentService : IIdentityDocumentService
         
         var frontIdUrl = string.Empty;
         var backIdUrl = string.Empty;
+        var selfieUrl = string.Empty;
         if (request.IdCardFrontUrl != null)
         {
             frontIdUrl = await _mediaService.UploadAsync(request.IdCardFrontUrl);
@@ -37,6 +38,11 @@ public class IdentityDocumentService : IIdentityDocumentService
         {
             backIdUrl = await _mediaService.UploadAsync(request.IdCardBackUrl);
         }
+
+        if (selfieUrl != null)
+        {
+            selfieUrl = await _mediaService.UploadAsync(request.SelfieUrl);
+        }
         
         var identityDocument = new IdentityDocument()
         {
@@ -44,6 +50,7 @@ public class IdentityDocumentService : IIdentityDocumentService
             UserId = userIdGuid,
             IdCardFrontUrl = frontIdUrl,
             IdCardBackUrl = backIdUrl,
+            SelfieUrl = selfieUrl,
             Status = IdentityStatus.Pending,
             CreatedAt = DateTimeOffset.UtcNow
         };
@@ -71,6 +78,7 @@ public class IdentityDocumentService : IIdentityDocumentService
         
         var frontIdUrl = string.Empty;
         var backIdUrl = string.Empty;
+        var selfieUrl = string.Empty;
         if (request.IdCardFrontUrl != null)
         {
             frontIdUrl = await _mediaService.UploadAsync(request.IdCardFrontUrl);
@@ -81,8 +89,14 @@ public class IdentityDocumentService : IIdentityDocumentService
             backIdUrl = await _mediaService.UploadAsync(request.IdCardBackUrl);
         }
 
+        if (selfieUrl != null)
+        {
+            selfieUrl = await _mediaService.UploadAsync(request.SelfieUrl);
+        }
+        
         identityDocument.IdCardFrontUrl = frontIdUrl;
         identityDocument.IdCardBackUrl = backIdUrl;
+        identityDocument.SelfieUrl = selfieUrl;
         identityDocument.Status = IdentityStatus.Pending;
         identityDocument.UpdatedAt = DateTimeOffset.UtcNow;
 
@@ -116,6 +130,7 @@ public class IdentityDocumentService : IIdentityDocumentService
             Id = identityDocument.Id,
             IdCardFrontUrl = identityDocument.IdCardFrontUrl,
             IdCardBackUrl = identityDocument.IdCardBackUrl,
+            SelfieUrl = identityDocument.SelfieUrl,
             Status = identityDocument.Status,
             CreatedAt = identityDocument.CreatedAt,
             Note = identityDocument.Note,
@@ -147,6 +162,7 @@ public class IdentityDocumentService : IIdentityDocumentService
             Id = x.Id,
             IdCardFrontUrl = x.IdCardFrontUrl,
             IdCardBackUrl = x.IdCardBackUrl,
+            SelfieUrl = x.SelfieUrl,
             Status = x.Status,
             CreatedAt = x.CreatedAt,
             Note = x.Note,
@@ -191,6 +207,7 @@ public class IdentityDocumentService : IIdentityDocumentService
             Id = identityDocument.Id,
             IdCardFrontUrl = identityDocument.IdCardFrontUrl,
             IdCardBackUrl = identityDocument.IdCardBackUrl,
+            SelfieUrl = identityDocument.SelfieUrl,
             Status = identityDocument.Status,
             CreatedAt = identityDocument.CreatedAt,
             Note = identityDocument.Note,

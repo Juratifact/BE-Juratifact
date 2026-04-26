@@ -9,6 +9,7 @@ public class Request
     {
         public IFormFile IdCardFrontUrl { get; set; }
         public IFormFile IdCardBackUrl { get; set; }  
+        public IFormFile SelfieUrl { get; set; }
     }
     
     public class ReUploadIdentityDocumentRequest: UploadIdentityDocumentRequest
