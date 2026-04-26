@@ -274,9 +274,9 @@ public class UserService : IUserService
         return "User deleted successfully";
     }
 
-    public async Task<Response.GetUserResponse> GetUserProfile(Guid userId)
+    public async Task<Response.GetUserResponse> GetUserProfile(Guid id)
     {
-        var query = _dbContext.Users.Where (x => x.Id == userId);
+        var query = _dbContext.Users.Where (x => x.Id == id);
 
         if (query == null)
         {
@@ -296,9 +296,6 @@ public class UserService : IUserService
         var result = await selectedQuery.FirstOrDefaultAsync();
         
         return result!;
-        
-        
-
     }
 
     public async Task<Response.GetUserResponse> GetUserByName(string userName)
