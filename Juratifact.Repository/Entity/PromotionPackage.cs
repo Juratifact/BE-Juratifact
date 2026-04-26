@@ -8,11 +8,13 @@ public class PromotionPackage: BaseEntity<Guid>, IAuditableEntity
     public string? Description { get; set; }
     public decimal Price { get; set; }
     
-    public int DurationDay { get; set; }
-    public string? Type { get; set; }
-    public int PostingDayCount { get; set; }
+    public int? MaxProductCount { get; set; }
+    public int? PromotionDaysPerSlot { get; set; }
+    public DateTimeOffset? AvailableFrom { get; set; }
+    public DateTimeOffset? AvailableTo { get; set; }
+    public int? UsageLimitDays  { get; set; }
     
-    public ICollection<UsePromotionSubscription>  UsePromotionSubscriptions { get; set; } = new List<UsePromotionSubscription>();
+    public ICollection<UserPromotionSubscription>  UsePromotionSubscriptions { get; set; } = new List<UserPromotionSubscription>();
     
     
     public DateTimeOffset CreatedAt { get; set; }
