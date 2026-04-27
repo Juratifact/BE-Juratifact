@@ -1,4 +1,5 @@
 using Juratifact.Repository;
+using Juratifact.Repository.Enum;
 using Juratifact.Service.MediaService;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
@@ -65,7 +66,7 @@ public class ReportService: IReportService
             UserId = user.Id,
             Reason = request.Reason,
             Description = request.Description,
-            Status = request.Status,
+            Status = ReportStatus.Processing
 
         };
         _dbContext.Add(report);
@@ -108,6 +109,55 @@ public class ReportService: IReportService
             TotalItems = totalItems,
         };
         return result;
+
+    }
+    
+
+    public async Task<string> ApproveReport(Guid id)
+    {
+        
+        var report = await _dbContext.Reports.FirstOrDefaultAsync(x => x.Id == id);
+        if (report == null)
+        {
+            throw new ArgumentException("Report not found.");
+        }
+        
+        report.Status = ReportStatus.Approved;
+        report.UpdatedAt = DateTime.UtcNow;
+        _dbContext.Update(report);
+        await _dbContext.SaveChangesAsync();
+        
+        var product = await _dbContext.Products.FirstOrDefaultAsync(x => x.Id == report.ProductId);
+        if (product == null)
+        {
+            throw new ArgumentException("Product not found.");
+        }
+        
+        product.Status = ProductStatus.Banned;
+        product.UpdatedAt = DateTime.UtcNow;
+        _dbContext.Update(product);
+        await _dbContext.SaveChangesAsync();
+        return "Report approved successfully";
+        
+    }
+
+    public async Task<string> RejectReport(Guid id)
+    {
+        var report = await _dbContext.Reports.FirstOrDefaultAsync(x => x.Id == id);
+        if (report == null)
+        {
+            throw new ArgumentException("Report not found.");
+        }
+        
+        report.Status = ReportStatus.Rejected;
+        report.UpdatedAt = DateTime.UtcNow;
+        _dbContext.Update(report);
+        var result = await _dbContext.SaveChangesAsync();
+        if (result > 0)
+        {
+            return "Report rejected successfully";
+        }
+        return "Report rejected not successfully";
 
     }
 }
