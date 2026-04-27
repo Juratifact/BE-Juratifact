@@ -26,9 +26,11 @@ public class PromotionController:ControllerBase
         return Ok(ApiResponseFactory.SuccessResponse(result, "Get promotion packages successfully", HttpContext.TraceIdentifier));
     }
 
+    [Authorize(Policy = JwtExtensions.AdminPolicy)]
     [HttpPost("api/admin/promotion-packages")]
-    public Task<IActionResult> CreatePromotionPackage()
+    public async Task<IActionResult> CreatePromotionPackage(Request.PromotionRequest request)
     {
-        return null;
+        var promotion = await _promotionService.CreatePromotion(request);
+        return Ok(ApiResponseFactory.SuccessResponse(promotion, "Promotion created",HttpContext.TraceIdentifier));
     }
 }

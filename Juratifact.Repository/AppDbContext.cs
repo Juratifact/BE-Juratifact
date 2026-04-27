@@ -29,7 +29,7 @@ public class AppDbContext : DbContext
     public DbSet<UserRole> UserRoles { get; set; }
     public DbSet<Wallet> Wallets { get; set; }
     public DbSet<ProductComment> ProductComments { get; set; }
-    public DbSet<UserPromotionSubscription> UsePromotionSubscriptions { get; set; }
+    public DbSet<UserPromotionSubscription> UserPromotionSubscriptions { get; set; }
     public DbSet<Notification> Notifications { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -87,6 +87,11 @@ public class AppDbContext : DbContext
                 .IsUnique();
 
         });
+        
+        modelBuilder.Entity<Transaction>()
+            .HasOne(t => t.UserPromotionSubscription)
+            .WithOne(s => s.Transaction)
+            .HasForeignKey<UserPromotionSubscription>(s => s.TransactionId);
 
         // ==================== SEED DATA ====================
         SeedData(modelBuilder);
