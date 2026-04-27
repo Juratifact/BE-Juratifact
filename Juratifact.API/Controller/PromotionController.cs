@@ -17,6 +17,14 @@ public class PromotionController:ControllerBase
     {
         _promotionService = promotionService;
     }
+    
+    [Authorize(Policy = JwtExtensions.SellerPolicy)]
+    [HttpGet("promotion-packages/available")]
+    public async Task<IActionResult> GetPromotionPackages()
+    {
+        var result = await _promotionService.GetPromotionPackages();
+        return Ok(ApiResponseFactory.SuccessResponse(result, "Get promotion packages successfully", HttpContext.TraceIdentifier));
+    }
 
     [Authorize(Policy = JwtExtensions.AdminPolicy)]
     [HttpPost("api/admin/promotion-packages")]
