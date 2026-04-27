@@ -4,7 +4,7 @@ public class Request
 {
     public class SepayWebhookDto
     {
-        public long Id { get; set; }           
+        public Guid SepayId { get; set; }           
         public string Content { get; set; }    
         public decimal TransferAmount { get; set; }
         public string ReferenceCode { get; set; } 

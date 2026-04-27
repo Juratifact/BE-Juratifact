@@ -843,8 +843,8 @@ namespace Juratifact.Repository.Migrations
                     b.Property<DateTimeOffset>("StartTime")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<decimal>("TotalSlot")
-                        .HasColumnType("numeric");
+                    b.Property<int?>("TotalSlot")
+                        .HasColumnType("integer");
 
                     b.Property<Guid>("TransactionId")
                         .HasColumnType("uuid");
@@ -852,8 +852,8 @@ namespace Juratifact.Repository.Migrations
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<decimal>("UsedSlot")
-                        .HasColumnType("numeric");
+                    b.Property<int?>("UsedSlot")
+                        .HasColumnType("integer");
 
                     b.Property<Guid>("UserId")
                         .HasColumnType("uuid");
