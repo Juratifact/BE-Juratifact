@@ -1,5 +1,8 @@
+using Juratifact.API.Extensions;
 using Juratifact.Repository.Entity;
+using Juratifact.Service.Models;
 using Juratifact.Service.Promotion;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Juratifact.API.Controller;
@@ -15,9 +18,11 @@ public class PromotionController:ControllerBase
         _promotionService = promotionService;
     }
 
+    [Authorize(Policy = JwtExtensions.AdminPolicy)]
     [HttpPost("api/admin/promotion-packages")]
-    public Task<IActionResult> CreatePromotionPackage()
+    public async Task<IActionResult> CreatePromotionPackage(Request.PromotionRequest request)
     {
-        return null;
+        var promotion = await _promotionService.CreatePromotion(request);
+        return Ok(ApiResponseFactory.SuccessResponse(promotion, "Promotion created",HttpContext.TraceIdentifier));
     }
 }
