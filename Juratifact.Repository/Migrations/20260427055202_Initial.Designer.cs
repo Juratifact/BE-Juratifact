@@ -12,7 +12,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Juratifact.Repository.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260426190024_Initial")]
+    [Migration("20260427055202_Initial")]
     partial class Initial
     {
         /// <inheritdoc />
@@ -694,7 +694,7 @@ namespace Juratifact.Repository.Migrations
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<Guid>("UsePromotionSubscriptionId")
+                    b.Property<Guid>("UserPromotionSubscriptionId")
                         .HasColumnType("uuid");
 
                     b.Property<Guid>("WalletId")
@@ -837,6 +837,9 @@ namespace Juratifact.Repository.Migrations
                     b.Property<Guid>("PackageId")
                         .HasColumnType("uuid");
 
+                    b.Property<int>("PaymentStatus")
+                        .HasColumnType("integer");
+
                     b.Property<Guid>("PromotionPackageId")
                         .HasColumnType("uuid");
 
@@ -858,9 +861,6 @@ namespace Juratifact.Repository.Migrations
                     b.Property<Guid>("UserId")
                         .HasColumnType("uuid");
 
-                    b.Property<int>("paymentStatus")
-                        .HasColumnType("integer");
-
                     b.HasKey("Id");
 
                     b.HasIndex("PromotionPackageId");
@@ -870,7 +870,7 @@ namespace Juratifact.Repository.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("UsePromotionSubscriptions");
+                    b.ToTable("UserPromotionSubscriptions");
                 });
 
             modelBuilder.Entity("Juratifact.Repository.Entity.UserRole", b =>
