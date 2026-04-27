@@ -8,6 +8,7 @@ using Juratifact.Service.JwtService;
 using Juratifact.Service.MailService;
 using Juratifact.Service.MediaService;
 using Juratifact.Service.Product;
+using Juratifact.Service.Promotion;
 using Juratifact.Service.Report;
 using Juratifact.Service.Sepay;
 using Juratifact.Service.User;
@@ -53,6 +54,7 @@ builder.Services.AddScoped<IIdentityService, IdentityService>();
 builder.Services.AddScoped<IProductService, ProductService>();
 builder.Services.AddScoped<IReportService, ReportService>();
 builder.Services.AddScoped<IIdentityDocumentService, IdentityDocumentService>();
+builder.Services.AddScoped<IPromotionService, PromotionService>();
 builder.Services.AddScoped<ISepayService, SepayService>();
 
 builder.Services.AddTransient<GlobalExceptionHandlerMiddleware>();
