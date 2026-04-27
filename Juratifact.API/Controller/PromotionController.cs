@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace Juratifact.API.Controller;
 
 [ApiController]
-[Route("[controller]")]
+[Route("api/[controller]")]
 public class PromotionController:ControllerBase
 {
     private readonly IPromotionService _promotionService;
@@ -27,10 +27,18 @@ public class PromotionController:ControllerBase
     }
 
     [Authorize(Policy = JwtExtensions.AdminPolicy)]
-    [HttpPost("api/admin/promotion-packages")]
+    [HttpPost("admin/promotion-packages")]
     public async Task<IActionResult> CreatePromotionPackage(Request.PromotionRequest request)
     {
         var promotion = await _promotionService.CreatePromotion(request);
         return Ok(ApiResponseFactory.SuccessResponse(promotion, "Promotion created",HttpContext.TraceIdentifier));
+    }
+
+    [Authorize(Policy = JwtExtensions.SellerPolicy)]
+    [HttpPost("promotion-packages/subscribe/{packageId}")]
+    public async Task<IActionResult> SubscribeByPackageId(Guid packageId)
+    {
+        var result = await _promotionService.SubscribeByPackageId(packageId);
+        return Ok(ApiResponseFactory.SuccessResponse(result, "Subscribe package successfully", HttpContext.TraceIdentifier));
     }
 }

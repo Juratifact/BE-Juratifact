@@ -3,6 +3,7 @@ using System;
 using Juratifact.Repository;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Juratifact.Repository.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260427162856_db")]
+    partial class db
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -840,7 +843,7 @@ namespace Juratifact.Repository.Migrations
                     b.Property<int?>("TotalSlot")
                         .HasColumnType("integer");
 
-                    b.Property<Guid?>("TransactionId")
+                    b.Property<Guid>("TransactionId")
                         .HasColumnType("uuid");
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
@@ -1174,7 +1177,9 @@ namespace Juratifact.Repository.Migrations
 
                     b.HasOne("Juratifact.Repository.Entity.Transaction", "Transaction")
                         .WithOne("UserPromotionSubscription")
-                        .HasForeignKey("Juratifact.Repository.Entity.UserPromotionSubscription", "TransactionId");
+                        .HasForeignKey("Juratifact.Repository.Entity.UserPromotionSubscription", "TransactionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.HasOne("Juratifact.Repository.Entity.User", "User")
                         .WithMany("UsePromotionSubscriptions")

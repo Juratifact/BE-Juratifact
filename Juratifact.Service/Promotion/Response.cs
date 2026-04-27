@@ -14,4 +14,9 @@ public class Response
         public DateTimeOffset? AvailableFrom { get; set; }
         public DateTimeOffset? AvailableTo { get; set; }
     }
+    
+    public class SubscribeResponse
+    {
+        public required string QrUrl { get; set; }
+    }
 }
