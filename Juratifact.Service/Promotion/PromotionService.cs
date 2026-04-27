@@ -22,7 +22,7 @@ public class PromotionService : IPromotionService
 
     public async Task<List<Response.PromotionPackageResponse>> GetPromotionPackages()
     {
-        var now = DateTime.UtcNow;
+        var now = DateTimeOffset.UtcNow;
 
         var promotionPackages = await _dbContext.PromotionPackages
             .Where(pp => pp.AvailableFrom <= now && pp.AvailableTo >= now)
@@ -144,4 +144,28 @@ public class PromotionService : IPromotionService
         return result;
     }
 
+    public async Task<List<Response.PromotionSubscribeResponse>> GetSubscribedPromotions()
+    {
+        var now = DateTimeOffset.UtcNow;
+
+        var promotionPackage = _dbContext.UserPromotionSubscriptions
+            .Include(s => s.PromotionPackage)
+            .Where(p => p.PaymentStatus == PaymentStatus.Paid &&
+                        p.PromotionPackage.AvailableTo > now &&
+                        (p.TotalSlot ?? 0) > (p.UsedSlot ?? 0));
+
+        var selected = promotionPackage.Select(p => new Response.PromotionSubscribeResponse()
+        {
+            PromotionPackageId = p.PromotionPackageId,
+            PromotionPackageName = p.PromotionPackage.PackageName,
+            AvailableFrom = p.PromotionPackage.AvailableFrom,
+            AvailableTo = p.PromotionPackage.AvailableTo,
+            TotalSlot = p.TotalSlot ?? 0,
+            UsedSlot = p.UsedSlot ?? 0,
+            Price = p.PromotionPackage.Price,
+        });
+        
+        var list = await selected.ToListAsync();
+        return list;
+    }
 }
