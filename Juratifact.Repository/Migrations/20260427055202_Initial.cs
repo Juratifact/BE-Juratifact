@@ -488,7 +488,7 @@ namespace Juratifact.Repository.Migrations
                     Status = table.Column<int>(type: "integer", nullable: false),
                     WalletId = table.Column<Guid>(type: "uuid", nullable: false),
                     OrderId = table.Column<Guid>(type: "uuid", nullable: false),
-                    UsePromotionSubscriptionId = table.Column<Guid>(type: "uuid", nullable: false),
+                    UserPromotionSubscriptionId = table.Column<Guid>(type: "uuid", nullable: false),
                     CreatedAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
                     UpdatedAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     IsDeleted = table.Column<bool>(type: "boolean", nullable: false)
@@ -511,7 +511,7 @@ namespace Juratifact.Repository.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "UsePromotionSubscriptions",
+                name: "UserPromotionSubscriptions",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
@@ -519,7 +519,7 @@ namespace Juratifact.Repository.Migrations
                     UsedSlot = table.Column<decimal>(type: "numeric", nullable: false),
                     StartTime = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
                     EndTime = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    paymentStatus = table.Column<int>(type: "integer", nullable: false),
+                    PaymentStatus = table.Column<int>(type: "integer", nullable: false),
                     UserId = table.Column<Guid>(type: "uuid", nullable: false),
                     PackageId = table.Column<Guid>(type: "uuid", nullable: false),
                     PromotionPackageId = table.Column<Guid>(type: "uuid", nullable: false),
@@ -530,21 +530,21 @@ namespace Juratifact.Repository.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_UsePromotionSubscriptions", x => x.Id);
+                    table.PrimaryKey("PK_UserPromotionSubscriptions", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_UsePromotionSubscriptions_PromotionPackages_PromotionPackag~",
+                        name: "FK_UserPromotionSubscriptions_PromotionPackages_PromotionPacka~",
                         column: x => x.PromotionPackageId,
                         principalTable: "PromotionPackages",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "FK_UsePromotionSubscriptions_Transactions_TransactionId",
+                        name: "FK_UserPromotionSubscriptions_Transactions_TransactionId",
                         column: x => x.TransactionId,
                         principalTable: "Transactions",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "FK_UsePromotionSubscriptions_Users_UserId",
+                        name: "FK_UserPromotionSubscriptions_Users_UserId",
                         column: x => x.UserId,
                         principalTable: "Users",
                         principalColumn: "Id",
@@ -576,9 +576,9 @@ namespace Juratifact.Repository.Migrations
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "FK_ProductPromotions_UsePromotionSubscriptions_UserPromotionSu~",
+                        name: "FK_ProductPromotions_UserPromotionSubscriptions_UserPromotionS~",
                         column: x => x.UserPromotionSubscriptionId,
-                        principalTable: "UsePromotionSubscriptions",
+                        principalTable: "UserPromotionSubscriptions",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
@@ -734,19 +734,19 @@ namespace Juratifact.Repository.Migrations
                 column: "WalletId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_UsePromotionSubscriptions_PromotionPackageId",
-                table: "UsePromotionSubscriptions",
+                name: "IX_UserPromotionSubscriptions_PromotionPackageId",
+                table: "UserPromotionSubscriptions",
                 column: "PromotionPackageId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_UsePromotionSubscriptions_TransactionId",
-                table: "UsePromotionSubscriptions",
+                name: "IX_UserPromotionSubscriptions_TransactionId",
+                table: "UserPromotionSubscriptions",
                 column: "TransactionId",
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_UsePromotionSubscriptions_UserId",
-                table: "UsePromotionSubscriptions",
+                name: "IX_UserPromotionSubscriptions_UserId",
+                table: "UserPromotionSubscriptions",
                 column: "UserId");
 
             migrationBuilder.CreateIndex(
@@ -821,7 +821,7 @@ namespace Juratifact.Repository.Migrations
                 name: "Categories");
 
             migrationBuilder.DropTable(
-                name: "UsePromotionSubscriptions");
+                name: "UserPromotionSubscriptions");
 
             migrationBuilder.DropTable(
                 name: "Products");
