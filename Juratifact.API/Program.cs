@@ -1,6 +1,7 @@
 using Juratifact.API.Extensions;
 using Juratifact.API.Middlewares;
 using Juratifact.Repository;
+using Juratifact.Service.BackgroundJobService;
 using Juratifact.Service.CloudinaryService;
 using Juratifact.Service.Identity;
 using Juratifact.Service.IdentityDocumentService;
@@ -13,6 +14,7 @@ using Juratifact.Service.Report;
 using Juratifact.Service.Sepay;
 using Juratifact.Service.User;
 using Microsoft.EntityFrameworkCore;
+using Quartz;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -56,6 +58,27 @@ builder.Services.AddScoped<IReportService, ReportService>();
 builder.Services.AddScoped<IIdentityDocumentService, IdentityDocumentService>();
 builder.Services.AddScoped<IPromotionService, PromotionService>();
 builder.Services.AddScoped<ISepayService, SepayService>();
+
+builder.Services.AddQuartz(q =>
+{
+    // 1. Cấu hình cho CancelOrderJob: Chạy mỗi 1 phút
+    var orderJobKey = new JobKey("CancelOrderJob");
+    q.AddJob<CancelOrderJob>(opts => opts.WithIdentity(orderJobKey));
+    q.AddTrigger(opts => opts
+        .ForJob(orderJobKey)
+        .WithIdentity("CancelOrderJob-trigger")
+        .WithSimpleSchedule(x => x.WithIntervalInMinutes(1).RepeatForever()));
+
+    // 2. Cấu hình cho SubscriptionExpiryJob: Chạy mỗi 1 giờ
+    var subJobKey = new JobKey("SubscriptionExpiryJob");
+    q.AddJob<SubscriptionExpiryJob>(opts => opts.WithIdentity(subJobKey));
+    q.AddTrigger(opts => opts
+        .ForJob(subJobKey)
+        .WithIdentity("SubscriptionExpiryJob-trigger")
+        .WithSimpleSchedule(x => x.WithIntervalInHours(1).RepeatForever()));
+});
+
+builder.Services.AddQuartzHostedService(q => q.WaitForJobsToComplete = true);
 
 builder.Services.AddTransient<GlobalExceptionHandlerMiddleware>();
 var app = builder.Build();

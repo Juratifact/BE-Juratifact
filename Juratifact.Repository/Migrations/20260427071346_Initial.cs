@@ -515,8 +515,8 @@ namespace Juratifact.Repository.Migrations
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    TotalSlot = table.Column<decimal>(type: "numeric", nullable: false),
-                    UsedSlot = table.Column<decimal>(type: "numeric", nullable: false),
+                    TotalSlot = table.Column<int>(type: "integer", nullable: true),
+                    UsedSlot = table.Column<int>(type: "integer", nullable: true),
                     StartTime = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
                     EndTime = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
                     PaymentStatus = table.Column<int>(type: "integer", nullable: false),

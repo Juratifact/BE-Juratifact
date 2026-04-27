@@ -1,7 +1,7 @@
 ﻿using Juratifact.Repository;
+using Juratifact.Repository.Entity;
 using Juratifact.Repository.Enum;
 using Microsoft.EntityFrameworkCore;
-using Juratifact.Repository.Enum;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 
@@ -19,66 +19,74 @@ public class SepayService: ISepayService
         _logger = logger;
     }
 
-    public async Task<bool> ProcessSePayWebhook(Request.SepayWebhookDto data)
+   public async Task<bool> ProcessSePayWebhook(Request.SepayWebhookDto data)
+{
+    // 1. Chống xử lý trùng (Idempotency)
+    if (await _dbContext.Transactions.AnyAsync(t => t.SepayId == data.SepayId.ToString()))
     {
-        // 1. Kiểm tra giao dịch đã tồn tại (idempotency)
-        if (await _dbContext.Transactions.AnyAsync(t => t.SepayId == data.Id.ToString()))
-        {
-            _logger.LogInformation("Webhook đã xử lý cho SepayId: {SepayId}", data.Id);
-            return true;
-        }
+        _logger.LogInformation("Giao dịch {Id} đã được xử lý.", data.SepayId);
+        return true; 
+    }
 
-        // 2. Tìm transaction khớp với ReferenceCode trong Content và trạng thái chờ xử lý
-        var transaction = await _dbContext.Transactions
-            .FirstOrDefaultAsync(t =>
-                !string.IsNullOrEmpty(t.ReferenceCode) &&
-                !string.IsNullOrEmpty(data.Content) &&
-                data.Content.ToUpper().Contains(t.ReferenceCode.ToUpper()) &&
-                t.Status == Juratifact.Repository.Enum.TransactionStatus.Pending);
+    // 2. Tìm Transaction kèm các liên kết cần thiết
+    var transaction = await _dbContext.Transactions
+        .Include(t => t.UserPromotionSubscription)
+            .ThenInclude(s => s.PromotionPackage)
+        .Include(t => t.Order) // Giả định bạn có navigation property Order
+        .FirstOrDefaultAsync(t => 
+            !string.IsNullOrEmpty(t.ReferenceCode) &&
+            data.Content.ToUpper().Contains(t.ReferenceCode.ToUpper()) &&
+            t.Status == TransactionStatus.Pending);
 
-        if (transaction == null)
-        {
-            _logger.LogWarning("Không tìm thấy transaction phù hợp cho nội dung: {Content}", data.Content);
-            return false;
-        }
+    if (transaction == null) return false;
 
-        // 3. Kiểm tra số tiền thực nhận
-        if (data.TransferAmount < transaction.Amount)
-        {
-            // Không có trạng thái 'Insufficient' trong enum → đánh dấu là Failed và ghi mô tả
-            transaction.Status = TransactionStatus.Failed; // Thanh toán thiếu được coi là thất bại
-            transaction.Description = $"Thanh toán thiếu. Thực nhận: {data.TransferAmount}";
-            transaction.UpdatedAt = DateTime.Now;
-            await _dbContext.SaveChangesAsync();
-            _logger.LogWarning("Thanh toán thiếu cho transaction {Id}. Nhận: {Amount}, Cần: {Need}", transaction.Id, data.TransferAmount, transaction.Amount);
-            return true;
-        }
-
-        // 4. Cập nhật trạng thái thành công
-        transaction.Status = TransactionStatus.Success; // Thành công
-        transaction.SepayId = data.Id.ToString();
-        transaction.ExternalTransactionId = data.ReferenceCode;
-        transaction.UpdatedAt = DateTime.Now;
-
-        // 5. Nếu là thanh toán cho Gói VIP (Subscription)
-        // Transaction.UserPromotionSubscriptionId is non-nullable Guid in entity; check != Guid.Empty
-        if (transaction.UserPromotionSubscriptionId != Guid.Empty)
-        {
-            var sub = await _dbContext.UserPromotionSubscriptions
-                .FirstOrDefaultAsync(s => s.Id == transaction.UserPromotionSubscriptionId);
-            if (sub != null)
-            {
-                sub.PaymentStatus = PaymentStatus.Paid;
-                sub.StartTime = DateTime.Now;
-                // TODO: sub.EndTime = sub.StartTime + package duration (nếu có)
-            }
-        }
-
+    // 3. Kiểm tra số tiền
+    if (data.TransferAmount < transaction.Amount)
+    {
+        transaction.Status = TransactionStatus.Failed;
+        transaction.Description = $"Thanh toán thiếu. Thực nhận: {data.TransferAmount}";
         await _dbContext.SaveChangesAsync();
-        _logger.LogInformation("Xử lý thành công webhook cho transaction {Id}", transaction.Id);
         return true;
     }
 
+    using var dbTransaction = await _dbContext.Database.BeginTransactionAsync();
+    try
+    {
+        // Cập nhật thông tin chung cho Transaction
+        transaction.Status = TransactionStatus.Success;
+        transaction.SepayId = data.SepayId.ToString();
+        transaction.ExternalTransactionId = data.ReferenceCode;
+        transaction.Description = $"Thanh toán qua {data.Gateway} lúc {data.TransactionDate}";
+        transaction.UpdatedAt = DateTime.Now;
+
+        // 4. Điều hướng xử lý theo TransactionType
+        switch (transaction.TransactionType)
+        {
+            case TransactionType.ServiceFee:
+                await HandlePromotionActivation(transaction);
+                break;
+
+            case TransactionType.OrderPayment:
+                await HandleOrderPayment(transaction);
+                break;
+
+            default:
+                _logger.LogWarning("Loại giao dịch {Type} chưa có logic xử lý.", transaction.TransactionType);
+                break;
+        }
+
+        await _dbContext.SaveChangesAsync();
+        await dbTransaction.CommitAsync();
+        return true;
+    }
+    catch (Exception ex)
+    {
+        await dbTransaction.RollbackAsync();
+        _logger.LogError(ex, "Lỗi khi xử lý Webhook cho Transaction {Id}", transaction.Id);
+        return false;
+    }
+
+}
 
     public Task<string> GenerateQrCode(decimal amount, string referenceCode)
     {
@@ -91,6 +99,53 @@ public class SepayService: ISepayService
             var qrLink = $"https://qr.sepay.vn/img?bank={bin}&acc={acc}&template={template}&amount={amount}&des={referenceCode}";
     
             return Task.FromResult(qrLink);
+        }
+    }
+    
+    private async Task HandlePromotionActivation(Transaction transaction)
+    {
+        var sub = transaction.UserPromotionSubscription;
+        if (sub != null && sub.PromotionPackage != null)
+        {
+            sub.PaymentStatus = PaymentStatus.Paid;
+            sub.StartTime = DateTime.Now; // StartTime là DateTime không nullable
+        
+            // Tính EndTime từ UsageLimitDays
+            sub.EndTime = sub.StartTime.AddDays((double)sub.PromotionPackage.UsageLimitDays);
+        
+            // Cấp Slots dựa trên MaxProductCount của gói
+            sub.TotalSlot = sub.PromotionPackage.MaxProductCount;
+            sub.UsedSlot = 0;
+
+            _logger.LogInformation("Đã kích hoạt gói {Name} cho User {User}", 
+                sub.PromotionPackage.PackageName, sub.UserId);
+        }
+    }
+    
+    private async Task HandleOrderPayment(Transaction transaction)
+    {
+        // Kiểm tra nếu Transaction có gắn với OrderId (image_f5a289.png)
+        if (transaction.OrderId != null)
+        {
+            // Tìm đơn hàng trong database
+            var order = await _dbContext.Orders
+                .FirstOrDefaultAsync(o => o.Id == transaction.OrderId);
+
+            if (order != null)
+            {
+                // Cập nhật trạng thái đơn hàng dựa trên Enum OrderStatus (image_f5452d.png)
+                order.Status = OrderStatus.Paid; 
+            
+                // Cập nhật ngày thay đổi
+                order.UpdatedAt = DateTime.Now;
+
+                _logger.LogInformation("Đơn hàng {OrderId} đã được cập nhật trạng thái: Paid", order.Id);
+            }
+            else
+            {
+                _logger.LogWarning("Giao dịch OrderPayment {TransId} gắn với OrderId {OrderId} không tồn tại.", 
+                    transaction.Id, transaction.OrderId);
+            }
         }
     }
 }

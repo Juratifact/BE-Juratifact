@@ -5,8 +5,8 @@ namespace Juratifact.Repository.Entity;
 
 public class UserPromotionSubscription : BaseEntity<Guid>,IAuditableEntity
 {
-    public decimal TotalSlot { get; set; }
-    public decimal UsedSlot { get; set; }
+    public int? TotalSlot { get; set; }
+    public int? UsedSlot { get; set; }
     public DateTimeOffset StartTime { get; set; }
     public DateTimeOffset EndTime { get; set; }
     
