@@ -82,9 +82,15 @@ public class SepayService: ISepayService
 
     public Task<string> GenerateQrCode(decimal amount, string referenceCode)
     {
-        var config = _configuration.GetSection("SePay");
-        // Cấu trúc chuẩn VietQR của SePay
-        var url = $"https://qr.sepay.vn/img?bank={config["BankBin"]}&acc={config["AccountNumber"]}&template=compact&amount={amount}&des={referenceCode}";
-        return Task.FromResult(url);
+        {
+            var sepayConfig = _configuration.GetSection("SePay");
+            string bin = sepayConfig["BankBin"];
+            string acc = sepayConfig["AccountNumber"];
+            string template = sepayConfig["QrTemplate"];
+
+            var qrLink = $"https://qr.sepay.vn/img?bank={bin}&acc={acc}&template={template}&amount={amount}&des={referenceCode}";
+    
+            return Task.FromResult(qrLink);
+        }
     }
 }
