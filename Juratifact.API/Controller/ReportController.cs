@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Juratifact.API.Controller;
 
+[Authorize]
 [ApiController]
 [Route("[controller]")]
 public class ReportController:ControllerBase
@@ -32,5 +33,22 @@ public class ReportController:ControllerBase
     {
         var reports = await _reportService.GetReport(searchTerm, pageSize, pageIndex);
         return Ok(ApiResponseFactory.SuccessResponse(reports, HttpContext.TraceIdentifier));
+    }
+    
+    
+    [Authorize(Policy = JwtExtensions.AdminPolicy)]
+    [HttpPut("AproveReport/BannedProduct")]
+    public async Task<IActionResult> ApproveReport(Guid reportId)
+    {
+        var result = await _reportService.ApproveReport(reportId);
+        return Ok(ApiResponseFactory.SuccessResponse(result, HttpContext.TraceIdentifier));
+    }
+    
+    [Authorize(Policy = JwtExtensions.AdminPolicy)]
+    [HttpPut("RejectReport")]
+    public async Task<IActionResult> RejectReport(Guid reportId)
+    {
+        var result = await _reportService.RejectReport(reportId);
+        return Ok(ApiResponseFactory.SuccessResponse(result, HttpContext.TraceIdentifier));
     }
 }

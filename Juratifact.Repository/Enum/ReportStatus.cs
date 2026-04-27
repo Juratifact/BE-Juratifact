@@ -2,10 +2,8 @@
 
 public enum ReportStatus
 {
-    Pending, 
     Processing,
-    Resolved_Valid,
-    Resolved_Invalid,
+    Approved,
+    Rejected,
     Dismissed
-    
 }
