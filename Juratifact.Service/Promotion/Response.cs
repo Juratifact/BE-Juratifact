@@ -14,4 +14,9 @@ public class Response
         public DateTimeOffset? AvailableFrom { get; set; }
         public DateTimeOffset? AvailableTo { get; set; }
     }
+    public class PromotionResponse
+    {
+        public int UniqueUsers { get; set; }
+        public decimal TotalRevenue { get; set; }
+    }
 }

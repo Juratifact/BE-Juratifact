@@ -1,4 +1,5 @@
 using Juratifact.Repository;
+using Juratifact.Repository.Enum;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 
@@ -64,5 +65,38 @@ public class PromotionService : IPromotionService
         await _dbContext.SaveChangesAsync();
         
         return "Promotion created";
+    }
+    public async Task<Response.PromotionResponse> GetSubscriptions()
+    {
+        var query = await _dbContext.UserPromotionSubscriptions
+            .Where(x => x.PaymentStatus== PaymentStatus.Paid).CountAsync();
+
+        var query2 = await _dbContext.Transactions
+            .Where(y => y.TransactionType == TransactionType.ServiceFee).SumAsync(z => z.Amount);
+
+        var result = new Response.PromotionResponse()
+        {
+            UniqueUsers = query,
+            TotalRevenue = query2
+        };
+        return result;
+    }
+
+    public async Task<string> DeletePromotion(Guid id)
+    {
+        var query = _dbContext.PromotionPackages
+            .Where(x => x.Id == id && !x.IsDeleted);
+        var result = await query.FirstOrDefaultAsync();
+
+        if (result == null)
+        {
+            throw new ArgumentException("Promotion not found");
+        }
+         
+        result.IsDeleted = true;
+        result.UpdatedAt = DateTimeOffset.Now;
+            
+        await _dbContext.SaveChangesAsync();
+        return  "Promotion deleted";
     }
 }
