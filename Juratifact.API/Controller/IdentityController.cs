@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace Juratifact.API.Controller;
 
 [ApiController]
-[Route("[controller]")]
+[Route("api/[controller]")]
 public class IdentityController : ControllerBase
 {
     private readonly IIdentityService _indentityService;

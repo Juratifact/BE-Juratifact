@@ -1,4 +1,7 @@
 using Juratifact.Repository;
+using Juratifact.Repository.Entity;
+using Juratifact.Repository.Enum;
+using Juratifact.Service.Sepay;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 
@@ -8,11 +11,13 @@ public class PromotionService : IPromotionService
 {
     private readonly AppDbContext _dbContext;
     private readonly IHttpContextAccessor _httpContext;
+    private readonly ISepayService _sepayService;
 
-    public PromotionService(AppDbContext dbContext, IHttpContextAccessor httpContext)
+    public PromotionService(AppDbContext dbContext, IHttpContextAccessor httpContext, ISepayService sepayService)
     {
         _dbContext = dbContext;
         _httpContext = httpContext;
+        _sepayService = sepayService;
     }
 
     public async Task<List<Response.PromotionPackageResponse>> GetPromotionPackages()
@@ -34,10 +39,10 @@ public class PromotionService : IPromotionService
                 AvailableTo = pp.AvailableTo,
             })
             .ToListAsync();
-        
+
         return promotionPackages;
     }
-    
+
     public async Task<string> CreatePromotion(Request.PromotionRequest request)
     {
         var existingQuery = _dbContext.PromotionPackages.Where(x => x.PackageName == request.PackageName);
@@ -50,7 +55,6 @@ public class PromotionService : IPromotionService
 
         var promotion = new Repository.Entity.PromotionPackage()
         {
-            
             PackageName = request.PackageName,
             Description = request.Description,
             Price = request.Price,
@@ -62,7 +66,82 @@ public class PromotionService : IPromotionService
         };
         _dbContext.PromotionPackages.Add(promotion);
         await _dbContext.SaveChangesAsync();
-        
+
         return "Promotion created";
     }
+
+    public async Task<Response.SubscribeResponse> SubscribeByPackageId(Guid packageId)
+    {
+        var userId = _httpContext.HttpContext.User.Claims.FirstOrDefault(c => c.Type == "UserId")?.Value;
+        var userIdGuid = Guid.Parse(userId!);
+
+        var package = await _dbContext.PromotionPackages.FirstOrDefaultAsync(p => p.Id == packageId);
+
+        if (package == null)
+        {
+            throw new Exception("Promotion package not found");
+        }
+
+        // Check duplicate - tránh tạo 2 lần
+        var existingTransaction = await _dbContext.Transactions
+            .Where(t => t.UserPromotionSubscription!.UserId == userIdGuid
+                        && t.UserPromotionSubscription.PromotionPackageId == packageId
+                        && t.Status == TransactionStatus.Pending)
+            .FirstOrDefaultAsync();
+
+        if (existingTransaction != null)
+        {
+            var existingQr = await _sepayService.GenerateQrCode(
+                existingTransaction.Amount,
+                existingTransaction.ReferenceCode);
+
+            return new Response.SubscribeResponse()
+            {
+                QrUrl = existingQr
+            };
+        }
+
+        // ReferenceCode unique
+        var referenceCode = $"JURATIFACT{Guid.NewGuid().ToString("N")[..8].ToUpper()}";
+
+        // Tạo Subscription trước
+        var subscription = new UserPromotionSubscription()
+        {
+            Id = Guid.NewGuid(),
+            UserId = userIdGuid,
+            PromotionPackageId = packageId,
+            PaymentStatus = PaymentStatus.UnPaid,
+            StartTime = DateTimeOffset.UtcNow,
+            EndTime = DateTimeOffset.UtcNow,
+            CreatedAt = DateTimeOffset.UtcNow,
+        };
+        _dbContext.Add(subscription);
+        await _dbContext.SaveChangesAsync();
+        
+        // Tạo Transaction sau, gắn SubscriptionId
+        var transaction = new Transaction()
+        {
+            Id = Guid.NewGuid(),
+            UserPromotionSubscriptionId = subscription.Id,
+            UserPromotionSubscription = subscription,
+            TransactionType = TransactionType.ServiceFee,
+            Status = TransactionStatus.Pending,
+            ReferenceCode = referenceCode,
+            Amount = package.Price,
+            CreatedAt = DateTimeOffset.UtcNow,
+        };
+
+        _dbContext.Add(transaction);
+        await _dbContext.SaveChangesAsync();
+        
+        var qrUrl = await _sepayService.GenerateQrCode(package.Price, referenceCode);
+        
+        var result = new Response.SubscribeResponse()
+        {
+            QrUrl = qrUrl
+        };
+
+        return result;
+    }
+
 }
