@@ -33,6 +33,14 @@ public class PromotionController:ControllerBase
         var result = await _promotionService.GetSubscribedPromotions();
         return Ok(ApiResponseFactory.SuccessResponse(result, "Get subscribed promotions successfully", HttpContext.TraceIdentifier));
     }
+    
+    [Authorize(Policy = JwtExtensions.SellerPolicy)]
+    [HttpGet("product-promotions")]
+    public async Task<IActionResult> GetProductPromotion()
+    {
+        var result = await _promotionService.GetProductPromotion();
+        return Ok(ApiResponseFactory.SuccessResponse(result, "Get product promotions successfully", HttpContext.TraceIdentifier));
+    }
 
     [Authorize(Policy = JwtExtensions.AdminPolicy)]
     [HttpPost("admin/promotion-packages")]
