@@ -53,7 +53,7 @@ public class PromotionService : IPromotionService
             throw new ArgumentException("Promotion already exists");
         }
 
-        var promotion = new Repository.Entity.PromotionPackage()
+        var promotion = new PromotionPackage()
         {
             PackageName = request.PackageName,
             Description = request.Description,
@@ -84,6 +84,8 @@ public class PromotionService : IPromotionService
 
         // Check duplicate - tránh tạo 2 lần
         var existingTransaction = await _dbContext.Transactions
+            .Include(t => t.UserPromotionSubscription)
+            .ThenInclude(s => s.PromotionPackage)
             .Where(t => t.UserPromotionSubscription!.UserId == userIdGuid
                         && t.UserPromotionSubscription.PromotionPackageId == packageId
                         && t.Status == TransactionStatus.Pending)
@@ -104,6 +106,8 @@ public class PromotionService : IPromotionService
         // ReferenceCode unique
         var referenceCode = $"JURATIFACT{Guid.NewGuid().ToString("N")[..8].ToUpper()}";
 
+        
+        var now = DateTimeOffset.UtcNow; // Chuẩn hóa thời gian
         // Tạo Subscription trước
         var subscription = new UserPromotionSubscription()
         {
@@ -111,8 +115,10 @@ public class PromotionService : IPromotionService
             UserId = userIdGuid,
             PromotionPackageId = packageId,
             PaymentStatus = PaymentStatus.UnPaid,
-            StartTime = DateTimeOffset.UtcNow,
-            EndTime = DateTimeOffset.UtcNow,
+            TotalSlot = package.MaxProductCount,
+            UsedSlot = 0,
+            StartTime = now,
+            EndTime = package.AvailableTo ?? now.AddDays(30),
             CreatedAt = DateTimeOffset.UtcNow,
         };
         _dbContext.Add(subscription);
@@ -123,7 +129,6 @@ public class PromotionService : IPromotionService
         {
             Id = Guid.NewGuid(),
             UserPromotionSubscriptionId = subscription.Id,
-            UserPromotionSubscription = subscription,
             TransactionType = TransactionType.ServiceFee,
             Status = TransactionStatus.Pending,
             ReferenceCode = referenceCode,
@@ -152,12 +157,15 @@ public class PromotionService : IPromotionService
             .Include(s => s.PromotionPackage)
             .Where(p => p.PaymentStatus == PaymentStatus.Paid &&
                         p.PromotionPackage.AvailableTo > now &&
+                        p.StartTime <= now && p.EndTime >= now &&
                         (p.TotalSlot ?? 0) > (p.UsedSlot ?? 0));
 
         var selected = promotionPackage.Select(p => new Response.PromotionSubscribeResponse()
         {
             PromotionPackageId = p.PromotionPackageId,
             PromotionPackageName = p.PromotionPackage.PackageName,
+            StartTime = p.StartTime,
+            EndTime = p.EndTime,
             AvailableFrom = p.PromotionPackage.AvailableFrom,
             AvailableTo = p.PromotionPackage.AvailableTo,
             TotalSlot = p.TotalSlot ?? 0,
@@ -186,9 +194,10 @@ public class PromotionService : IPromotionService
 
         var promotionPackage = _dbContext.UserPromotionSubscriptions
             .Include(x => x.PromotionPackage)
-            .Where(x => x.PromotionPackageId == request.PromotionPackageId
-                        && x.PaymentStatus == PaymentStatus.Paid &&
+            .Where(x => x.PromotionPackageId == request.PromotionPackageId && 
+                        x.PaymentStatus == PaymentStatus.Paid &&
                         x.PromotionPackage.AvailableTo > now &&
+                        x.StartTime <= now && x.EndTime >= now && // kiểm tra xem promotion còn hạn ko
                         (x.TotalSlot ?? 0) > (x.UsedSlot ?? 0))
             .OrderBy(x => x.EndTime); // ưu tiên gói nào hết hạn gần nhất
 
