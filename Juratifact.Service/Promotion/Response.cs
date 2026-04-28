@@ -19,4 +19,17 @@ public class Response
     {
         public required string QrUrl { get; set; }
     }
+
+    public class PromotionSubscribeResponse
+    {
+        public Guid PromotionPackageId { get; set; }
+        public string PromotionPackageName { get; set; } = null!;
+        public decimal Price { get; set; }
+        
+        public int TotalSlot { get; set; }
+        public int UsedSlot { get; set; }
+        
+        public DateTimeOffset? AvailableFrom { get; set; }
+        public DateTimeOffset? AvailableTo { get; set; }
+    }
 }

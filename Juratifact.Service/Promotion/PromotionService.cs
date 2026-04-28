@@ -22,7 +22,7 @@ public class PromotionService : IPromotionService
 
     public async Task<List<Response.PromotionPackageResponse>> GetPromotionPackages()
     {
-        var now = DateTime.UtcNow;
+        var now = DateTimeOffset.UtcNow;
 
         var promotionPackages = await _dbContext.PromotionPackages
             .Where(pp => pp.AvailableFrom <= now && pp.AvailableTo >= now)
@@ -144,4 +144,94 @@ public class PromotionService : IPromotionService
         return result;
     }
 
+    public async Task<List<Response.PromotionSubscribeResponse>> GetSubscribedPromotions()
+    {
+        var now = DateTimeOffset.UtcNow;
+
+        var promotionPackage = _dbContext.UserPromotionSubscriptions
+            .Include(s => s.PromotionPackage)
+            .Where(p => p.PaymentStatus == PaymentStatus.Paid &&
+                        p.PromotionPackage.AvailableTo > now &&
+                        (p.TotalSlot ?? 0) > (p.UsedSlot ?? 0));
+
+        var selected = promotionPackage.Select(p => new Response.PromotionSubscribeResponse()
+        {
+            PromotionPackageId = p.PromotionPackageId,
+            PromotionPackageName = p.PromotionPackage.PackageName,
+            AvailableFrom = p.PromotionPackage.AvailableFrom,
+            AvailableTo = p.PromotionPackage.AvailableTo,
+            TotalSlot = p.TotalSlot ?? 0,
+            UsedSlot = p.UsedSlot ?? 0,
+            Price = p.PromotionPackage.Price,
+        });
+        
+        var list = await selected.ToListAsync();
+        return list;
+    }
+
+    public async Task<string> ApplyProductPromotion(Request.ProductPromotionRequest request)
+    {
+        // Kiểm tra gói promotion nào còn slot, còn hạn, phù hợp với productId này không
+        // Nếu có, tăng UsedSlot lên 1
+        var product = _dbContext.Products.Where(x => x.Id == request.ProductId);
+
+        var existingProduct = await product.AnyAsync();
+
+        if (!existingProduct)
+        {
+            throw new Exception("Product not found");
+        }
+        
+        var now = DateTimeOffset.UtcNow;
+
+        var promotionPackage = _dbContext.UserPromotionSubscriptions
+            .Include(x => x.PromotionPackage)
+            .Where(x => x.PromotionPackageId == request.PromotionPackageId
+                        && x.PaymentStatus == PaymentStatus.Paid &&
+                        x.PromotionPackage.AvailableTo > now &&
+                        (x.TotalSlot ?? 0) > (x.UsedSlot ?? 0))
+            .OrderBy(x => x.EndTime); // ưu tiên gói nào hết hạn gần nhất
+
+        var subscription = await promotionPackage.FirstOrDefaultAsync();
+
+        if (subscription == null)
+        {
+            throw new Exception("Promotion package not found");
+        }
+        
+        // Chặn trùng
+        var isDuplicate = await _dbContext.ProductPromotions
+            .AnyAsync(p => p.ProductId == request.ProductId && 
+                           p.UserPromotionSubscriptionId == subscription.Id &&
+                           p.IsActive  == true);
+
+        if (isDuplicate)
+        {
+            throw new Exception("This product is already promoted with this package");
+        }
+        
+        // dùng được luôn
+
+        if ((subscription.UsedSlot ?? 0) >= (subscription.TotalSlot ?? 0))
+        {
+            throw new Exception("Promotion package used slot  is too large");
+        }
+        
+        subscription.UsedSlot = (subscription.UsedSlot ?? 0) + 1;
+
+        var productPromotion = new ProductPromotion()
+        {
+            Id = Guid.NewGuid(),
+            ProductId = request.ProductId,
+            UserPromotionSubscriptionId = subscription.Id,
+            IsActive = true,
+            ActiveAt = DateTimeOffset.UtcNow,
+            ExpiresAt =  subscription.PromotionPackage.AvailableTo,
+            CreatedAt = DateTimeOffset.UtcNow,
+        };
+        _dbContext.Add(productPromotion);
+        await _dbContext.SaveChangesAsync();
+
+        return "Apply product promotion successfully";
+    }
 }

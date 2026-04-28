@@ -26,6 +26,14 @@ public class PromotionController:ControllerBase
         return Ok(ApiResponseFactory.SuccessResponse(result, "Get promotion packages successfully", HttpContext.TraceIdentifier));
     }
 
+    [Authorize(Policy = JwtExtensions.SellerPolicy)]
+    [HttpGet("my-subscriptions")]
+    public async Task<IActionResult> GetSubscribedPromotions()
+    {
+        var result = await _promotionService.GetSubscribedPromotions();
+        return Ok(ApiResponseFactory.SuccessResponse(result, "Get subscribed promotions successfully", HttpContext.TraceIdentifier));
+    }
+
     [Authorize(Policy = JwtExtensions.AdminPolicy)]
     [HttpPost("admin/promotion-packages")]
     public async Task<IActionResult> CreatePromotionPackage(Request.PromotionRequest request)
@@ -41,4 +49,14 @@ public class PromotionController:ControllerBase
         var result = await _promotionService.SubscribeByPackageId(packageId);
         return Ok(ApiResponseFactory.SuccessResponse(result, "Subscribe package successfully", HttpContext.TraceIdentifier));
     }
+
+    [Authorize(Policy = JwtExtensions.SellerPolicy)]
+    [HttpPost("product-promotions/apply")]
+    public async Task<IActionResult> ApplyProductPromotion(Request.ProductPromotionRequest request)
+    {
+        var result = await _promotionService.ApplyProductPromotion(request);
+        return Ok(ApiResponseFactory.SuccessResponse(result, "Apply promotion successfully", HttpContext.TraceIdentifier));
+    }
+    
+    
 }
