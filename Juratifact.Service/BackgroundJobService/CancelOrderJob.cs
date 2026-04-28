@@ -22,7 +22,7 @@ public class CancelOrderJob : IJob
         _logger.LogInformation("Đang chạy CancelOrderJob: Quét các đơn hàng hết hạn thanh toán...");
         
         // Ngưỡng thời gian: 10 phút trước
-        var timeoutThreshold = DateTime.Now.AddMinutes(-10);
+        var timeoutThreshold = DateTimeOffset.UtcNow.AddMinutes(-10);
 
         // Tìm các giao dịch OrderPayment đang Pending và quá 10 phút
         var pendingTransactions = await _dbContext.Transactions
@@ -42,7 +42,7 @@ public class CancelOrderJob : IJob
                 if (trans.Order != null)
                 {
                     trans.Order.Status = OrderStatus.Cancelled; //
-                    trans.Order.UpdatedAt = DateTime.Now;
+                    trans.Order.UpdatedAt = DateTimeOffset.UtcNow;
                 }
             }
 

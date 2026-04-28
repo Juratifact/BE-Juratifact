@@ -8,7 +8,7 @@ namespace Juratifact.API.Controller;
 
 [Authorize]
 [ApiController]
-[Route("[controller]")]
+[Route("api/[controller]")]
 public class ReportController:ControllerBase
 {
     private readonly IReportService _reportService;

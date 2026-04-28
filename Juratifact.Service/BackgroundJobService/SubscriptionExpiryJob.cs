@@ -21,8 +21,7 @@ public class SubscriptionExpiryJob : IJob
     {
         _logger.LogInformation("Đang chạy SubscriptionExpiryJob: Kiểm tra thời hạn gói dịch vụ...");
 
-        var now = DateTime.Now;
-
+        var now = DateTimeOffset.UtcNow;
         // Tìm các gói đã quá EndTime nhưng vẫn đang là Paid
         var expiredSubs = await _dbContext.UserPromotionSubscriptions
             .Where(s => s.EndTime < now && s.PaymentStatus == PaymentStatus.Paid)

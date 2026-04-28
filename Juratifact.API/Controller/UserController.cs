@@ -8,7 +8,7 @@ namespace Juratifact.API.Controller;
 
 
 [ApiController]
-[Route("[controller]")]
+[Route("api/[controller]")]
 public class UserController : ControllerBase
 {
     private readonly  IUserService _userService;
