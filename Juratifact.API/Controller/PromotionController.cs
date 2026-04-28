@@ -51,9 +51,12 @@ public class PromotionController:ControllerBase
     }
 
     [Authorize(Policy = JwtExtensions.SellerPolicy)]
-    public async Task<IActionResult> ApplyProductPromotion()
+    [HttpPost("product-promotions/apply")]
+    public async Task<IActionResult> ApplyProductPromotion(Request.ProductPromotionRequest request)
     {
-        return null;
+        var result = await _promotionService.ApplyProductPromotion(request);
+        return Ok(ApiResponseFactory.SuccessResponse(result, "Apply promotion successfully", HttpContext.TraceIdentifier));
     }
+    
     
 }

@@ -168,4 +168,70 @@ public class PromotionService : IPromotionService
         var list = await selected.ToListAsync();
         return list;
     }
+
+    public async Task<string> ApplyProductPromotion(Request.ProductPromotionRequest request)
+    {
+        // Kiểm tra gói promotion nào còn slot, còn hạn, phù hợp với productId này không
+        // Nếu có, tăng UsedSlot lên 1
+        var product = _dbContext.Products.Where(x => x.Id == request.ProductId);
+
+        var existingProduct = await product.AnyAsync();
+
+        if (!existingProduct)
+        {
+            throw new Exception("Product not found");
+        }
+        
+        var now = DateTimeOffset.UtcNow;
+
+        var promotionPackage = _dbContext.UserPromotionSubscriptions
+            .Include(x => x.PromotionPackage)
+            .Where(x => x.PromotionPackageId == request.PromotionPackageId
+                        && x.PaymentStatus == PaymentStatus.Paid &&
+                        x.PromotionPackage.AvailableTo > now &&
+                        (x.TotalSlot ?? 0) > (x.UsedSlot ?? 0))
+            .OrderBy(x => x.EndTime); // ưu tiên gói nào hết hạn gần nhất
+
+        var subscription = await promotionPackage.FirstOrDefaultAsync();
+
+        if (subscription == null)
+        {
+            throw new Exception("Promotion package not found");
+        }
+        
+        // Chặn trùng
+        var isDuplicate = await _dbContext.ProductPromotions
+            .AnyAsync(p => p.ProductId == request.ProductId && 
+                           p.UserPromotionSubscriptionId == subscription.Id &&
+                           p.IsActive  == true);
+
+        if (isDuplicate)
+        {
+            throw new Exception("This product is already promoted with this package");
+        }
+        
+        // dùng được luôn
+
+        if ((subscription.UsedSlot ?? 0) >= (subscription.TotalSlot ?? 0))
+        {
+            throw new Exception("Promotion package used slot  is too large");
+        }
+        
+        subscription.UsedSlot = (subscription.UsedSlot ?? 0) + 1;
+
+        var productPromotion = new ProductPromotion()
+        {
+            Id = Guid.NewGuid(),
+            ProductId = request.ProductId,
+            UserPromotionSubscriptionId = subscription.Id,
+            IsActive = true,
+            ActiveAt = DateTimeOffset.UtcNow,
+            ExpiresAt =  subscription.PromotionPackage.AvailableTo,
+            CreatedAt = DateTimeOffset.UtcNow,
+        };
+        _dbContext.Add(productPromotion);
+        await _dbContext.SaveChangesAsync();
+
+        return "Apply product promotion successfully";
+    }
 }
