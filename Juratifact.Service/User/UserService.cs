@@ -113,6 +113,7 @@ public class UserService : IUserService
         var userCart = new Repository.Entity.Cart()
         {
             UserId = user.Id,
+            CreatedAt = DateTimeOffset.UtcNow
         };
         
         _dbContext.Carts.Add(userCart);
@@ -210,6 +211,8 @@ public class UserService : IUserService
             user.ProfilePicture = imageUrl;
         }
         
+        user.UpdatedAt = DateTimeOffset.UtcNow;
+        
         await _dbContext.SaveChangesAsync();
         
         return "User updated successfully";
@@ -268,6 +271,7 @@ public class UserService : IUserService
         }
         
         userToDelete.IsDeleted = true;
+        userToDelete.UpdatedAt = DateTimeOffset.UtcNow;
         _dbContext.Update(userToDelete);
         await _dbContext.SaveChangesAsync();
         
