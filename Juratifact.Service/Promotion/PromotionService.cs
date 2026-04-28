@@ -286,4 +286,24 @@ public class PromotionService : IPromotionService
         await _dbContext.SaveChangesAsync();
         return $"Update promotion status to {(productPromotion.IsActive ? "ON" : "OFF")} successfully";
     }
+
+    public Task<List<Response.GetProductPromotionResponse>> GetProductPromotion()
+    {        
+        var userId = _httpContext.HttpContext.User.Claims.FirstOrDefault(c => c.Type == "UserId")?.Value;
+        var userIdGuid = Guid.Parse(userId!);
+        var productPromotions = _dbContext.ProductPromotions
+            .Include(p => p.UserPromotionSubscription)
+            .Where(p => p.UserPromotionSubscription.UserId == userIdGuid)
+            .Select(p => new Response.GetProductPromotionResponse()
+            {
+                ProductPromotionId = p.Id,
+                UserPromotionSubscriptionId = p.UserPromotionSubscriptionId,
+                ProductId = p.ProductId,
+                IsActive = p.IsActive,
+                ActiveAt = p.ActiveAt,
+                ExpiresAt = p.ExpiresAt,
+            });
+
+        return productPromotions.ToListAsync();
+    }
 }

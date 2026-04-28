@@ -32,4 +32,14 @@ public class Response
         public DateTimeOffset? AvailableFrom { get; set; }
         public DateTimeOffset? AvailableTo { get; set; }
     }
+    
+    public class GetProductPromotionResponse
+    {
+        public Guid ProductPromotionId { get; set; }
+        public Guid UserPromotionSubscriptionId { get; set; }
+        public Guid ProductId { get; set; }
+        public bool IsActive { get; set; } 
+        public DateTimeOffset? ActiveAt { get; set; } 
+        public DateTimeOffset? ExpiresAt { get; set; }
+    }
 }
