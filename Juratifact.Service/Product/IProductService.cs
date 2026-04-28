@@ -30,6 +30,8 @@ public interface IProductService
         int pageSize,
         int pageIndex);
     
+    public Task<Base.Response.PageResult<Response.ProductResponse>> GetProductByPromotion(int pageSize, int pageIndex);
+    
     // public Task<Base.Response.PageResult<Response.ProductResponse>> GetCategory(
     //     string? searchTerm,
     //     int pageSize,
