@@ -57,6 +57,14 @@ public class PromotionController:ControllerBase
         var result = await _promotionService.ApplyProductPromotion(request);
         return Ok(ApiResponseFactory.SuccessResponse(result, "Apply promotion successfully", HttpContext.TraceIdentifier));
     }
+
+    [Authorize(Policy = JwtExtensions.SellerPolicy)]
+    [HttpPatch("product-promotions/{id}/toggle")]
+    public async Task<IActionResult> ChangeStatusPromotion(Guid id)
+    {
+        var result = await _promotionService.ChangeStatusPromotion(id);
+        return Ok(ApiResponseFactory.SuccessResponse(result, "Change promotion status successfully", HttpContext.TraceIdentifier));
+    }
     
     
 }

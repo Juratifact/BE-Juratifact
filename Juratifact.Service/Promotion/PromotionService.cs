@@ -117,7 +117,7 @@ public class PromotionService : IPromotionService
         };
         _dbContext.Add(subscription);
         await _dbContext.SaveChangesAsync();
-        
+
         // Tạo Transaction sau, gắn SubscriptionId
         var transaction = new Transaction()
         {
@@ -133,9 +133,9 @@ public class PromotionService : IPromotionService
 
         _dbContext.Add(transaction);
         await _dbContext.SaveChangesAsync();
-        
+
         var qrUrl = await _sepayService.GenerateQrCode(package.Price, referenceCode);
-        
+
         var result = new Response.SubscribeResponse()
         {
             QrUrl = qrUrl
@@ -164,7 +164,7 @@ public class PromotionService : IPromotionService
             UsedSlot = p.UsedSlot ?? 0,
             Price = p.PromotionPackage.Price,
         });
-        
+
         var list = await selected.ToListAsync();
         return list;
     }
@@ -181,7 +181,7 @@ public class PromotionService : IPromotionService
         {
             throw new Exception("Product not found");
         }
-        
+
         var now = DateTimeOffset.UtcNow;
 
         var promotionPackage = _dbContext.UserPromotionSubscriptions
@@ -198,25 +198,25 @@ public class PromotionService : IPromotionService
         {
             throw new Exception("Promotion package not found");
         }
-        
+
         // Chặn trùng
         var isDuplicate = await _dbContext.ProductPromotions
-            .AnyAsync(p => p.ProductId == request.ProductId && 
+            .AnyAsync(p => p.ProductId == request.ProductId &&
                            p.UserPromotionSubscriptionId == subscription.Id &&
-                           p.IsActive  == true);
+                           p.IsActive == true);
 
         if (isDuplicate)
         {
             throw new Exception("This product is already promoted with this package");
         }
-        
+
         // dùng được luôn
 
         if ((subscription.UsedSlot ?? 0) >= (subscription.TotalSlot ?? 0))
         {
             throw new Exception("Promotion package used slot  is too large");
         }
-        
+
         subscription.UsedSlot = (subscription.UsedSlot ?? 0) + 1;
 
         var productPromotion = new ProductPromotion()
@@ -226,12 +226,64 @@ public class PromotionService : IPromotionService
             UserPromotionSubscriptionId = subscription.Id,
             IsActive = true,
             ActiveAt = DateTimeOffset.UtcNow,
-            ExpiresAt =  subscription.PromotionPackage.AvailableTo,
+            ExpiresAt = subscription.PromotionPackage.AvailableTo,
             CreatedAt = DateTimeOffset.UtcNow,
         };
         _dbContext.Add(productPromotion);
         await _dbContext.SaveChangesAsync();
 
         return "Apply product promotion successfully";
+    }
+
+    public async Task<string> ChangeStatusPromotion(Guid id)
+    {
+        var productPromotion = await _dbContext.ProductPromotions
+            .Include(x => x.UserPromotionSubscription)
+            .Where(x => x.Id == id)
+            .FirstOrDefaultAsync();
+
+        if (productPromotion == null)
+        {
+            throw new Exception("Product promotion not found");
+        }
+
+        if (productPromotion.UserPromotionSubscription.UsedSlot >= productPromotion.UserPromotionSubscription.TotalSlot)
+        {
+            throw new Exception("Promotion package used slot  is too large");
+        }
+
+        var now = DateTimeOffset.UtcNow;
+
+        if (productPromotion.ExpiresAt < now)
+        {
+            throw new Exception("Promotion package is expired");
+        }
+
+        var subscription = productPromotion.UserPromotionSubscription;
+
+        // LOGIC TOGGLE
+
+        if (productPromotion.IsActive)
+        {
+            // on -> off
+            productPromotion.IsActive = false;
+            subscription.UsedSlot = (subscription.UsedSlot ?? 0) - 1; //turn back slot
+        }
+        else
+        {
+            if ((subscription.UsedSlot ?? 0) >= (subscription.TotalSlot ?? 0))
+            {
+                throw new Exception("Promotion package used slot  is too large");
+            }
+
+            productPromotion.IsActive = true;
+            subscription.UsedSlot = (subscription.UsedSlot ?? 0) + 1; // increase slot
+        }
+
+        productPromotion.UpdatedAt = DateTimeOffset.UtcNow;
+        subscription.UpdatedAt = DateTimeOffset.UtcNow;
+        
+        await _dbContext.SaveChangesAsync();
+        return $"Update promotion status to {(productPromotion.IsActive ? "ON" : "OFF")} successfully";
     }
 }
