@@ -29,6 +29,9 @@ public class Response
         public int TotalSlot { get; set; }
         public int UsedSlot { get; set; }
         
+        public DateTimeOffset? StartTime { get; set; }
+        public DateTimeOffset? EndTime { get; set; }
+        
         public DateTimeOffset? AvailableFrom { get; set; }
         public DateTimeOffset? AvailableTo { get; set; }
     }
