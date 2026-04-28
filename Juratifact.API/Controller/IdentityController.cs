@@ -18,6 +18,7 @@ public class IdentityController : ControllerBase
     [HttpGet("login")]
     public async Task<IActionResult> Login(string  email, string password)
     {
+        // throw new Exception("Cảnh báo giả: Test thử xem Discord có réo tên không nè!");
         var result = await _indentityService.Login(email, password);
         return Ok(ApiResponseFactory.SuccessResponse(result, "Login successful", HttpContext.TraceIdentifier));
     }
