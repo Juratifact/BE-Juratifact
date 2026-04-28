@@ -1,4 +1,5 @@
-﻿using Juratifact.Service.Models;
+﻿using Juratifact.Service.DiscordService;
+using Juratifact.Service.Models;
 
 namespace Juratifact.API.Middlewares;
 
@@ -6,13 +7,16 @@ public class GlobalExceptionHandlerMiddleware: IMiddleware
 {
     private readonly IHostEnvironment _environment;
     private readonly ILogger<GlobalExceptionHandlerMiddleware> _logger;
+    private readonly IDiscordService _discordService;
 
     public GlobalExceptionHandlerMiddleware(
         IHostEnvironment environment,
-        ILogger<GlobalExceptionHandlerMiddleware> logger)
+        ILogger<GlobalExceptionHandlerMiddleware> logger,
+        IDiscordService discordService)
     {
         _environment = environment;
         _logger = logger;
+        _discordService = discordService;
     }
 
     public async Task InvokeAsync(HttpContext context, RequestDelegate next)
@@ -34,6 +38,20 @@ public class GlobalExceptionHandlerMiddleware: IMiddleware
             var statusCode = MapStatusCode(ex);
             context.Response.StatusCode = statusCode;
             context.Response.ContentType = "application/json";
+            
+            // chỉ gửi Discord khi là lỗi 500
+            if (statusCode >= StatusCodes.Status500InternalServerError)
+            {
+                try 
+                {
+                    await _discordService.SendExceptionAlertAsync(context, ex, statusCode);
+                }
+                catch (Exception discordEx)
+                {
+                    // Chỉ log ra file/console hệ thống, tuyệt đối không làm đứt gãy luồng trả Response về cho Client
+                    _logger.LogError(discordEx, "Failed to send exception alert to Discord");
+                }
+            }
 
             var response = ApiResponseFactory.ErrorResponse(
                 message: ResolveClientMessage(ex, statusCode),
