@@ -14,7 +14,7 @@ public class CategoryService : ICategoryService
 
     public async Task<List<Response.CategoryResponse>> GetCategories()
     {
-        var query = _dbContext.Categories.Where(x => true);
+        var query = _dbContext.Categories.Where(x => x.IsDeleted == false);
         
         query = query.OrderBy(x => x.Name);
 
@@ -31,7 +31,7 @@ public class CategoryService : ICategoryService
 
     public async Task<List<Response.CategoryResponse>> GetCategoriesByParentId(Guid parentId)
     {
-        var query = _dbContext.Categories.Where(x => x.ParentId == parentId);
+        var query = _dbContext.Categories.Where(x => x.ParentId == parentId &&  x.IsDeleted == false);
         
         query = query.OrderBy(x => x.Name);
 
