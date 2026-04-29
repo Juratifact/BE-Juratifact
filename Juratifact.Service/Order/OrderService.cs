@@ -148,4 +148,39 @@ public class OrderService : IOrderService
         };
 
     }
+
+    public async Task<Response.GetOrderStatusResponse> GetStatusOrder(Guid id)
+    {
+        var query = _dbContext.Orders.Where(x => x.Id == id);
+
+        var existingOrder = await query.FirstOrDefaultAsync();
+
+        if (existingOrder == null)
+        {
+            throw new Exception("Order not found");
+        }
+
+        var response = new Response.GetOrderStatusResponse()
+        {
+            Status = existingOrder.Status,
+        };
+        
+        return response;
+    }
+
+    public async Task<List<Response.GetAllOrderResponse>> GetAllOrders()
+    {
+        var query = _dbContext.Orders.Where(x => x.IsDeleted == false);
+
+        var select = query.Select(x => new Response.GetAllOrderResponse()
+        {
+            OrderId = x.Id,
+            Name = x.Name,
+            Status = x.Status,
+            PaymentStatus = x.PaymentStatus,
+        });
+
+        var result = await select.ToListAsync();
+        return result;
+    }
 }

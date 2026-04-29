@@ -1,3 +1,4 @@
+using Juratifact.API.Extensions;
 using Juratifact.Service.Models;
 using Juratifact.Service.Order;
 using Microsoft.AspNetCore.Authorization;
@@ -5,7 +6,6 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Juratifact.API.Controller;
 
-[Authorize]
 [ApiController]
 [Route("api/[controller]")]
 public class OrderController : ControllerBase
@@ -18,8 +18,25 @@ public class OrderController : ControllerBase
     }
     
     // get để trên này cho dễ đọc nha -> ai "đọc comment xong thì xóa" nhen
-
-    [HttpPost("/checkout")]
+    [Authorize(Policy = JwtExtensions.AdminPolicy)]
+    [HttpGet("all-orders")]
+    public async Task<IActionResult> GetAllOrder()
+    {
+        var result = await _orderService.GetAllOrders();
+        return Ok(ApiResponseFactory.SuccessResponse(result, "Get all order successfully", HttpContext.TraceIdentifier));
+    }
+    
+    
+    [Authorize(Policy = JwtExtensions.BuyerPolicy)]
+    [HttpGet("{id}/status")]
+    public async Task<IActionResult> GetStatusOrder(Guid id)
+    {
+        var result = await _orderService.GetStatusOrder(id);
+        return Ok(ApiResponseFactory.SuccessResponse(result, "Get status order successfully", HttpContext.TraceIdentifier));
+    }
+    
+    [Authorize(Policy = JwtExtensions.BuyerPolicy)]
+    [HttpPost("checkout")]
     public async Task<IActionResult> CreateOrderProduct(Request.CreateOrderRequest request)
     {
         var result = await  _orderService.CreateOrderProduct(request);
