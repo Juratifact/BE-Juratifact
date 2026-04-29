@@ -2,6 +2,7 @@ using Juratifact.API.Extensions;
 using Juratifact.API.Middlewares;
 using Juratifact.Repository;
 using Juratifact.Service.BackgroundJobService;
+using Juratifact.Service.Category;
 using Juratifact.Service.CloudinaryService;
 using Juratifact.Service.DiscordService;
 using Juratifact.Service.Identity;
@@ -59,6 +60,7 @@ builder.Services.AddScoped<IReportService, ReportService>();
 builder.Services.AddScoped<IIdentityDocumentService, IdentityDocumentService>();
 builder.Services.AddScoped<IPromotionService, PromotionService>();
 builder.Services.AddScoped<ISepayService, SepayService>();
+builder.Services.AddScoped<ICategoryService, CategoryService>();
 
 //test thử discord
 builder.Services.Configure<DiscordAlertOptions>(
