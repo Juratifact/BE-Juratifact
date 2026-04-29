@@ -13,7 +13,7 @@ public class Request
         public decimal Price { get; set; }
         public IFormFile? Image { get; set; }
         public IFormFile? Video { get; set; }
-        public Guid CategoryId { get; set; }
+        public List<Guid>? CategoryIds { get; set; }
     }
 
     public class ProductCommentRequest
