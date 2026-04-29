@@ -15,4 +15,12 @@ public class Response
     {
         public OrderStatus Status { get; set; }
     }
+
+    public class GetAllOrderResponse
+    {
+        public Guid OrderId { get; set; }
+        public string Name { get; set; }
+        public OrderStatus Status { get; set; }
+        public PaymentStatus PaymentStatus { get; set; }
+    }
 }

@@ -167,4 +167,20 @@ public class OrderService : IOrderService
         
         return response;
     }
+
+    public async Task<List<Response.GetAllOrderResponse>> GetAllOrders()
+    {
+        var query = _dbContext.Orders.Where(x => x.IsDeleted == false);
+
+        var select = query.Select(x => new Response.GetAllOrderResponse()
+        {
+            OrderId = x.Id,
+            Name = x.Name,
+            Status = x.Status,
+            PaymentStatus = x.PaymentStatus,
+        });
+
+        var result = await select.ToListAsync();
+        return result;
+    }
 }
