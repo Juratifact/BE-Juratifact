@@ -236,6 +236,15 @@ public class ProductService: IProductService
             await _dbContext.SaveChangesAsync();
         }
 
+        var queryCategory = _dbContext.Categories.Where(x => x.Id == request.CategoryId);
+        
+        bool existingCategory = await queryCategory.AnyAsync();
+
+        if (!existingCategory)
+        {
+            throw new Exception("Category not found.");
+        }
+        
         // Create product
         var product = new Repository.Entity.Product()
         {
@@ -272,8 +281,20 @@ public class ProductService: IProductService
             ProductId = product.Id,
             CreatedAt = DateTimeOffset.UtcNow
         };
-
+        
         _dbContext.ProductMedia.Add(productMedia);
+        await _dbContext.SaveChangesAsync();
+
+
+        var productCategory = new Repository.Entity.ProductCategory()
+        {
+            Id = Guid.NewGuid(),
+            ProductId = product.Id,
+            CategoryId = request.CategoryId,
+            CreatedAt = DateTimeOffset.UtcNow
+        };
+        
+        _dbContext.Add(productCategory);
         await _dbContext.SaveChangesAsync();
 
         return "Product created successfully! User now has both Buyer and Seller roles.";
