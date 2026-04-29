@@ -1,4 +1,5 @@
 using Juratifact.Repository;
+using Juratifact.Repository.Entity;
 using Juratifact.Repository.Enum;
 using Juratifact.Service.MediaService;
 using Microsoft.AspNetCore.Http;
@@ -235,15 +236,7 @@ public class ProductService: IProductService
             _dbContext.UserRoles.Add(userRole);
             await _dbContext.SaveChangesAsync();
         }
-
-        var queryCategory = _dbContext.Categories.Where(x => x.Id == request.CategoryId);
         
-        bool existingCategory = await queryCategory.AnyAsync();
-
-        if (!existingCategory)
-        {
-            throw new Exception("Category not found.");
-        }
         
         // Create product
         var product = new Repository.Entity.Product()
@@ -284,18 +277,20 @@ public class ProductService: IProductService
         
         _dbContext.ProductMedia.Add(productMedia);
         await _dbContext.SaveChangesAsync();
-
-
-        var productCategory = new Repository.Entity.ProductCategory()
-        {
-            Id = Guid.NewGuid(),
-            ProductId = product.Id,
-            CategoryId = request.CategoryId,
-            CreatedAt = DateTimeOffset.UtcNow
-        };
         
-        _dbContext.Add(productCategory);
-        await _dbContext.SaveChangesAsync();
+        
+        if (request.CategoryIds != null && request.CategoryIds.Count > 0)
+        {
+            var productCateList = request.CategoryIds.Select(id => new ProductCategory()
+            {
+                CategoryId = id,
+                ProductId = product.Id,
+                CreatedAt = DateTimeOffset.UtcNow
+            });
+
+            _dbContext.AddRange(productCateList);
+            await _dbContext.SaveChangesAsync();
+        }
 
         return "Product created successfully! User now has both Buyer and Seller roles.";
     }

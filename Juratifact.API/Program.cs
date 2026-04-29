@@ -10,6 +10,7 @@ using Juratifact.Service.IdentityDocumentService;
 using Juratifact.Service.JwtService;
 using Juratifact.Service.MailService;
 using Juratifact.Service.MediaService;
+using Juratifact.Service.Order;
 using Juratifact.Service.Product;
 using Juratifact.Service.Promotion;
 using Juratifact.Service.Report;
@@ -61,6 +62,7 @@ builder.Services.AddScoped<IIdentityDocumentService, IdentityDocumentService>();
 builder.Services.AddScoped<IPromotionService, PromotionService>();
 builder.Services.AddScoped<ISepayService, SepayService>();
 builder.Services.AddScoped<ICategoryService, CategoryService>();
+builder.Services.AddScoped<IOrderService, OrderService>();
 
 //test thử discord
 builder.Services.Configure<DiscordAlertOptions>(
