@@ -19,6 +19,13 @@ public class OrderController : ControllerBase
     
     // get để trên này cho dễ đọc nha -> ai "đọc comment xong thì xóa" nhen
 
+    [HttpGet("{id}/status")]
+    public async Task<IActionResult> GetStatusOrder(Guid id)
+    {
+        var result = await _orderService.GetStatusOrder(id);
+        return Ok(ApiResponseFactory.SuccessResponse(result, "Get status order successfully", HttpContext.TraceIdentifier));
+    }
+    
     [HttpPost("/checkout")]
     public async Task<IActionResult> CreateOrderProduct(Request.CreateOrderRequest request)
     {

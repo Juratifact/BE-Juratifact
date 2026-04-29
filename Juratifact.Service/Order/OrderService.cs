@@ -148,4 +148,23 @@ public class OrderService : IOrderService
         };
 
     }
+
+    public async Task<Response.GetOrderStatusResponse> GetStatusOrder(Guid id)
+    {
+        var query = _dbContext.Orders.Where(x => x.Id == id);
+
+        var existingOrder = await query.FirstOrDefaultAsync();
+
+        if (existingOrder == null)
+        {
+            throw new Exception("Order not found");
+        }
+
+        var response = new Response.GetOrderStatusResponse()
+        {
+            Status = existingOrder.Status,
+        };
+        
+        return response;
+    }
 }
