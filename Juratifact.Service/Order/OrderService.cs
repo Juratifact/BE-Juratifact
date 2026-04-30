@@ -183,4 +183,75 @@ public class OrderService : IOrderService
         var result = await select.ToListAsync();
         return result;
     }
+
+    public async Task<string> CancelOrder(Guid id)
+    {
+        var order = await _dbContext.Orders
+            .Include(x => x.Transactions)
+            .FirstOrDefaultAsync(x => x.Id == id);
+
+
+        if (order == null)
+        {
+            throw new Exception("Order not found");
+        }
+
+
+        var time = DateTimeOffset.UtcNow - order.CreatedAt; 
+
+        if (time.TotalMinutes > 10)
+        {
+            throw new ArgumentException("Timeout after 10 minutes");
+        }
+
+        order.Status = OrderStatus.Cancelled;
+
+        foreach (var transaction in order.Transactions)
+        {
+            transaction.Status = TransactionStatus.Failed;
+        }
+        
+        await _dbContext.SaveChangesAsync();
+        
+        return "Cancelled successfully";
+    }
+
+    public async Task<Response.CreateOrderResponse> GetPaymentInfo(Guid id)
+    {
+        var order = await _dbContext.Orders
+            .Include(o => o.Transactions)
+            .FirstOrDefaultAsync(o => o.Id == id);
+
+        if (order == null)
+        {
+            throw new ArgumentException("Order not foundP");
+        }
+        
+        var time = DateTimeOffset.UtcNow - order.CreatedAt; 
+
+        if (time.TotalMinutes > 10)
+        {
+            throw new ArgumentException("Timeout after 10 minutes");
+        }
+        
+        var transaction = order.Transactions
+            .OrderByDescending(t => t.CreatedAt)
+            .FirstOrDefault(t => t.Status == TransactionStatus.Pending 
+                                 && t.TransactionType == TransactionType.OrderPayment);
+        if (transaction == null)
+        {
+            throw new ArgumentException("Order not foundP");
+        }
+        
+        var qrUrl = await _sepayService.GenerateQrCode(transaction.Amount, transaction.ReferenceCode);
+
+        return new Response.CreateOrderResponse()
+        {
+            OrderId = order.Id,
+            QrUrl = qrUrl,
+            ReferenceCode = transaction.ReferenceCode,
+            Amount = transaction.Amount,
+        };
+
+    }
 }

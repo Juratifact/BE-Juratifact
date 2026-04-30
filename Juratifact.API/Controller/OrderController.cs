@@ -42,5 +42,19 @@ public class OrderController : ControllerBase
         var result = await  _orderService.CreateOrderProduct(request);
         return Ok(ApiResponseFactory.SuccessResponse(result, "Create order successfully", HttpContext.TraceIdentifier));
     }
+
+    [HttpPost("/api/orders/{id}/cancel")]
+    public async Task<IActionResult> CancelOrder(Guid id)
+    {
+        var order = await _orderService.CancelOrder(id);
+        return Ok(ApiResponseFactory.SuccessResponse(order, "Cancel order successfully", HttpContext.TraceIdentifier));
+    }
+
+    [HttpGet("api/orders/{id}/payment-info")]
+    public async Task<IActionResult> GetPaymentInfo(Guid id)
+    {
+        var order2 = await _orderService.GetPaymentInfo(id);
+        return Ok(ApiResponseFactory.SuccessResponse(order2, "Get payment info successfully", HttpContext.TraceIdentifier));
+    }
     
 }

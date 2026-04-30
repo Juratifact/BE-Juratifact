@@ -9,6 +9,7 @@ public class Response
         public Guid OrderId { get; set; }
         public required string ReferenceCode { get; set; }
         public required string QrUrl { get; set; }
+        public decimal Amount { get; set; }
     }
     
     public class GetOrderStatusResponse
