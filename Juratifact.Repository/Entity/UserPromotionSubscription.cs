@@ -15,11 +15,11 @@ public class UserPromotionSubscription : BaseEntity<Guid>,IAuditableEntity
     public Guid UserId { get; set; }
     public User User { get; set; }
     
-    public Guid PackageId { get; set; }
+    public Guid PromotionPackageId { get; set; }
     public PromotionPackage  PromotionPackage { get; set; }
     
-    public Guid TransactionId { get; set; }
-    public Transaction Transaction { get; set; }
+    public Guid? TransactionId { get; set; }
+    public Transaction? Transaction { get; set; }
     
     public ICollection<ProductPromotion> ProductPromotions { get; set; } = new List<ProductPromotion>();
 

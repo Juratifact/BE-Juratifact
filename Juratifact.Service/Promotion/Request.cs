@@ -14,4 +14,10 @@ public class Request
         public DateTimeOffset? AvailableTo { get; set; }
         public int? UsageLimitDays { get; set; }
     }
+    
+    public class ProductPromotionRequest
+    {
+        public Guid ProductId { get; set; }
+        public Guid PromotionPackageId { get; set; }
+    }
 }

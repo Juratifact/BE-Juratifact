@@ -8,7 +8,7 @@ public class ProductPromotion : BaseEntity<Guid>, IAuditableEntity
     public DateTimeOffset? ActiveAt { get; set; } 
     public DateTimeOffset? ExpiresAt { get; set; }
     
-    public Guid UsePromotionSubscriptionId { get; set; }
+    public Guid UserPromotionSubscriptionId { get; set; }
     public UserPromotionSubscription UserPromotionSubscription { get; set; }
     
     public Guid ProductId { get; set; }

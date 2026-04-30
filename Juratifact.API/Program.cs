@@ -2,12 +2,15 @@ using Juratifact.API.Extensions;
 using Juratifact.API.Middlewares;
 using Juratifact.Repository;
 using Juratifact.Service.BackgroundJobService;
+using Juratifact.Service.Category;
 using Juratifact.Service.CloudinaryService;
+using Juratifact.Service.DiscordService;
 using Juratifact.Service.Identity;
 using Juratifact.Service.IdentityDocumentService;
 using Juratifact.Service.JwtService;
 using Juratifact.Service.MailService;
 using Juratifact.Service.MediaService;
+using Juratifact.Service.Order;
 using Juratifact.Service.Product;
 using Juratifact.Service.Promotion;
 using Juratifact.Service.Report;
@@ -58,6 +61,14 @@ builder.Services.AddScoped<IReportService, ReportService>();
 builder.Services.AddScoped<IIdentityDocumentService, IdentityDocumentService>();
 builder.Services.AddScoped<IPromotionService, PromotionService>();
 builder.Services.AddScoped<ISepayService, SepayService>();
+builder.Services.AddScoped<ICategoryService, CategoryService>();
+builder.Services.AddScoped<IOrderService, OrderService>();
+
+//test thử discord
+builder.Services.Configure<DiscordAlertOptions>(
+    builder.Configuration.GetSection("DiscordAlertOptions"));
+builder.Services.AddHttpClient<IDiscordService, DiscordService>(); // AddHttpClient là do nó tự gọi API ở bên ngoài
+// Cụ thể ở đây của mình là tự gọi API webhook của discord
 
 builder.Services.AddQuartz(q =>
 {
