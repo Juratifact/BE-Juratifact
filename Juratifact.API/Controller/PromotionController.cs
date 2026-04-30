@@ -49,6 +49,21 @@ public class PromotionController:ControllerBase
         var promotion = await _promotionService.CreatePromotion(request);
         return Ok(ApiResponseFactory.SuccessResponse(promotion, "Promotion created",HttpContext.TraceIdentifier));
     }
+    [Authorize(Policy = JwtExtensions.AdminPolicy)]
+    [HttpGet("api/admin/reports/subscriptions")]
+    public async Task<IActionResult> GetSubscriptions()
+    {
+        var promotions = await _promotionService.GetSubscriptions();
+        return Ok(ApiResponseFactory.SuccessResponse(promotions,HttpContext.TraceIdentifier));
+    }
+    
+    [Authorize(Policy = JwtExtensions.AdminPolicy)]
+    [HttpGet("api/admin/reports/subscriptions")]
+    public async Task<IActionResult> DeletePromotion(Guid id)
+    {
+        var promotion1 = await _promotionService.DeletePromotion(id);
+        return Ok(ApiResponseFactory.SuccessResponse(promotion1,"Delete successfully",HttpContext.TraceIdentifier));
+    }
 
     [Authorize(Policy = JwtExtensions.SellerPolicy)]
     [HttpPost("promotion-packages/subscribe/{packageId}")]

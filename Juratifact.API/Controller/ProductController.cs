@@ -80,6 +80,12 @@ public class ProductController : ControllerBase
         var result = await _productService.SoftDeleteProductPostingById(id);
         return Ok(ApiResponseFactory.SuccessResponse(result, "Product removed", HttpContext.TraceIdentifier));
     }
-    
+
+    [HttpGet("Get/{api/products/promoted}")]
+    public async Task<IActionResult> GetByPromotion(int pageSize = 10, int pageIndex = 1)
+    {
+        var promotion = await _productService.GetProductByPromotion(pageSize, pageIndex);
+        return Ok(ApiResponseFactory.SuccessResponse(promotion, HttpContext.TraceIdentifier));
+    }
     
 }
