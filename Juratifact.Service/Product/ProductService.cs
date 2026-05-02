@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Juratifact.Service.Product;
 
-public class ProductService: IProductService
+public class ProductService : IProductService
 {
     private readonly AppDbContext _dbContext;
     private readonly IMediaService _mediaService;
@@ -22,38 +22,38 @@ public class ProductService: IProductService
     }
 
     public async Task<Base.Response.PageResult<Response.ProductResponse>> GetAll(int pageSize, int pageIndex)
-     {
-         var query = _dbContext.Products.Where(x => x.Status == ProductStatus.Available);
-         
-         query = query.Skip((pageIndex - 1) * pageSize)
-             .Take(pageSize);
-         var selected = query.Select(x => new Response.ProductResponse()
-         {
-             ProductId = x.Id,
-             SellerId = x.SellerId,
-             Title = x.Title,
-             Description = x.Description,
-             Price = x.Price,
-             Status = x.Status,
-             Condition = x.Condition,
-             Video = x.ProductMedias.Select(m => m.Video!).ToList(),
-             ImageUrl = x.ProductMedias.Select(m =>m.ImageUrl).ToList(),
-         });
-         var listResult = await selected.ToListAsync();
-         var totalItems = listResult.Count;
- 
-         var result = new Base.Response.PageResult<Response.ProductResponse>()
-         {
-             Items = listResult,
-             PageIndex = pageIndex,
-             PageSize = pageSize,
-             TotalItems = totalItems,
-         };
-         return result;
- 
-     }
+    {
+        var query = _dbContext.Products.Where(x => x.Status == ProductStatus.Available);
 
-    public async Task<Base.Response.PageResult<Response.ProductResponse>> GetByTitle(string? searchTerm, int pageSize, int pageIndex)
+        query = query.Skip((pageIndex - 1) * pageSize)
+            .Take(pageSize);
+        var selected = query.Select(x => new Response.ProductResponse()
+        {
+            ProductId = x.Id,
+            SellerId = x.SellerId,
+            Title = x.Title,
+            Description = x.Description,
+            Price = x.Price,
+            Status = x.Status,
+            Condition = x.Condition,
+            Video = x.ProductMedias.Select(m => m.Video!).ToList(),
+            ImageUrl = x.ProductMedias.Select(m => m.ImageUrl).ToList(),
+        });
+        var listResult = await selected.ToListAsync();
+        var totalItems = listResult.Count;
+
+        var result = new Base.Response.PageResult<Response.ProductResponse>()
+        {
+            Items = listResult,
+            PageIndex = pageIndex,
+            PageSize = pageSize,
+            TotalItems = totalItems,
+        };
+        return result;
+    }
+
+    public async Task<Base.Response.PageResult<Response.ProductResponse>> GetByTitle(string? searchTerm, int pageSize,
+        int pageIndex)
     {
         var query = _dbContext.Products.Where(x => x.Status == ProductStatus.Available);
 
@@ -61,6 +61,7 @@ public class ProductService: IProductService
         {
             query = query.Where(x => x.Title.Contains(searchTerm));
         }
+
         query = query.OrderBy(x => x.Title);
         query = query.Skip((pageIndex - 1) * pageSize)
             .Take(pageSize);
@@ -74,11 +75,11 @@ public class ProductService: IProductService
             Status = x.Status,
             Condition = x.Condition,
             Video = x.ProductMedias.Select(m => m.Video!).ToList(),
-            ImageUrl = x.ProductMedias.Select(m =>m.ImageUrl).ToList(),
+            ImageUrl = x.ProductMedias.Select(m => m.ImageUrl).ToList(),
         });
         var listResult = await selected.ToListAsync();
         var totalItems = listResult.Count;
- 
+
         var result = new Base.Response.PageResult<Response.ProductResponse>()
         {
             Items = listResult,
@@ -87,12 +88,11 @@ public class ProductService: IProductService
             TotalItems = totalItems,
         };
         return result;
- 
     }
 
-    public async Task<Base.Response.PageResult<Response.ProductResponse>> GetByCondition(string? searchTerm, int pageSize, int pageIndex)
+    public async Task<Base.Response.PageResult<Response.ProductResponse>> GetByCondition(string? searchTerm,
+        int pageSize, int pageIndex)
     {
-
         var query = _dbContext.Products
             .Where(x => x.Status == ProductStatus.Available);
 
@@ -100,6 +100,7 @@ public class ProductService: IProductService
         {
             query = query.Where(x => x.Condition.Contains(searchTerm));
         }
+
         query = query.OrderBy(x => x.Condition);
         query = query.Skip((pageIndex - 1) * pageSize)
             .Take(pageSize);
@@ -113,11 +114,11 @@ public class ProductService: IProductService
             Status = x.Status,
             Condition = x.Condition,
             Video = x.ProductMedias.Select(m => m.Video!).ToList(),
-            ImageUrl = x.ProductMedias.Select(m =>m.ImageUrl).ToList(),
+            ImageUrl = x.ProductMedias.Select(m => m.ImageUrl).ToList(),
         });
         var listResult = await selected.ToListAsync();
         var totalItems = listResult.Count;
- 
+
         var result = new Base.Response.PageResult<Response.ProductResponse>()
         {
             Items = listResult,
@@ -182,7 +183,7 @@ public class ProductService: IProductService
         {
             throw new ArgumentException("User not found.");
         }
-        
+
         // Format condition input to match DB values (case-insensitive)
         var validConditions = new Dictionary<string, string>
         {
@@ -199,7 +200,7 @@ public class ProductService: IProductService
         }
 
         request.Condition = validConditions[key]; // lưu đúng format vào DB
-        
+
         // Check if user has Buyer role
         var hasBuyerRole = user.UserRoles.Any(ur => ur.Role.Name == "Buyer");
         if (!hasBuyerRole)
@@ -236,8 +237,8 @@ public class ProductService: IProductService
             _dbContext.UserRoles.Add(userRole);
             await _dbContext.SaveChangesAsync();
         }
-        
-        
+
+
         // Create product
         var product = new Repository.Entity.Product()
         {
@@ -274,11 +275,11 @@ public class ProductService: IProductService
             ProductId = product.Id,
             CreatedAt = DateTimeOffset.UtcNow
         };
-        
+
         _dbContext.ProductMedia.Add(productMedia);
         await _dbContext.SaveChangesAsync();
-        
-        
+
+
         if (request.CategoryIds != null && request.CategoryIds.Count > 0)
         {
             var productCateList = request.CategoryIds.Select(id => new ProductCategory()
@@ -484,7 +485,7 @@ public class ProductService: IProductService
             throw new ArgumentException("User not found.");
         }
 
-        var hasSellerRole = user.UserRoles.Any(ur => ur.Role.Name == "Seller" || 
+        var hasSellerRole = user.UserRoles.Any(ur => ur.Role.Name == "Seller" ||
                                                      ur.Role.Name == "Admin");
         if (!hasSellerRole)
         {
@@ -499,17 +500,18 @@ public class ProductService: IProductService
         {
             throw new ArgumentException("Product not found or you don't have permission to delete it.");
         }
-        
+
         product.IsDeleted = true;
         product.UpdatedAt = DateTimeOffset.UtcNow;
-        
+
         _dbContext.Products.Update(product);
         await _dbContext.SaveChangesAsync();
-        
+
         return "Product deleted successfully!";
     }
 
-    public async Task<Base.Response.PageResult<Response.ProductResponse>> GetByPrice(decimal? searchTerm, int pageSize, int pageIndex)
+    public async Task<Base.Response.PageResult<Response.ProductResponse>> GetByPrice(decimal? searchTerm, int pageSize,
+        int pageIndex)
     {
         var query = _dbContext.Products.Where(x => x.Status == ProductStatus.Available);
 
@@ -517,9 +519,9 @@ public class ProductService: IProductService
         {
             query = query.Where(x => x.Price <= searchTerm);
         }
-        
+
         query = query.OrderBy(x => x.Price);
-        
+
         query = query.Skip((pageIndex - 1) * pageSize)
             .Take(pageSize);
         var selected = query.Select(x => new Response.ProductResponse()
@@ -530,11 +532,11 @@ public class ProductService: IProductService
             Status = x.Status,
             Condition = x.Condition,
             Video = x.ProductMedias.Select(m => m.Video!).ToList(),
-            ImageUrl = x.ProductMedias.Select(m =>m.ImageUrl).ToList(),
+            ImageUrl = x.ProductMedias.Select(m => m.ImageUrl).ToList(),
         });
         var listResult = await selected.ToListAsync();
         var totalItems = listResult.Count;
- 
+
         var result = new Base.Response.PageResult<Response.ProductResponse>()
         {
             Items = listResult,
@@ -544,5 +546,72 @@ public class ProductService: IProductService
         };
         return result;
     }
-    
+
+    public async Task<Response.ProductCommentsResponse> GetProductCommentsByProductId(Guid productId)
+    {
+        var product = await _dbContext.Products
+            .Where(x => x.Id == productId
+                        && x.Status == ProductStatus.Available
+                        && !x.IsDeleted)
+            .Select(x => new Response.ProductCommentsResponse
+            {
+                ProductId = x.Id,
+                Title = x.Title,
+                Description = x.Description,
+                Price = x.Price,
+                Status = x.Status,
+                Condition = x.Condition,
+                Video = x.ProductMedias.Select(m => m.Video!).ToList(),
+                ImageUrl = x.ProductMedias.Select(m => m.ImageUrl).ToList(),
+            })
+            .FirstOrDefaultAsync();
+
+        if (product == null)
+            throw new Exception("Product not found.");
+
+        var previewLimit = 2;
+
+        var comments = await _dbContext.ProductComments
+            .Where(c => c.ProductId == productId
+                        && c.ParentCommentId == null
+                        && !c.IsDeleted)
+            .OrderByDescending(c => c.CreatedAt)
+            .Select(c => new Response.CommentDto
+            {
+                CommentId = c.Id,
+                Content = c.Content,
+                ParentCommentId = c.ParentCommentId,
+                CreatedAt = c.CreatedAt,
+
+                User = new Response.UserInfo
+                {
+                    UserId = c.User.Id,
+                    Name = c.User.FullName
+                },
+
+                ReplyCount = c.Children.Count(),
+
+                Replies = c.Children
+                    .OrderBy(r => r.CreatedAt)
+                    .Take(previewLimit)
+                    .Select(r => new Response.ReplyDto
+                    {
+                        CommentId = r.Id,
+                        ParentCommentId = r.ParentCommentId,
+                        Content = r.Content,
+                        CreatedAt = r.CreatedAt,
+                        User = new Response.UserInfo
+                        {
+                            UserId = r.User.Id,
+                            Name = r.User.FullName
+                        }
+                    }).ToList()
+            })
+            .ToListAsync();
+
+        product.Comments = comments;
+
+        return product;
+    }
+
 }
