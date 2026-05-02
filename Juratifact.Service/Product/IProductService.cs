@@ -29,7 +29,8 @@ public interface IProductService
         decimal? searchTerm,
         int pageSize,
         int pageIndex);
-    
-    public Task<Response.ProductCommentsResponse> GetProductCommentsByProductId(Guid productId, int pageSize, int pageIndex);
-    
+
+    public Task<Response.ProductCommentsResponse> GetProductCommentsByProductId(
+        Guid productId);
+
 }

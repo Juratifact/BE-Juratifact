@@ -48,9 +48,9 @@ public class ProductController : ControllerBase
     }
     
     [HttpGet("{productId}/commentsV2")]
-    public async Task<IActionResult> GetCommentsByProductId(Guid productId, int pageSize, int pageIndex = 1)
+    public async Task<IActionResult> GetCommentsByProductId2(Guid productId)
     {
-        var comments = await _productService.GetProductCommentsByProductId(productId, pageSize, pageIndex);
+        var comments = await _productService.GetProductCommentsByProductId(productId);
         return Ok(ApiResponseFactory.SuccessResponse(comments, HttpContext.TraceIdentifier));
     }
     

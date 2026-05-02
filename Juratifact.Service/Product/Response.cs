@@ -71,15 +71,15 @@ public class Response
         public DateTimeOffset CreatedAt { get; set; }
 
         public int ReplyCount { get; set; }
-        public bool HasMoreReplies { get; set; }
-        public string? NextCursor { get; set; }
+        // public bool HasMoreReplies { get; set; }
+        // public string? NextCursor { get; set; }
 
         public List<ReplyDto> Replies { get; set; } = new();
     }
     
     public class ProductCommentsResponse : ProductResponse
     {
-        public Base.Response.PageResult<CommentDto> Comments { get; set; } = new();
+        public List<CommentDto> Comments { get; set; } = new();
     }
     
 }

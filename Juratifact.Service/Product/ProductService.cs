@@ -547,8 +547,7 @@ public class ProductService : IProductService
         return result;
     }
 
-    public async Task<Response.ProductCommentsResponse> GetProductCommentsByProductId(
-        Guid productId, int pageSize, int pageIndex)
+    public async Task<Response.ProductCommentsResponse> GetProductCommentsByProductId(Guid productId)
     {
         var product = await _dbContext.Products
             .Where(x => x.Id == productId
@@ -570,18 +569,13 @@ public class ProductService : IProductService
         if (product == null)
             throw new Exception("Product not found.");
 
-        var commentsQuery = _dbContext.ProductComments
-            .Where(c => c.ProductId == productId
-                        && c.ParentCommentId == null
-                        && !c.IsDeleted);
-
-        var total = await commentsQuery.CountAsync();
         var previewLimit = 2;
 
-        var comments = await commentsQuery
+        var comments = await _dbContext.ProductComments
+            .Where(c => c.ProductId == productId
+                        && c.ParentCommentId == null
+                        && !c.IsDeleted)
             .OrderByDescending(c => c.CreatedAt)
-            .Skip((pageIndex - 1) * pageSize)
-            .Take(pageSize)
             .Select(c => new Response.CommentDto
             {
                 CommentId = c.Id,
@@ -611,27 +605,13 @@ public class ProductService : IProductService
                             UserId = r.User.Id,
                             Name = r.User.FullName
                         }
-                    }).ToList(),
-
-                HasMoreReplies = c.Children.Count() > previewLimit,
-
-                NextCursor = c.Children
-                    .OrderBy(r => r.CreatedAt)
-                    .Take(previewLimit)
-                    .OrderByDescending(r => r.CreatedAt)
-                    .Select(r => r.CreatedAt.ToString())
-                    .FirstOrDefault()
+                    }).ToList()
             })
             .ToListAsync();
 
-        product.Comments = new Base.Response.PageResult<Response.CommentDto>()
-        {
-            Items = comments,
-            TotalItems = total,
-            PageSize = pageSize,
-            PageIndex = pageIndex
-        };
+        product.Comments = comments;
 
         return product;
     }
+
 }
