@@ -11,6 +11,8 @@ public class Order: BaseEntity<Guid>,IAuditableEntity
     public string? ShipperPod1Url { get; set; }
     public string? ShipperPod2Url { get; set; }
     public string PaymentMethod { get; set; } = "Banking";
+    public DateTimeOffset? PickupAt { get; set; }
+    public DateTimeOffset? DeliveryAt { get; set; }
     
     public OrderStatus Status { get; set; }
     public PaymentStatus PaymentStatus { get; set; }
