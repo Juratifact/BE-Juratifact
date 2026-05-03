@@ -13,12 +13,14 @@ public class Order: BaseEntity<Guid>,IAuditableEntity
     public string PaymentMethod { get; set; } = "Banking";
     public DateTimeOffset? PickupAt { get; set; }
     public DateTimeOffset? DeliveryAt { get; set; }
+    public string? EvidenceUrl  { get; set; }
     
     public OrderStatus Status { get; set; }
     public PaymentStatus PaymentStatus { get; set; }
     public DateTimeOffset? ExpiresAt { get; set; } 
     
     public Guid UserId { get; set; }
+    public Guid? ShipperId { get; set; }
     public User User { get; set; }
     
     public SellerReview SellerReview { get; set; }
