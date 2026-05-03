@@ -255,6 +255,7 @@ namespace Juratifact.Repository.Migrations
                     ShipperPod1Url = table.Column<string>(type: "text", nullable: true),
                     ShipperPod2Url = table.Column<string>(type: "text", nullable: true),
                     PaymentMethod = table.Column<string>(type: "text", nullable: false),
+                    PickupAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     Status = table.Column<int>(type: "integer", nullable: false),
                     PaymentStatus = table.Column<int>(type: "integer", nullable: false),
                     ExpiresAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
@@ -478,17 +479,17 @@ namespace Juratifact.Repository.Migrations
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    SepayId = table.Column<string>(type: "text", nullable: false),
+                    SepayId = table.Column<string>(type: "text", nullable: true),
                     Amount = table.Column<decimal>(type: "numeric", nullable: false),
-                    ExternalTransactionId = table.Column<string>(type: "text", nullable: false),
-                    Description = table.Column<string>(type: "text", nullable: false),
+                    ExternalTransactionId = table.Column<string>(type: "text", nullable: true),
+                    Description = table.Column<string>(type: "text", nullable: true),
                     ReferenceCode = table.Column<string>(type: "text", nullable: false),
-                    FeeAmount = table.Column<decimal>(type: "numeric", nullable: false),
+                    FeeAmount = table.Column<decimal>(type: "numeric", nullable: true),
                     TransactionType = table.Column<int>(type: "integer", nullable: false),
                     Status = table.Column<int>(type: "integer", nullable: false),
-                    WalletId = table.Column<Guid>(type: "uuid", nullable: false),
-                    OrderId = table.Column<Guid>(type: "uuid", nullable: false),
-                    UserPromotionSubscriptionId = table.Column<Guid>(type: "uuid", nullable: false),
+                    WalletId = table.Column<Guid>(type: "uuid", nullable: true),
+                    OrderId = table.Column<Guid>(type: "uuid", nullable: true),
+                    UserPromotionSubscriptionId = table.Column<Guid>(type: "uuid", nullable: true),
                     CreatedAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
                     UpdatedAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     IsDeleted = table.Column<bool>(type: "boolean", nullable: false)
@@ -500,14 +501,12 @@ namespace Juratifact.Repository.Migrations
                         name: "FK_Transactions_Orders_OrderId",
                         column: x => x.OrderId,
                         principalTable: "Orders",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        principalColumn: "Id");
                     table.ForeignKey(
                         name: "FK_Transactions_Wallets_WalletId",
                         column: x => x.WalletId,
                         principalTable: "Wallets",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        principalColumn: "Id");
                 });
 
             migrationBuilder.CreateTable(
@@ -521,9 +520,8 @@ namespace Juratifact.Repository.Migrations
                     EndTime = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
                     PaymentStatus = table.Column<int>(type: "integer", nullable: false),
                     UserId = table.Column<Guid>(type: "uuid", nullable: false),
-                    PackageId = table.Column<Guid>(type: "uuid", nullable: false),
                     PromotionPackageId = table.Column<Guid>(type: "uuid", nullable: false),
-                    TransactionId = table.Column<Guid>(type: "uuid", nullable: false),
+                    TransactionId = table.Column<Guid>(type: "uuid", nullable: true),
                     CreatedAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
                     UpdatedAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     IsDeleted = table.Column<bool>(type: "boolean", nullable: false)
@@ -541,8 +539,7 @@ namespace Juratifact.Repository.Migrations
                         name: "FK_UserPromotionSubscriptions_Transactions_TransactionId",
                         column: x => x.TransactionId,
                         principalTable: "Transactions",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        principalColumn: "Id");
                     table.ForeignKey(
                         name: "FK_UserPromotionSubscriptions_Users_UserId",
                         column: x => x.UserId,
@@ -559,7 +556,6 @@ namespace Juratifact.Repository.Migrations
                     IsActive = table.Column<bool>(type: "boolean", nullable: false),
                     ActiveAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     ExpiresAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    UsePromotionSubscriptionId = table.Column<Guid>(type: "uuid", nullable: false),
                     UserPromotionSubscriptionId = table.Column<Guid>(type: "uuid", nullable: false),
                     ProductId = table.Column<Guid>(type: "uuid", nullable: false),
                     CreatedAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
