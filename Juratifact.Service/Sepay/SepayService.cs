@@ -124,22 +124,41 @@ public class SepayService: ISepayService
     
     private async Task HandleOrderPayment(Transaction transaction)
     {
-        // Kiểm tra nếu Transaction có gắn với OrderId (image_f5a289.png)
+        // 1. Kiểm tra nếu Transaction có gắn với OrderId
         if (transaction.OrderId != null)
         {
-            // Tìm đơn hàng trong database
+            // Sử dụng Include để lấy các OrderDetails (cần thiết để biết mua sản phẩm nào)
             var order = await _dbContext.Orders
+                .Include(o => o.OrderDetails) 
                 .FirstOrDefaultAsync(o => o.Id == transaction.OrderId);
 
             if (order != null)
             {
-                // Cập nhật trạng thái đơn hàng dựa trên Enum OrderStatus (image_f5452d.png)
-                order.Status = OrderStatus.Paid; 
-            
-                // Cập nhật ngày thay đổi
-                order.UpdatedAt = DateTime.Now;
+                // 2. Cập nhật trạng thái đơn hàng
+                order.Status = OrderStatus.Paid; // Giả sử bạn có Enum này
+                order.PaymentStatus = PaymentStatus.Paid; // Đảm bảo PaymentStatus cũng cập nhật
+                order.UpdatedAt = DateTimeOffset.UtcNow; // Sử dụng UtcNow đồng bộ với project
 
-                _logger.LogInformation("Đơn hàng {OrderId} đã được cập nhật trạng thái: Paid", order.Id);
+                // 3. Cập nhật trạng thái sản phẩm thành Sold
+                // Lấy danh sách ProductId từ OrderDetails
+                var productIds = order.OrderDetails.Select(od => od.ProductId).ToList();
+
+                // Truy vấn các sản phẩm này từ database
+                var products = await _dbContext.Products
+                    .Where(p => productIds.Contains(p.Id))
+                    .ToListAsync();
+
+                // Chuyển trạng thái từng sản phẩm
+                foreach (var product in products)
+                {
+                    product.Status = ProductStatus.Sold; // Cập nhật sang trạng thái Sold
+                }
+
+                // 4. Lưu tất cả thay đổi
+                await _dbContext.SaveChangesAsync();
+
+                _logger.LogInformation("Đơn hàng {OrderId} đã thanh toán. Đã cập nhật trạng thái {Count} sản phẩm thành Sold.", 
+                    order.Id, products.Count);
             }
             else
             {
