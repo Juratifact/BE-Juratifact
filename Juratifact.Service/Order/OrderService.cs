@@ -21,70 +21,44 @@ public class OrderService : IOrderService
     }
     
     public async Task<Response.CreateOrderResponse> CreateOrderProduct(Request.CreateOrderRequest request)
+{
+    var userId = _httpContext.HttpContext.User.Claims.FirstOrDefault(x => x.Type == "UserId")?.Value;
+    var userIdGuid = Guid.Parse(userId!);
+
+    using var dbTransaction = await _dbContext.Database.BeginTransactionAsync();
+    try
     {
-        var userId = _httpContext.HttpContext.User.Claims.FirstOrDefault(x => x.Type == "UserId")?.Value;
+        // 1. Get/Create Cart
+        var cart = await _dbContext.Carts.FirstOrDefaultAsync(x => x.UserId == userIdGuid) 
+                   ?? new Repository.Entity.Cart { Id = Guid.NewGuid(), UserId = userIdGuid, CreatedAt = DateTimeOffset.UtcNow };
         
-        var userIdGuid = Guid.Parse(userId!);
-        
-        // 1. Get or create Cart
-        var cart = await _dbContext.Carts.FirstOrDefaultAsync(x => x.UserId == userIdGuid);
+        if (cart.Id == Guid.Empty) _dbContext.Carts.Add(cart);
 
-        if (cart == null)
-        {
-            cart = new Repository.Entity.Cart()
-            {
-                Id = Guid.NewGuid(),
-                UserId = userIdGuid,
-                CreatedAt = DateTimeOffset.UtcNow,
-            };
-            _dbContext.Carts.Add(cart);
-        }
-        
-        //  2. Validate all requested products exist
-        var productGroups = request.Products
-            .GroupBy(x => x.ProductId)
-            .ToList();
-        var productIds = productGroups.Select(g => g.Key).ToList();
-        
-        var products = await _dbContext.Products
-            .Where(x => productIds.Contains(x.Id))
-            .ToListAsync();
+        // 2. Validate products
+        var productIds = request.Products.Select(x => x.ProductId).Distinct().ToList();
+        var products = await _dbContext.Products.Where(x => productIds.Contains(x.Id)).ToListAsync();
 
-        if (products.Count != productIds.Count)
-        {
-            throw new Exception("Some products not found");
-        }
-        
-        // 3. Create CartDetails (one per product)
-        foreach (var group in productGroups)
-        {
-            var quantity = group.Count();
-            var newCartDetail = new CartDetail()
-            {
-                Id = Guid.NewGuid(),
-                CartId = cart.Id,
-                ProductId = group.Key,
-                Quantity = quantity,
-                CreatedAt = DateTimeOffset.UtcNow,
-            };
-            _dbContext.Add(newCartDetail);
-            await _dbContext.SaveChangesAsync();
-        }
-        
-        // 4. TotalAmount + OrderDetails
+        if (products.Count != productIds.Count) throw new Exception("Một số sản phẩm không tồn tại.");
+
         decimal totalAmount = 0;
         
-        foreach (var group in productGroups)
+        // 3. Xử lý Trạng thái (Chuyển sang OnHold)
+        foreach (var product in products)
         {
-            var quantity = group.Count();
-            var product = products.FirstOrDefault(p => p.Id == group.Key)!;
-            totalAmount += product.Price * quantity;
+            // Kiểm tra xem sản phẩm có đang ở trạng thái Available không
+            if (product.Status != ProductStatus.Available)
+                throw new Exception($"Sản phẩm '{product.Title}' hiện không thể đặt hàng (Đang ở trạng thái: {product.Status}).");
+
+            // Chuyển trạng thái sang OnHold để giữ chỗ
+            product.Status = ProductStatus.OnHold;
+            
+            // Cộng dồn tiền
+            totalAmount += product.Price;
         }
-        
-        if (totalAmount <= 0)
-            throw new Exception("Total amount must be greater than 0");
-        // 5. Create Order
-        
+
+        if (totalAmount <= 0) throw new Exception("Tổng tiền không hợp lệ.");
+
+        // 4. Tạo Order
         var newOrder = new Repository.Entity.Order()
         {
             Id = Guid.NewGuid(),
@@ -96,58 +70,53 @@ public class OrderService : IOrderService
             CreatedAt = DateTimeOffset.UtcNow,
         };
         _dbContext.Orders.Add(newOrder);
-        await _dbContext.SaveChangesAsync();
 
-        foreach (var group in productGroups)
+        // 5. Tạo OrderDetails và CartDetails
+        foreach (var product in products)
         {
-            var quantity = group.Count();
-            var product = products.FirstOrDefault(p => p.Id == group.Key)!;
-    
-            totalAmount += product.Price * quantity;
-            
-            
-
-            var newOrderDetail = new OrderDetail()
+            _dbContext.Add(new OrderDetail()
             {
                 Id = Guid.NewGuid(),
                 OrderId = newOrder.Id,
-                ProductId = group.Key,
-                Price = product.Price * quantity,
+                ProductId = product.Id,
+                Price = product.Price, // Giá sản phẩm
                 CreatedAt = DateTimeOffset.UtcNow,
-            };
+            });
             
-            _dbContext.Add(newOrderDetail);
-            await _dbContext.SaveChangesAsync();
+            _dbContext.Add(new CartDetail() { Id = Guid.NewGuid(), CartId = cart.Id, ProductId = product.Id, Quantity = 1, CreatedAt = DateTimeOffset.UtcNow });
         }
-        
-        // 7. Generate reference code and create Transaction
-        
+
+        // 6. Tạo Transaction
         var referenceCode = $"JURATIFACT{Guid.NewGuid().ToString("N")[..8].ToUpper()}";
-        
-        var newTransaction = new Transaction()
+        _dbContext.Transactions.Add(new Transaction()
         {
             Id = Guid.NewGuid(),
             OrderId = newOrder.Id,
-            ReferenceCode = referenceCode,          
+            ReferenceCode = referenceCode,
             Amount = totalAmount,
             Status = TransactionStatus.Pending,
             TransactionType = TransactionType.OrderPayment,
             CreatedAt = DateTimeOffset.UtcNow,
-        };
-        
-        _dbContext.Transactions.Add(newTransaction);
+        });
+
         await _dbContext.SaveChangesAsync();
-        
+        await dbTransaction.CommitAsync();
+
         var qrUrl = await _sepayService.GenerateQrCode(totalAmount, referenceCode);
 
         return new Response.CreateOrderResponse()
         {
-            OrderId  = newOrder.Id,
+            OrderId = newOrder.Id,
             QrUrl = qrUrl,
             ReferenceCode = referenceCode,
         };
-
     }
+    catch (Exception)
+    {
+        await dbTransaction.RollbackAsync();
+        throw;
+    }
+}
 
     public async Task<Response.GetOrderStatusResponse> GetStatusOrder(Guid id)
     {
