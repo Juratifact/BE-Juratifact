@@ -237,6 +237,9 @@ namespace Juratifact.Repository.Migrations
                     b.Property<int>("PaymentStatus")
                         .HasColumnType("integer");
 
+                    b.Property<DateTimeOffset?>("PickupAt")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<string>("ShipperPod1Url")
                         .HasColumnType("text");
 

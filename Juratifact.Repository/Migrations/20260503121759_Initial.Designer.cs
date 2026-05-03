@@ -12,7 +12,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Juratifact.Repository.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260427082047_Initial")]
+    [Migration("20260503121759_Initial")]
     partial class Initial
     {
         /// <inheritdoc />
@@ -239,6 +239,9 @@ namespace Juratifact.Repository.Migrations
 
                     b.Property<int>("PaymentStatus")
                         .HasColumnType("integer");
+
+                    b.Property<DateTimeOffset?>("PickupAt")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("ShipperPod1Url")
                         .HasColumnType("text");
@@ -469,9 +472,6 @@ namespace Juratifact.Repository.Migrations
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<Guid>("UsePromotionSubscriptionId")
-                        .HasColumnType("uuid");
-
                     b.Property<Guid>("UserPromotionSubscriptionId")
                         .HasColumnType("uuid");
 
@@ -661,20 +661,18 @@ namespace Juratifact.Repository.Migrations
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Description")
-                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<string>("ExternalTransactionId")
-                        .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<decimal>("FeeAmount")
+                    b.Property<decimal?>("FeeAmount")
                         .HasColumnType("numeric");
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean");
 
-                    b.Property<Guid>("OrderId")
+                    b.Property<Guid?>("OrderId")
                         .HasColumnType("uuid");
 
                     b.Property<string>("ReferenceCode")
@@ -682,7 +680,6 @@ namespace Juratifact.Repository.Migrations
                         .HasColumnType("text");
 
                     b.Property<string>("SepayId")
-                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<int>("Status")
@@ -694,10 +691,10 @@ namespace Juratifact.Repository.Migrations
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<Guid>("UserPromotionSubscriptionId")
+                    b.Property<Guid?>("UserPromotionSubscriptionId")
                         .HasColumnType("uuid");
 
-                    b.Property<Guid>("WalletId")
+                    b.Property<Guid?>("WalletId")
                         .HasColumnType("uuid");
 
                     b.HasKey("Id");
@@ -834,9 +831,6 @@ namespace Juratifact.Repository.Migrations
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean");
 
-                    b.Property<Guid>("PackageId")
-                        .HasColumnType("uuid");
-
                     b.Property<int>("PaymentStatus")
                         .HasColumnType("integer");
 
@@ -849,7 +843,7 @@ namespace Juratifact.Repository.Migrations
                     b.Property<int?>("TotalSlot")
                         .HasColumnType("integer");
 
-                    b.Property<Guid>("TransactionId")
+                    b.Property<Guid?>("TransactionId")
                         .HasColumnType("uuid");
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
@@ -1162,15 +1156,11 @@ namespace Juratifact.Repository.Migrations
                 {
                     b.HasOne("Juratifact.Repository.Entity.Order", "Order")
                         .WithMany("Transactions")
-                        .HasForeignKey("OrderId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("OrderId");
 
                     b.HasOne("Juratifact.Repository.Entity.Wallet", "Wallet")
                         .WithMany("Transactions")
-                        .HasForeignKey("WalletId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("WalletId");
 
                     b.Navigation("Order");
 
@@ -1187,9 +1177,7 @@ namespace Juratifact.Repository.Migrations
 
                     b.HasOne("Juratifact.Repository.Entity.Transaction", "Transaction")
                         .WithOne("UserPromotionSubscription")
-                        .HasForeignKey("Juratifact.Repository.Entity.UserPromotionSubscription", "TransactionId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("Juratifact.Repository.Entity.UserPromotionSubscription", "TransactionId");
 
                     b.HasOne("Juratifact.Repository.Entity.User", "User")
                         .WithMany("UsePromotionSubscriptions")
@@ -1290,8 +1278,7 @@ namespace Juratifact.Repository.Migrations
 
             modelBuilder.Entity("Juratifact.Repository.Entity.Transaction", b =>
                 {
-                    b.Navigation("UserPromotionSubscription")
-                        .IsRequired();
+                    b.Navigation("UserPromotionSubscription");
                 });
 
             modelBuilder.Entity("Juratifact.Repository.Entity.User", b =>
