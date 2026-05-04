@@ -31,7 +31,8 @@ public class AppDbContext : DbContext
     public DbSet<ProductComment> ProductComments { get; set; }
     public DbSet<UserPromotionSubscription> UserPromotionSubscriptions { get; set; }
     public DbSet<Notification> Notifications { get; set; }
-
+    public DbSet<Dispute>  Disputes { get; set; }
+    
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         // ==================== USER ====================
@@ -92,6 +93,20 @@ public class AppDbContext : DbContext
             .HasOne(t => t.UserPromotionSubscription)
             .WithOne(s => s.Transaction)
             .HasForeignKey<UserPromotionSubscription>(s => s.TransactionId);
+        
+        // 1. Khiếu nại của người mua
+        modelBuilder.Entity<Dispute>()
+            .HasOne(d => d.Buyer)
+            .WithMany(u => u.BuyerDisputes) // Đã thêm: trỏ về danh sách BuyerDisputes trong User
+            .HasForeignKey(d => d.BuyerId)
+            .OnDelete(DeleteBehavior.Restrict); 
+
+        // 2. Khiếu nại do Admin xử lý
+        modelBuilder.Entity<Dispute>()
+            .HasOne(d => d.ResolvedByAdmin)
+            .WithMany(u => u.ResolvedDisputes) // Đã thêm: trỏ về danh sách ResolvedDisputes trong User
+            .HasForeignKey(d => d.ResolvedByAdminId)
+            .OnDelete(DeleteBehavior.Restrict);
 
         // ==================== SEED DATA ====================
         SeedData(modelBuilder);
