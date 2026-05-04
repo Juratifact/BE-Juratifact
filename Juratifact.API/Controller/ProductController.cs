@@ -25,6 +25,14 @@ public class ProductController : ControllerBase
         return Ok(ApiResponseFactory.SuccessResponse(product,HttpContext.TraceIdentifier));
     }
     
+    [Authorize(Policy = JwtExtensions.BuyerPolicy)]
+    [HttpGet("MyProducts")]
+    public async Task<IActionResult> GetAllMyProduct(int pageSize = 10, int pageIndex = 1)
+    {
+        var product = await _productService.GetAllMyProduct(pageSize, pageIndex);
+        return Ok(ApiResponseFactory.SuccessResponse(product,HttpContext.TraceIdentifier));
+    }
+    
     [HttpGet("Title")]
     public async Task<IActionResult> GetByTitle(string? searchTerm,int pageSize = 10, int pageIndex = 1)
     {

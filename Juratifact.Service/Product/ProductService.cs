@@ -52,6 +52,49 @@ public class ProductService : IProductService
         return result;
     }
 
+    public async Task<Base.Response.PageResult<Response.ProductResponse>> GetAllMyProduct(int pageSize, int pageIndex)
+    {
+        var userId = _httpContext.HttpContext.User.Claims.FirstOrDefault(x => x.Type == "UserId")?.Value;
+
+        if (string.IsNullOrEmpty(userId))
+        {
+            throw new UnauthorizedAccessException("User not authenticated.");
+        }
+
+        var userIdGuid = Guid.Parse(userId);
+        
+        var query = _dbContext.Products
+                                    .Where(x => x.Status == ProductStatus.Available &&
+                                            x.SellerId == userIdGuid &&
+                                            x.IsDeleted  == false);
+
+        query = query.Skip((pageIndex - 1) * pageSize)
+            .Take(pageSize);
+        var selected = query.Select(x => new Response.ProductResponse()
+        {
+            ProductId = x.Id,
+            SellerId = x.SellerId,
+            Title = x.Title,
+            Description = x.Description,
+            Price = x.Price,
+            Status = x.Status,
+            Condition = x.Condition,
+            Video = x.ProductMedias.Select(m => m.Video!).ToList(),
+            ImageUrl = x.ProductMedias.Select(m => m.ImageUrl).ToList(),
+        });
+        var listResult = await selected.ToListAsync();
+        var totalItems = listResult.Count;
+
+        var result = new Base.Response.PageResult<Response.ProductResponse>()
+        {
+            Items = listResult,
+            PageIndex = pageIndex,
+            PageSize = pageSize,
+            TotalItems = totalItems,
+        };
+        return result;
+    }
+
     public async Task<Base.Response.PageResult<Response.ProductResponse>> GetByTitle(string? searchTerm, int pageSize,
         int pageIndex)
     {
