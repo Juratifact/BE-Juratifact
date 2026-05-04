@@ -27,6 +27,7 @@ public class Order: BaseEntity<Guid>,IAuditableEntity
     
     public ICollection<Transaction> Transactions { get; set; } = new List<Transaction>();
     public ICollection<OrderDetail> OrderDetails { get; set; } = new List<OrderDetail>();
+    public ICollection<Dispute>  Disputes { get; set; } = new List<Dispute>();
     
     
     public DateTimeOffset CreatedAt { get; set; }
