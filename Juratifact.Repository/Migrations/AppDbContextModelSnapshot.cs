@@ -178,6 +178,7 @@ namespace Juratifact.Repository.Migrations
                         .HasColumnType("uuid");
 
                     b.Property<string>("Content")
+                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<DateTimeOffset>("CreatedAt")
@@ -193,6 +194,7 @@ namespace Juratifact.Repository.Migrations
                         .HasColumnType("text");
 
                     b.Property<string>("Title")
+                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<int>("Type")
@@ -220,6 +222,12 @@ namespace Juratifact.Repository.Migrations
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<DateTimeOffset?>("DeliveryAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("EvidenceUrl")
+                        .HasColumnType("text");
+
                     b.Property<DateTimeOffset?>("ExpiresAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -239,6 +247,9 @@ namespace Juratifact.Repository.Migrations
 
                     b.Property<DateTimeOffset?>("PickupAt")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("ShipperId")
+                        .HasColumnType("uuid");
 
                     b.Property<string>("ShipperPod1Url")
                         .HasColumnType("text");
