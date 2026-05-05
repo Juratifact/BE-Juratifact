@@ -12,7 +12,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Juratifact.Repository.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260505064250_Initial")]
+    [Migration("20260505130245_Initial")]
     partial class Initial
     {
         /// <inheritdoc />
@@ -20,6 +20,7 @@ namespace Juratifact.Repository.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
+                .HasDefaultSchema("public")
                 .HasAnnotation("ProductVersion", "8.0.0")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
@@ -48,7 +49,7 @@ namespace Juratifact.Repository.Migrations
                     b.HasIndex("UserId")
                         .IsUnique();
 
-                    b.ToTable("Carts");
+                    b.ToTable("Carts", "public");
 
                     b.HasData(
                         new
@@ -90,7 +91,7 @@ namespace Juratifact.Repository.Migrations
 
                     b.HasIndex("ProductId");
 
-                    b.ToTable("CartDetails");
+                    b.ToTable("CartDetails", "public");
                 });
 
             modelBuilder.Entity("Juratifact.Repository.Entity.Category", b =>
@@ -119,7 +120,7 @@ namespace Juratifact.Repository.Migrations
 
                     b.HasIndex("ParentId");
 
-                    b.ToTable("Categories");
+                    b.ToTable("Categories", "public");
                 });
 
             modelBuilder.Entity("Juratifact.Repository.Entity.Dispute", b =>
@@ -129,7 +130,6 @@ namespace Juratifact.Repository.Migrations
                         .HasColumnType("uuid");
 
                     b.Property<string>("AdminNote")
-                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<Guid>("BuyerId")
@@ -168,7 +168,7 @@ namespace Juratifact.Repository.Migrations
 
                     b.HasIndex("ResolvedByAdminId");
 
-                    b.ToTable("Disputes");
+                    b.ToTable("Disputes", "public");
                 });
 
             modelBuilder.Entity("Juratifact.Repository.Entity.IdentityDocument", b =>
@@ -220,7 +220,7 @@ namespace Juratifact.Repository.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("IdentityDocuments");
+                    b.ToTable("IdentityDocuments", "public");
                 });
 
             modelBuilder.Entity("Juratifact.Repository.Entity.Notification", b =>
@@ -262,7 +262,7 @@ namespace Juratifact.Repository.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("Notifications");
+                    b.ToTable("Notifications", "public");
                 });
 
             modelBuilder.Entity("Juratifact.Repository.Entity.Order", b =>
@@ -270,6 +270,9 @@ namespace Juratifact.Repository.Migrations
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
+
+                    b.Property<string>("CancelReason")
+                        .HasColumnType("text");
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -328,7 +331,7 @@ namespace Juratifact.Repository.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("Orders");
+                    b.ToTable("Orders", "public");
                 });
 
             modelBuilder.Entity("Juratifact.Repository.Entity.OrderDetail", b =>
@@ -361,7 +364,7 @@ namespace Juratifact.Repository.Migrations
 
                     b.HasIndex("ProductId");
 
-                    b.ToTable("OrderDetails");
+                    b.ToTable("OrderDetails", "public");
                 });
 
             modelBuilder.Entity("Juratifact.Repository.Entity.Product", b =>
@@ -401,7 +404,9 @@ namespace Juratifact.Repository.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Products");
+                    b.HasIndex("SellerId");
+
+                    b.ToTable("Products", "public");
                 });
 
             modelBuilder.Entity("Juratifact.Repository.Entity.ProductCategory", b =>
@@ -431,7 +436,7 @@ namespace Juratifact.Repository.Migrations
 
                     b.HasIndex("ProductId");
 
-                    b.ToTable("ProductCategories");
+                    b.ToTable("ProductCategories", "public");
                 });
 
             modelBuilder.Entity("Juratifact.Repository.Entity.ProductComment", b =>
@@ -470,7 +475,7 @@ namespace Juratifact.Repository.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("ProductComments");
+                    b.ToTable("ProductComments", "public");
                 });
 
             modelBuilder.Entity("Juratifact.Repository.Entity.ProductMedia", b =>
@@ -502,7 +507,7 @@ namespace Juratifact.Repository.Migrations
 
                     b.HasIndex("ProductId");
 
-                    b.ToTable("ProductMedia");
+                    b.ToTable("ProductMedia", "public");
                 });
 
             modelBuilder.Entity("Juratifact.Repository.Entity.ProductPromotion", b =>
@@ -541,7 +546,7 @@ namespace Juratifact.Repository.Migrations
 
                     b.HasIndex("UserPromotionSubscriptionId");
 
-                    b.ToTable("ProductPromotions");
+                    b.ToTable("ProductPromotions", "public");
                 });
 
             modelBuilder.Entity("Juratifact.Repository.Entity.PromotionPackage", b =>
@@ -586,7 +591,7 @@ namespace Juratifact.Repository.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("PromotionPackages");
+                    b.ToTable("PromotionPackages", "public");
                 });
 
             modelBuilder.Entity("Juratifact.Repository.Entity.Report", b =>
@@ -626,7 +631,7 @@ namespace Juratifact.Repository.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("Reports");
+                    b.ToTable("Reports", "public");
                 });
 
             modelBuilder.Entity("Juratifact.Repository.Entity.Role", b =>
@@ -650,7 +655,7 @@ namespace Juratifact.Repository.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Roles");
+                    b.ToTable("Roles", "public");
 
                     b.HasData(
                         new
@@ -673,6 +678,13 @@ namespace Juratifact.Repository.Migrations
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             IsDeleted = false,
                             Name = "Admin"
+                        },
+                        new
+                        {
+                            Id = new Guid("00000000-0000-0000-0000-000000000004"),
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            IsDeleted = false,
+                            Name = "Shipper"
                         });
                 });
 
@@ -705,7 +717,7 @@ namespace Juratifact.Repository.Migrations
                     b.HasIndex("OrderId")
                         .IsUnique();
 
-                    b.ToTable("SellerReviews");
+                    b.ToTable("SellerReviews", "public");
                 });
 
             modelBuilder.Entity("Juratifact.Repository.Entity.Transaction", b =>
@@ -763,7 +775,7 @@ namespace Juratifact.Repository.Migrations
 
                     b.HasIndex("WalletId");
 
-                    b.ToTable("Transactions");
+                    b.ToTable("Transactions", "public");
                 });
 
             modelBuilder.Entity("Juratifact.Repository.Entity.User", b =>
@@ -838,7 +850,7 @@ namespace Juratifact.Repository.Migrations
                     b.HasIndex("PhoneNumber")
                         .IsUnique();
 
-                    b.ToTable("Users", t =>
+                    b.ToTable("Users", "public", t =>
                         {
                             t.HasCheckConstraint("CK_User_TrustScore_Range", "\"TrustScore\" >= 0 AND \"TrustScore\" <= 5");
                         });
@@ -924,7 +936,7 @@ namespace Juratifact.Repository.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("UserPromotionSubscriptions");
+                    b.ToTable("UserPromotionSubscriptions", "public");
                 });
 
             modelBuilder.Entity("Juratifact.Repository.Entity.UserRole", b =>
@@ -954,7 +966,7 @@ namespace Juratifact.Repository.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("UserRoles");
+                    b.ToTable("UserRoles", "public");
 
                     b.HasData(
                         new
@@ -1004,7 +1016,7 @@ namespace Juratifact.Repository.Migrations
                     b.HasIndex("UserId")
                         .IsUnique();
 
-                    b.ToTable("Wallets");
+                    b.ToTable("Wallets", "public");
 
                     b.HasData(
                         new
@@ -1131,6 +1143,17 @@ namespace Juratifact.Repository.Migrations
                     b.Navigation("Order");
 
                     b.Navigation("Product");
+                });
+
+            modelBuilder.Entity("Juratifact.Repository.Entity.Product", b =>
+                {
+                    b.HasOne("Juratifact.Repository.Entity.User", "Seller")
+                        .WithMany()
+                        .HasForeignKey("SellerId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Seller");
                 });
 
             modelBuilder.Entity("Juratifact.Repository.Entity.ProductCategory", b =>
