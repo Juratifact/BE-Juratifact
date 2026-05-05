@@ -7,9 +7,7 @@ public class Request
     public class SendNotificationRequest
     {
         public Guid UserId { get; set; }
-        public string Title { get; set; }
-        public string Content { get; set; }
+        public string Data { get; set; }
         public NotificationType Type { get; set; }
-        public string? RedirectUrl { get; set; }
     }
 }
