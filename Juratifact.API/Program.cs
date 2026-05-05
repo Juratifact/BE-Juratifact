@@ -10,6 +10,7 @@ using Juratifact.Service.IdentityDocumentService;
 using Juratifact.Service.JwtService;
 using Juratifact.Service.MailService;
 using Juratifact.Service.MediaService;
+using Juratifact.Service.Notification;
 using Juratifact.Service.Order;
 using Juratifact.Service.Product;
 using Juratifact.Service.Promotion;
@@ -39,6 +40,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 
 builder.Services.AddJwtServices(builder.Configuration);
 builder.Services.AddSwaggerServices();
+builder.Services.AddSignalR();
 
 builder.Services.AddCors(options =>
 {
@@ -69,6 +71,7 @@ builder.Services.AddScoped<ISettlementService, SettlementService>();
 builder.Services.AddScoped<IOrderService, OrderService>();
 builder.Services.AddScoped<IShipperService,ShipperService>();
 builder.Services.AddScoped<IWalletService, WalletService>();
+builder.Services.AddScoped<INotificationService, NotificationService>();
 
 //test thử discord
 builder.Services.Configure<DiscordAlertOptions>(
@@ -119,7 +122,7 @@ app.UseMiddleware<GlobalExceptionHandlerMiddleware>();
 // Configure the HTTP request pipeline.
 
 app.UseSwaggerAPI();
-    
+app.MapHub<Juratifact.Service.Hubs.NotificationHub>("/notificationHub");
 app.UseCors("AllowFrontend");
 
 
