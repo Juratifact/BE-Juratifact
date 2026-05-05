@@ -16,7 +16,9 @@ using Juratifact.Service.Promotion;
 using Juratifact.Service.Report;
 using Juratifact.Service.Sepay;
 using Juratifact.Service.SettlementService;
+using Juratifact.Service.Shipper;
 using Juratifact.Service.User;
+using Juratifact.Service.Wallet;
 using Microsoft.EntityFrameworkCore;
 using Quartz;
 
@@ -65,6 +67,8 @@ builder.Services.AddScoped<ISepayService, SepayService>();
 builder.Services.AddScoped<ICategoryService, CategoryService>();
 builder.Services.AddScoped<ISettlementService, SettlementService>();
 builder.Services.AddScoped<IOrderService, OrderService>();
+builder.Services.AddScoped<IShipperService,ShipperService>();
+builder.Services.AddScoped<IWalletService, WalletService>();
 
 //test thử discord
 builder.Services.Configure<DiscordAlertOptions>(
