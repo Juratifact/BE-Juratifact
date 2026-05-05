@@ -21,7 +21,7 @@ public class Dispute : BaseEntity<Guid>, IAuditableEntity
     public string Reason { get; set; }
     public DisputeStatus Status { get; set; }
     public DisputeResolution Resolution { get; set; }
-    public string AdminNote { get; set; }
+    public string? AdminNote { get; set; }
     
     public DateTimeOffset CreatedAt { get; set; }
     public DateTimeOffset? UpdatedAt { get; set; }

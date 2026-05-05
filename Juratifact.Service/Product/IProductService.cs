@@ -20,7 +20,6 @@ public interface IProductService
         int pageSize,
         int pageIndex);
     
-    public Task<Response.ProductCommentResponseFull> GetCommentsByProductId(Guid productId);
     
     public Task<string> CreateProduct(Request.CreateProductRequest request);
     

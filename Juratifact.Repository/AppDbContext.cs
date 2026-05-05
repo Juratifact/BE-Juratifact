@@ -110,6 +110,7 @@ public class AppDbContext : DbContext
 
         // ==================== SEED DATA ====================
         SeedData(modelBuilder);
+        modelBuilder.HasDefaultSchema("public");
     }
 
     private static void SeedData(ModelBuilder modelBuilder)
@@ -122,11 +123,14 @@ public class AppDbContext : DbContext
         var buyerRoleId  = new Guid("00000000-0000-0000-0000-000000000001");
         var sellerRoleId = new Guid("00000000-0000-0000-0000-000000000002");
         var adminRoleId  = new Guid("00000000-0000-0000-0000-000000000003");
+        var shipperRoleId = new Guid("00000000-0000-0000-0000-000000000004");
 
+        
         modelBuilder.Entity<Role>().HasData(
             new Role { Id = buyerRoleId,  Name = "Buyer",  IsDeleted = false, CreatedAt = now },
             new Role { Id = sellerRoleId, Name = "Seller", IsDeleted = false, CreatedAt = now },
-            new Role { Id = adminRoleId,  Name = "Admin",  IsDeleted = false, CreatedAt = now }
+            new Role { Id = adminRoleId,  Name = "Admin",  IsDeleted = false, CreatedAt = now },
+            new Role {Id = shipperRoleId,  Name = "Shipper",  IsDeleted = false, CreatedAt = now}
         );
 
         // ════════════════════════════════════════
