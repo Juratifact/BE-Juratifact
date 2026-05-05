@@ -17,14 +17,14 @@ public class NotificationService: INotificationService
     }
     public async Task SendNotification(Request.SendNotificationRequest request)
     {
+        var (title, content) = NotificationTemplateProvider.GetTemplate(request.Type, request.Data);
         var notification = new Repository.Entity.Notification()
         {
             Id = Guid.NewGuid(),
             UserId = request.UserId,
-            Title = request.Title,
-            Content = request.Content,
+            Title = title,
+            Content = content,
             Type = request.Type,
-            RedirectUrl = request.RedirectUrl,
             CreatedAt = DateTimeOffset.UtcNow,
             IsRead = false
         };
