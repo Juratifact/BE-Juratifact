@@ -26,6 +26,13 @@ public class DisputeController : ControllerBase
         return Ok(ApiResponseFactory.SuccessResponse(result, "Created Dispute successfully", HttpContext.TraceIdentifier));
     }
     
+    // /api/dispute/my-disputes
+    [Authorize(Policy = JwtExtensions.BuyerPolicy)]
+    [HttpPost("my-disputes")]
+    public async Task<IActionResult> CreateDisputes([FromBody] Request.CreateDisputeRequest request)
+    {
+        return null;
+    }
     
     
 
