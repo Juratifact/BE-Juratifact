@@ -58,6 +58,7 @@ public class AutoSettlementJob : IJob
                     {
                         _logger.LogInformation($"[SUCCESS] Đã tự động chốt đơn và chia tiền cho OrderId: {orderId}");
                     }
+                    // (Tùy chọn) Chỗ này có thể inject INotificationService để gửi thông báo cho User
                 }
                 catch (Exception innerEx)
                 {
