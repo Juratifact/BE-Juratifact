@@ -40,7 +40,7 @@ public class DiscordService : IDiscordService
 
         var content = 
             $"{_options.Mention}\n" +
-            "Unhandled exception in TetPee.Api\n" +
+            "Unhandled exception in Juratifact.API\n" +
             $"Environment: {_environment.EnvironmentName}\n" +
             $"Request: {context.Request.Method} {context.Request.Path}\n" +
             $"StatusCode: {statusCode}\n" +
