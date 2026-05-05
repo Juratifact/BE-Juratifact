@@ -51,13 +51,6 @@ public class ProductController : ControllerBase
     [HttpGet("{productId}/comments")]
     public async Task<IActionResult> GetCommentsByProductId(Guid productId)
     {
-        var comments = await _productService.GetCommentsByProductId(productId);
-        return Ok(ApiResponseFactory.SuccessResponse(comments, HttpContext.TraceIdentifier));
-    }
-    
-    [HttpGet("{productId}/commentsV2")]
-    public async Task<IActionResult> GetCommentsByProductId2(Guid productId)
-    {
         var comments = await _productService.GetProductCommentsByProductId(productId);
         return Ok(ApiResponseFactory.SuccessResponse(comments, HttpContext.TraceIdentifier));
     }
@@ -95,6 +88,5 @@ public class ProductController : ControllerBase
         var result = await _productService.SoftDeleteProductPostingById(id);
         return Ok(ApiResponseFactory.SuccessResponse(result, "Product removed", HttpContext.TraceIdentifier));
     }
-    
     
 }
