@@ -195,12 +195,6 @@ public class OrderService : IOrderService
             throw new Exception("Failed to confirm receipt. Could not process settlement for the seller.");
         }
         
-        await _notificationService.SendNotification(new Notification.Request.SendNotificationRequest() {
-            UserId = userIdGuid,
-            Type = NotificationType.OrderShipped,
-            Data = order.Name, // Chỉ cần truyền cái ID đơn hàng thôi
-        });
-
 
         return "Receipt confirmed successfully.";
     }
@@ -288,6 +282,12 @@ public class OrderService : IOrderService
             // 7. Save changes and commit transaction
             await _dbContext.SaveChangesAsync();
             await transaction.CommitAsync();
+            
+            await _notificationService.SendNotification(new Notification.Request.SendNotificationRequest() {
+                UserId = userIdGuid,
+                Type = NotificationType.OrderCancelled,
+                Data = order.Name, 
+            });
 
             return "Order cancelled successfully.";
             

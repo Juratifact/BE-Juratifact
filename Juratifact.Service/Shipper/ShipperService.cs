@@ -1,6 +1,7 @@
 using Juratifact.Repository;
 using Juratifact.Repository.Enum;
 using Juratifact.Service.MediaService;
+using Juratifact.Service.Notification;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 
@@ -10,11 +11,13 @@ public class ShipperService: IShipperService
 {
     private readonly AppDbContext _dbContext;
     private readonly IMediaService _mediaService;
+    private readonly INotificationService _notificationService;
 
-    public ShipperService(AppDbContext dbContext, IMediaService mediaService)
+    public ShipperService(AppDbContext dbContext, IMediaService mediaService,  INotificationService notificationService)
     {
         _dbContext = dbContext;
         _mediaService = mediaService;
+        _notificationService = notificationService;
     }
 
     public async Task<List<Response.ShipperResponse>> GetListOrder()
@@ -84,6 +87,12 @@ public class ShipperService: IShipperService
 
         await _dbContext.SaveChangesAsync();
         
+        await _notificationService.SendNotification(new Notification.Request.SendNotificationRequest() {
+            UserId = query.UserId,
+            Type = NotificationType.OrderShipped,
+            Data = query.Name, 
+        });
+        
         return  "Successfully shipped order";
     }
 
@@ -110,6 +119,12 @@ public class ShipperService: IShipperService
         query.UpdatedAt = DateTimeOffset.UtcNow;
 
         await _dbContext.SaveChangesAsync();
+        
+        await _notificationService.SendNotification(new Notification.Request.SendNotificationRequest() {
+            UserId = query.UserId,
+            Type = NotificationType.OrderDelivered,
+            Data = query.Name, 
+        });
         
         return  "Successfully";
     }
