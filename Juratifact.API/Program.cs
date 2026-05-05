@@ -93,6 +93,21 @@ builder.Services.AddQuartz(q =>
 
 builder.Services.AddQuartzHostedService(q => q.WaitForJobsToComplete = true);
 
+builder.Services.AddQuartz(q =>
+{
+    // Đăng ký Job của bạn bình thường
+    var jobKey = new JobKey("AutoSettlementJob");
+    q.AddJob<AutoSettlementJob>(opts => opts.WithIdentity(jobKey));
+    
+    // Hẹn giờ chạy mỗi 1 tiếng
+    q.AddTrigger(opts => opts
+        .ForJob(jobKey)
+        .WithIdentity("AutoSettlementJob-trigger")
+        .WithCronSchedule("0 0 * * * ?")); 
+});
+
+builder.Services.AddQuartzHostedService(q => q.WaitForJobsToComplete = true);
+
 builder.Services.AddTransient<GlobalExceptionHandlerMiddleware>();
 var app = builder.Build();
 
