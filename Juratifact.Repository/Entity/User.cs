@@ -24,6 +24,12 @@ public class User: BaseEntity<Guid>,IAuditableEntity
     
     public Cart Cart { get; set; }
     
+    // Danh sách các khiếu nại mà User này là người mua (Buyer)
+    public ICollection<Dispute> BuyerDisputes { get; set; }
+
+    // Danh sách các khiếu nại mà User này là Admin giải quyết
+    public ICollection<Dispute> ResolvedDisputes { get; set; }
+    
     public ICollection<Order> Orders { get; set; } =  new List<Order>();
     public ICollection<UserRole> UserRoles { get; set; }  = new List<UserRole>();
     public ICollection<IdentityDocument> IdentityDocuments { get; set; }  = new List<IdentityDocument>();

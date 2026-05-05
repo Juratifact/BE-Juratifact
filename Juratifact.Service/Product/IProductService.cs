@@ -5,6 +5,12 @@ public interface IProductService
     public Task<Base.Response.PageResult<Response.ProductResponse>> GetAll(
         int pageSize,
         int pageIndex);
+    
+    public Task<Base.Response.PageResult<Response.ProductResponse>> GetAllMyProduct(
+        int pageSize,
+        int pageIndex);
+
+    
     public Task<Base.Response.PageResult<Response.ProductResponse>> GetByTitle(
         string? searchTerm,
         int pageSize,
