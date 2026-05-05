@@ -43,5 +43,12 @@ public class OrderController : ControllerBase
         return Ok(ApiResponseFactory.SuccessResponse(result, "Create order successfully", HttpContext.TraceIdentifier));
     }
     
-    
+    [Authorize(Policy = JwtExtensions.BuyerPolicy)]
+    [HttpPost("{orderId}/confirm-receipt")]
+    public async Task<IActionResult> ConfirmReceipt(Guid orderId)
+    {
+        var result = await _orderService.ConfirmReceipt(orderId);
+        return Ok(ApiResponseFactory.SuccessResponse(result, "Confirm receipt order successfully", HttpContext.TraceIdentifier));
+    }
+
 }
