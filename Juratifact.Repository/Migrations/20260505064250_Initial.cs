@@ -224,8 +224,8 @@ namespace Juratifact.Repository.Migrations
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    Content = table.Column<string>(type: "text", nullable: true),
-                    Title = table.Column<string>(type: "text", nullable: true),
+                    Content = table.Column<string>(type: "text", nullable: false),
+                    Title = table.Column<string>(type: "text", nullable: false),
                     Type = table.Column<int>(type: "integer", nullable: false),
                     RedirectUrl = table.Column<string>(type: "text", nullable: true),
                     IsRead = table.Column<bool>(type: "boolean", nullable: false),
@@ -256,10 +256,13 @@ namespace Juratifact.Repository.Migrations
                     ShipperPod2Url = table.Column<string>(type: "text", nullable: true),
                     PaymentMethod = table.Column<string>(type: "text", nullable: false),
                     PickupAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
+                    DeliveryAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
+                    EvidenceUrl = table.Column<string>(type: "text", nullable: true),
                     Status = table.Column<int>(type: "integer", nullable: false),
                     PaymentStatus = table.Column<int>(type: "integer", nullable: false),
                     ExpiresAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     UserId = table.Column<Guid>(type: "uuid", nullable: false),
+                    ShipperId = table.Column<Guid>(type: "uuid", nullable: true),
                     CreatedAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
                     UpdatedAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     IsDeleted = table.Column<bool>(type: "boolean", nullable: false)
@@ -420,6 +423,45 @@ namespace Juratifact.Repository.Migrations
                         principalTable: "Products",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "Disputes",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    OrderId = table.Column<Guid>(type: "uuid", nullable: false),
+                    BuyerId = table.Column<Guid>(type: "uuid", nullable: false),
+                    ResolvedByAdminId = table.Column<Guid>(type: "uuid", nullable: true),
+                    Reason = table.Column<string>(type: "text", nullable: false),
+                    Status = table.Column<int>(type: "integer", nullable: false),
+                    Resolution = table.Column<int>(type: "integer", nullable: false),
+                    AdminNote = table.Column<string>(type: "text", nullable: false),
+                    CreatedAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
+                    UpdatedAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
+                    IsDeleted = table.Column<bool>(type: "boolean", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Disputes", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Disputes_Orders_OrderId",
+                        column: x => x.OrderId,
+                        principalTable: "Orders",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_Disputes_Users_BuyerId",
+                        column: x => x.BuyerId,
+                        principalTable: "Users",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_Disputes_Users_ResolvedByAdminId",
+                        column: x => x.ResolvedByAdminId,
+                        principalTable: "Users",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
@@ -639,6 +681,21 @@ namespace Juratifact.Repository.Migrations
                 column: "ParentId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_Disputes_BuyerId",
+                table: "Disputes",
+                column: "BuyerId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Disputes_OrderId",
+                table: "Disputes",
+                column: "OrderId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Disputes_ResolvedByAdminId",
+                table: "Disputes",
+                column: "ResolvedByAdminId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_IdentityDocuments_UserId",
                 table: "IdentityDocuments",
                 column: "UserId");
@@ -779,6 +836,9 @@ namespace Juratifact.Repository.Migrations
         {
             migrationBuilder.DropTable(
                 name: "CartDetails");
+
+            migrationBuilder.DropTable(
+                name: "Disputes");
 
             migrationBuilder.DropTable(
                 name: "IdentityDocuments");

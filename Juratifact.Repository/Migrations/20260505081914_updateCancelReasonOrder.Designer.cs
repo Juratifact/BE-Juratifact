@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Juratifact.Repository.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260504161937_asdf")]
-    partial class asdf
+    [Migration("20260505081914_updateCancelReasonOrder")]
+    partial class updateCancelReasonOrder
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -268,6 +268,9 @@ namespace Juratifact.Repository.Migrations
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
+
+                    b.Property<string>("CancelReason")
+                        .HasColumnType("text");
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone");

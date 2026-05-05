@@ -12,4 +12,9 @@ public class Request
     {
         public Guid ProductId { get; set; }
     }
+
+    public class CancelOrderRequest
+    {
+        public required string Reason { get; set; }
+    }
 }

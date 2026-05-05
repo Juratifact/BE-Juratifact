@@ -227,6 +227,7 @@ namespace Juratifact.Repository.Migrations
                         .HasColumnType("uuid");
 
                     b.Property<string>("Content")
+                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<DateTimeOffset>("CreatedAt")
@@ -242,6 +243,7 @@ namespace Juratifact.Repository.Migrations
                         .HasColumnType("text");
 
                     b.Property<string>("Title")
+                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<int>("Type")

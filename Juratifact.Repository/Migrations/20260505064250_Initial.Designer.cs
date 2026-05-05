@@ -12,7 +12,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Juratifact.Repository.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260503121759_Initial")]
+    [Migration("20260505064250_Initial")]
     partial class Initial
     {
         /// <inheritdoc />
@@ -122,6 +122,55 @@ namespace Juratifact.Repository.Migrations
                     b.ToTable("Categories");
                 });
 
+            modelBuilder.Entity("Juratifact.Repository.Entity.Dispute", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("AdminNote")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("BuyerId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<Guid>("OrderId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("Resolution")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid?>("ResolvedByAdminId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTimeOffset?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BuyerId");
+
+                    b.HasIndex("OrderId");
+
+                    b.HasIndex("ResolvedByAdminId");
+
+                    b.ToTable("Disputes");
+                });
+
             modelBuilder.Entity("Juratifact.Repository.Entity.IdentityDocument", b =>
                 {
                     b.Property<Guid>("Id")
@@ -181,6 +230,7 @@ namespace Juratifact.Repository.Migrations
                         .HasColumnType("uuid");
 
                     b.Property<string>("Content")
+                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<DateTimeOffset>("CreatedAt")
@@ -196,6 +246,7 @@ namespace Juratifact.Repository.Migrations
                         .HasColumnType("text");
 
                     b.Property<string>("Title")
+                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<int>("Type")
@@ -223,6 +274,12 @@ namespace Juratifact.Repository.Migrations
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<DateTimeOffset?>("DeliveryAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("EvidenceUrl")
+                        .HasColumnType("text");
+
                     b.Property<DateTimeOffset?>("ExpiresAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -242,6 +299,9 @@ namespace Juratifact.Repository.Migrations
 
                     b.Property<DateTimeOffset?>("PickupAt")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("ShipperId")
+                        .HasColumnType("uuid");
 
                     b.Property<string>("ShipperPod1Url")
                         .HasColumnType("text");
@@ -997,6 +1057,32 @@ namespace Juratifact.Repository.Migrations
                     b.Navigation("Parent");
                 });
 
+            modelBuilder.Entity("Juratifact.Repository.Entity.Dispute", b =>
+                {
+                    b.HasOne("Juratifact.Repository.Entity.User", "Buyer")
+                        .WithMany("BuyerDisputes")
+                        .HasForeignKey("BuyerId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Juratifact.Repository.Entity.Order", "Order")
+                        .WithMany("Disputes")
+                        .HasForeignKey("OrderId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Juratifact.Repository.Entity.User", "ResolvedByAdmin")
+                        .WithMany("ResolvedDisputes")
+                        .HasForeignKey("ResolvedByAdminId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Buyer");
+
+                    b.Navigation("Order");
+
+                    b.Navigation("ResolvedByAdmin");
+                });
+
             modelBuilder.Entity("Juratifact.Repository.Entity.IdentityDocument", b =>
                 {
                     b.HasOne("Juratifact.Repository.Entity.User", "User")
@@ -1236,6 +1322,8 @@ namespace Juratifact.Repository.Migrations
 
             modelBuilder.Entity("Juratifact.Repository.Entity.Order", b =>
                 {
+                    b.Navigation("Disputes");
+
                     b.Navigation("OrderDetails");
 
                     b.Navigation("SellerReview")
@@ -1283,6 +1371,8 @@ namespace Juratifact.Repository.Migrations
 
             modelBuilder.Entity("Juratifact.Repository.Entity.User", b =>
                 {
+                    b.Navigation("BuyerDisputes");
+
                     b.Navigation("Cart")
                         .IsRequired();
 
@@ -1295,6 +1385,8 @@ namespace Juratifact.Repository.Migrations
                     b.Navigation("ProductComments");
 
                     b.Navigation("Reports");
+
+                    b.Navigation("ResolvedDisputes");
 
                     b.Navigation("UsePromotionSubscriptions");
 

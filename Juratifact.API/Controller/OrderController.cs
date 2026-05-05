@@ -51,4 +51,13 @@ public class OrderController : ControllerBase
         return Ok(ApiResponseFactory.SuccessResponse(result, "Confirm receipt order successfully", HttpContext.TraceIdentifier));
     }
 
+    [Authorize(Policy = JwtExtensions.BuyerPolicy)]
+    [HttpPost("{orderId}/cancel")]
+    public async Task<IActionResult> CancelOrder([FromRoute] Guid orderId, [FromBody] Request.CancelOrderRequest request)
+    {
+        var result = await _orderService.CancelOrder(orderId, request);
+        return Ok(ApiResponseFactory.SuccessResponse(result, "Cancel order successfully", HttpContext.TraceIdentifier));
+    }
+    
+
 }
