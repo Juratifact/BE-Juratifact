@@ -5,6 +5,7 @@ using Juratifact.Service.BackgroundJobService;
 using Juratifact.Service.Category;
 using Juratifact.Service.CloudinaryService;
 using Juratifact.Service.DiscordService;
+using Juratifact.Service.Dispute;
 using Juratifact.Service.Identity;
 using Juratifact.Service.IdentityDocumentService;
 using Juratifact.Service.JwtService;
@@ -69,6 +70,7 @@ builder.Services.AddScoped<ISettlementService, SettlementService>();
 builder.Services.AddScoped<IOrderService, OrderService>();
 builder.Services.AddScoped<IShipperService,ShipperService>();
 builder.Services.AddScoped<IWalletService, WalletService>();
+builder.Services.AddScoped<IDisputeService, DisputeService>();
 
 //test thử discord
 builder.Services.Configure<DiscordAlertOptions>(
