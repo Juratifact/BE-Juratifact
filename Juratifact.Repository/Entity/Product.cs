@@ -6,6 +6,7 @@ namespace Juratifact.Repository.Entity;
 public class Product : BaseEntity<Guid>, IAuditableEntity
 {
     public required Guid SellerId { get; set; }
+    public User Seller { get; set; }
     public required string Title { get; set; }
     public required string Condition { get; set; } // New, Used, Refurbished, etc.
     

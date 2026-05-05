@@ -80,7 +80,7 @@ public class SettlementService: ISettlementService
                 var wallet = await _context.Wallets.FirstOrDefaultAsync(w => w.UserId == sellerId);
                 if (wallet == null)
                 {
-                    wallet = new Wallet
+                    wallet = new Repository.Entity.Wallet()
                     {
                         Id = Guid.NewGuid(),
                         UserId = sellerId,
