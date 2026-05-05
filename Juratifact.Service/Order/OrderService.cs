@@ -188,4 +188,9 @@ public class OrderService : IOrderService
 
         return "Receipt confirmed successfully.";
     }
+
+    public async Task<string> CancelOrder(Guid orderId, Request.CancelOrderRequest request)
+    {
+        return null;
+    }
 }
