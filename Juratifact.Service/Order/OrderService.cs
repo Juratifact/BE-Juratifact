@@ -2,6 +2,7 @@ using Juratifact.Repository;
 using Juratifact.Repository.Entity;
 using Juratifact.Repository.Enum;
 using Juratifact.Service.Sepay;
+using Juratifact.Service.SettlementService;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 
@@ -12,12 +13,15 @@ public class OrderService : IOrderService
     private readonly AppDbContext _dbContext;
     private readonly IHttpContextAccessor _httpContext;
     private readonly ISepayService _sepayService;
+    private readonly ISettlementService _settlementService;
     
-    public OrderService(AppDbContext dbContext, IHttpContextAccessor httpContextAccessor, ISepayService sepayService)
+    
+    public OrderService(AppDbContext dbContext, IHttpContextAccessor httpContextAccessor, ISepayService sepayService, ISettlementService settlementService)
     {
         _dbContext = dbContext;
         _httpContext = httpContextAccessor;
         _sepayService = sepayService;
+        _settlementService = settlementService;
     }
     
     public async Task<Response.CreateOrderResponse> CreateOrderProduct(Request.CreateOrderRequest request)
@@ -151,5 +155,37 @@ public class OrderService : IOrderService
 
         var result = await select.ToListAsync();
         return result;
+    }
+    
+    public async Task<string> ConfirmReceipt(Guid orderId)
+    {
+        var userId = _httpContext.HttpContext.User.Claims.FirstOrDefault(x => x.Type == "UserId")?.Value;
+        var userIdGuid = Guid.Parse(userId!);
+
+        var order = await _dbContext.Orders
+            .FirstOrDefaultAsync(x => x.Id == orderId &&
+                                      x.UserId == userIdGuid &&
+                                      x.IsDeleted == false);
+
+        if (order == null)
+        {
+            throw new Exception("Order not found or you do not have permission to access it.");
+        }
+
+        // 3. Validate order status
+        if (order.Status != OrderStatus.Delivered)
+        {
+            throw new Exception("Order is not delivered yet, cannot confirm receipt.");
+        }
+
+        // 4. Process settlement (This also updates the status to Completed internally)
+        bool isSuccess = await _settlementService.ProcessSettlementAsync(orderId);
+
+        if (!isSuccess)
+        {
+            throw new Exception("Failed to confirm receipt. Could not process settlement for the seller.");
+        }
+
+        return "Receipt confirmed successfully.";
     }
 }
