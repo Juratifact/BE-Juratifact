@@ -2,6 +2,7 @@ using Juratifact.Repository;
 using Juratifact.Repository.Entity;
 using Juratifact.Repository.Enum;
 using Juratifact.Service.MediaService;
+using Juratifact.Service.Notification;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 
@@ -12,13 +13,15 @@ public class ProductService : IProductService
     private readonly AppDbContext _dbContext;
     private readonly IMediaService _mediaService;
     private readonly IHttpContextAccessor _httpContext;
+    private readonly INotificationService _notificationService;
 
 
-    public ProductService(AppDbContext dbContext, IMediaService mediaService, IHttpContextAccessor httpContext)
+    public ProductService(AppDbContext dbContext, IMediaService mediaService, IHttpContextAccessor httpContext,  INotificationService notificationService)
     {
         _dbContext = dbContext;
         _mediaService = mediaService;
         _httpContext = httpContext;
+        _notificationService = notificationService;
     }
 
     public async Task<Base.Response.PageResult<Response.ProductResponse>> GetAll(int pageSize, int pageIndex)
@@ -337,19 +340,16 @@ public class ProductService : IProductService
         }
 
         // If ParentCommentId is provided, check if parent comment exists and belongs to the same product
+        Guid? parentCommentOwnerId = null; 
+
         if (request.ParentCommentId.HasValue)
         {
             var parentComment = await _dbContext.ProductComments.FindAsync(request.ParentCommentId.Value);
-
-            if (parentComment == null)
-            {
-                throw new ArgumentException("Parent comment not found.");
-            }
-
-            if (parentComment.ProductId != request.ProductId)
-            {
-                throw new ArgumentException("Parent comment does not belong to this product.");
-            }
+            if (parentComment == null) throw new ArgumentException("Parent comment not found.");
+            if (parentComment.ProductId != request.ProductId) throw new ArgumentException("Parent comment does not belong to this product.");
+        
+            // Lưu lại ID của người cần nhận thông báo
+            parentCommentOwnerId = parentComment.UserId;
         }
 
         var newComment = new Repository.Entity.ProductComment()
@@ -363,6 +363,16 @@ public class ProductService : IProductService
 
         _dbContext.Add(newComment);
         await _dbContext.SaveChangesAsync();
+        
+        if (parentCommentOwnerId.HasValue && parentCommentOwnerId != userIdGuid)
+        {
+            await _notificationService.SendNotification(new Notification.Request.SendNotificationRequest() 
+            {
+                UserId = parentCommentOwnerId.Value, // Gửi cho người sở hữu bình luận gốc
+                Type = NotificationType.CommentReply,
+                Data = product.Title, // Ví dụ: Gửi tên sản phẩm để họ biết đang được trả lời ở đâu
+            });
+        }
 
         var commentResponse = new Response.ProductCommentResponse()
         {

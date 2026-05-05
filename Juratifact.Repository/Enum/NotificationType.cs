@@ -5,7 +5,11 @@ public enum NotificationType
     System,             // Thông báo chung từ hệ thống
 
     // Đơn hàng & Sản phẩm
-    OrderUpdate,        // Cập nhật trạng thái đơn hàng (đã đặt, đã ship, đã nhận)
+    OrderPlaced,      // Đã đặt
+    OrderShipped,     // Đã bàn giao vận chuyển
+    OrderDelivered,   // Đã giao thành công
+    OrderCancelled,   // Đã hủy
+    OrderReturned,     // Đã hoàn trả       
     ProductStatus,      // Thông báo về trạng thái sản phẩm (hết hàng, đã bán, bị ẩn)
 
     // Tài chính (Ví tiền)

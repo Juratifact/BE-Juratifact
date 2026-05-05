@@ -1,6 +1,7 @@
 using Juratifact.Repository;
 using Juratifact.Repository.Entity;
 using Juratifact.Repository.Enum;
+using Juratifact.Service.Notification;
 using Juratifact.Service.Sepay;
 using Juratifact.Service.SettlementService;
 using Microsoft.AspNetCore.Http;
@@ -14,14 +15,16 @@ public class OrderService : IOrderService
     private readonly IHttpContextAccessor _httpContext;
     private readonly ISepayService _sepayService;
     private readonly ISettlementService _settlementService;
+    private readonly INotificationService _notificationService;
     
     
-    public OrderService(AppDbContext dbContext, IHttpContextAccessor httpContextAccessor, ISepayService sepayService, ISettlementService settlementService)
+    public OrderService(AppDbContext dbContext, IHttpContextAccessor httpContextAccessor, ISepayService sepayService, ISettlementService settlementService,  INotificationService notificationService)
     {
         _dbContext = dbContext;
         _httpContext = httpContextAccessor;
         _sepayService = sepayService;
         _settlementService = settlementService;
+        _notificationService = notificationService;
     }
     
     public async Task<Response.CreateOrderResponse> CreateOrderProduct(Request.CreateOrderRequest request)
@@ -105,6 +108,12 @@ public class OrderService : IOrderService
 
         await _dbContext.SaveChangesAsync();
         await dbTransaction.CommitAsync();
+        
+        await _notificationService.SendNotification(new Notification.Request.SendNotificationRequest() {
+            UserId = userIdGuid,
+            Type = NotificationType.OrderPlaced,
+            Data = newOrder.Name, // Chỉ cần truyền cái ID đơn hàng thôi
+        });
 
         var qrUrl = await _sepayService.GenerateQrCode(totalAmount, referenceCode);
 
@@ -185,6 +194,7 @@ public class OrderService : IOrderService
         {
             throw new Exception("Failed to confirm receipt. Could not process settlement for the seller.");
         }
+        
 
         return "Receipt confirmed successfully.";
     }
@@ -272,6 +282,12 @@ public class OrderService : IOrderService
             // 7. Save changes and commit transaction
             await _dbContext.SaveChangesAsync();
             await transaction.CommitAsync();
+            
+            await _notificationService.SendNotification(new Notification.Request.SendNotificationRequest() {
+                UserId = userIdGuid,
+                Type = NotificationType.OrderCancelled,
+                Data = order.Name, 
+            });
 
             return "Order cancelled successfully.";
             
