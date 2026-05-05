@@ -191,6 +191,96 @@ public class OrderService : IOrderService
 
     public async Task<string> CancelOrder(Guid orderId, Request.CancelOrderRequest request)
     {
-        return null;
+        var userId = _httpContext.HttpContext.User.Claims.FirstOrDefault(x => x.Type == "UserId")?.Value;
+        var userIdGuid = Guid.Parse(userId!);
+        
+        using var transaction = await _dbContext.Database.BeginTransactionAsync();
+
+        try
+        {
+            var order = await _dbContext.Orders
+                .Include(o => o.OrderDetails!)
+                .ThenInclude(od => od.Product)
+                .FirstOrDefaultAsync(x => x.Id == orderId 
+                                          && x.UserId == userIdGuid // BẢO MẬT: Phải là đơn của user này
+                                          && x.IsDeleted == false);
+
+            if (order == null)
+            {
+                throw new Exception("Order not found or you do not have permission to access it.");
+            }
+
+            if (order.Status == OrderStatus.Cancelled)
+            {
+                throw new Exception("This order has already been cancelled.");
+            }
+            
+            if ((int)order.Status >= (int)OrderStatus.Shipping)
+            {
+                throw new Exception("Order has already been handed over to the shipping carrier or is completed and cannot be cancelled.");
+            }
+            
+            // 4. Update order status
+            order.Status = OrderStatus.Cancelled;
+            order.CancelReason = request.Reason;
+            order.UpdatedAt = DateTimeOffset.UtcNow;
+            
+            // 5. Process Refund (ONLY IF ALREADY PAID)
+            if (order.PaymentStatus == PaymentStatus.Paid)
+            {
+                // Find buyer's wallet
+                var wallet = await _dbContext.Wallets.FirstOrDefaultAsync(w => w.UserId == userIdGuid);
+                if (wallet == null) 
+                    throw new Exception("Buyer's wallet not found for refund.");
+
+                // Calculate total refund amount
+                var totalRefund = order.OrderDetails!.Sum(d => d.Price);
+
+                // Credit the buyer's wallet
+                wallet.Balance += totalRefund;
+                wallet.UpdatedAt = DateTimeOffset.UtcNow;
+
+                // Generate a unique Reference Code for the refund
+                // Example format: RF-20260505162638-A1B2C3D4 (RF-Timestamp-ShortOrderId)
+                string refundRefCode = $"RF-{DateTimeOffset.UtcNow:yyyyMMddHHmmss}-{order.Id.ToString().Substring(0, 8).ToUpper()}";
+
+                // Log the refund transaction
+                var refundTx = new Transaction
+                {
+                    Id = Guid.NewGuid(),
+                    OrderId = order.Id,
+                    WalletId = wallet.Id,
+                    Amount = totalRefund,
+                    TransactionType = TransactionType.Refund, 
+                    Status = TransactionStatus.Success,
+                    ReferenceCode = refundRefCode, // <--- BỔ SUNG DÒNG NÀY VÀO ĐÂY
+                    Description = $"Refund for cancelled order {order.Id}. Reason: {request.Reason}",
+                    CreatedAt = DateTimeOffset.UtcNow
+                };
+                _dbContext.Transactions.Add(refundTx);
+
+                // Update payment status
+                order.PaymentStatus = PaymentStatus.Refunded;
+            }
+            
+            // 6. Release Inventory (Make products available again)
+            foreach (var detail in order.OrderDetails)
+            {
+                detail.Product.Status = ProductStatus.Available;
+                detail.Product.UpdatedAt = DateTimeOffset.UtcNow;
+            }
+            // 7. Save changes and commit transaction
+            await _dbContext.SaveChangesAsync();
+            await transaction.CommitAsync();
+
+            return "Order cancelled successfully.";
+            
+        }
+        catch (Exception)
+        {
+            await transaction.RollbackAsync();
+            throw; // Ném lỗi ra ngoài cho Controller bắt
+        }
+        
     }
 }
