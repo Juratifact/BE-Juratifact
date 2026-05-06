@@ -47,6 +47,18 @@ public class OrderService : IOrderService
 
         if (products.Count != productIds.Count) throw new Exception("Một số sản phẩm không tồn tại.");
 
+        // Kiểm tra xem các sản phẩm này có cùng 1 Seller không?
+        var sellerIds = products.Select(x => x.SellerId).Distinct().ToList();
+        
+        if (sellerIds.Count > 1)
+        {
+            // Nếu list SellerIds có từ 2 ID trở lên -> Khách đang mua đồ của nhiều Shop cùng lúc
+            throw new InvalidOperationException("All products in a single order must belong to the same seller. Please split your checkout.");
+        }
+        
+        var theSellerId = sellerIds.First();
+        
+        
         decimal totalAmount = 0;
         
         // 3. Xử lý Trạng thái (Chuyển sang OnHold)
@@ -72,6 +84,7 @@ public class OrderService : IOrderService
             UserId = userIdGuid,
             Name = request.Name,
             TotalPrice = totalAmount,
+            SellerId = theSellerId,
             Status = OrderStatus.PendingPayment,
             PaymentStatus = PaymentStatus.UnPaid,
             CreatedAt = DateTimeOffset.UtcNow,
