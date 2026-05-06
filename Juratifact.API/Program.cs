@@ -2,6 +2,7 @@ using Juratifact.API.Extensions;
 using Juratifact.API.Middlewares;
 using Juratifact.Repository;
 using Juratifact.Service.BackgroundJobService;
+using Juratifact.Service.Cart;
 using Juratifact.Service.Category;
 using Juratifact.Service.CloudinaryService;
 using Juratifact.Service.DiscordService;
@@ -74,6 +75,7 @@ builder.Services.AddScoped<IShipperService,ShipperService>();
 builder.Services.AddScoped<IWalletService, WalletService>();
 builder.Services.AddScoped<IDisputeService, DisputeService>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
+builder.Services.AddScoped<ICartService, CartService>();
 
 //test thử discord
 builder.Services.Configure<DiscordAlertOptions>(
