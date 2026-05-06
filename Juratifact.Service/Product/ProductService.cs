@@ -26,7 +26,7 @@ public class ProductService : IProductService
 
     public async Task<Base.Response.PageResult<Response.ProductResponse>> GetAll(int pageSize, int pageIndex)
     {
-        var query = _dbContext.Products.Where(x => x.Status == ProductStatus.Available);
+        var query = _dbContext.Products.Where(x => x.Status == ProductStatus.Available && x.IsDeleted == false);
 
         query = query.Skip((pageIndex - 1) * pageSize)
             .Take(pageSize);
@@ -101,7 +101,7 @@ public class ProductService : IProductService
     public async Task<Base.Response.PageResult<Response.ProductResponse>> GetByTitle(string? searchTerm, int pageSize,
         int pageIndex)
     {
-        var query = _dbContext.Products.Where(x => x.Status == ProductStatus.Available);
+        var query = _dbContext.Products.Where(x => x.Status == ProductStatus.Available && x.IsDeleted == false);
 
         if (searchTerm != null)
         {
@@ -140,7 +140,8 @@ public class ProductService : IProductService
         int pageSize, int pageIndex)
     {
         var query = _dbContext.Products
-            .Where(x => x.Status == ProductStatus.Available);
+            .Where(x => x.Status == ProductStatus.Available &&
+                        x.IsDeleted == false);
 
         if (searchTerm != null)
         {
@@ -324,15 +325,16 @@ public class ProductService : IProductService
         var userIdGuid = Guid.Parse(userId);
 
         // Check if product exists
-        var product = await _dbContext.Products.FindAsync(request.ProductId);
-
+        var product = await _dbContext.Products
+            .FirstOrDefaultAsync(p => p.Id == request.ProductId && p.IsDeleted == false);
+        
         if (product == null)
         {
             throw new ArgumentException("Product not found.");
         }
 
         // Check if user exists
-        var user = await _dbContext.Users.FindAsync(userIdGuid);
+        var user = await _dbContext.Users.FindAsync(userIdGuid); // Tìm theo khóa chính
 
         if (user == null)
         {
@@ -417,11 +419,13 @@ public class ProductService : IProductService
 
         // Get existing product - must belong to the authenticated user
         var product = await _dbContext.Products
-            .FirstOrDefaultAsync(x => x.Id == productId && x.SellerId == userIdGuid);
+            .FirstOrDefaultAsync(x => x.Id == productId && 
+                                      x.SellerId == userIdGuid &&
+                                      x.IsDeleted ==  false);
 
         if (product == null)
         {
-            throw new ArgumentException("Product not found or you don't have permission to update it.");
+            throw new ArgumentException("Product not found or you don't have permission to update it."); 
         }
 
         // Update product fields
@@ -516,7 +520,9 @@ public class ProductService : IProductService
 
         // Get existing product - must belong to the authenticated user
         var product = await _dbContext.Products
-            .FirstOrDefaultAsync(x => x.Id == productId && x.SellerId == userIdGuid);
+            .FirstOrDefaultAsync(x => x.Id == productId && 
+                                      x.SellerId == userIdGuid && 
+                                      x.IsDeleted ==  false);
 
         if (product == null)
         {
@@ -535,7 +541,8 @@ public class ProductService : IProductService
     public async Task<Base.Response.PageResult<Response.ProductResponse>> GetByPrice(decimal? searchTerm, int pageSize,
         int pageIndex)
     {
-        var query = _dbContext.Products.Where(x => x.Status == ProductStatus.Available);
+        var query = _dbContext.Products.Where(x => x.Status == ProductStatus.Available &&
+                                                   x.IsDeleted == false);
 
         if (searchTerm != null)
         {
