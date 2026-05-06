@@ -44,7 +44,7 @@ public class OrderController : ControllerBase
     }
     
     [Authorize(Policy = JwtExtensions.BuyerPolicy)]
-    [HttpPost("{orderId}/confirm-receipt")]
+    [HttpPut("{orderId}/confirm-receipt")]
     public async Task<IActionResult> ConfirmReceipt(Guid orderId)
     {
         var result = await _orderService.ConfirmReceipt(orderId);
@@ -52,7 +52,7 @@ public class OrderController : ControllerBase
     }
 
     [Authorize(Policy = JwtExtensions.BuyerPolicy)]
-    [HttpPost("{orderId}/cancel")]
+    [HttpPut("{orderId}/cancel")]
     public async Task<IActionResult> CancelOrder([FromRoute] Guid orderId, [FromBody] Request.CancelOrderRequest request)
     {
         var result = await _orderService.CancelOrder(orderId, request);
