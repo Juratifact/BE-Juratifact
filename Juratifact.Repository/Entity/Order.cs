@@ -8,6 +8,7 @@ public class Order: BaseEntity<Guid>,IAuditableEntity
     public required string Name { get; set; }
     public decimal TotalPrice { get; set; }
     public decimal ShippingPee { get; set; } //
+    public string? ShippingAddress { get; set; }
     public string? ShipperPod1Url { get; set; }
     public string? ShipperPod2Url { get; set; }
     public string PaymentMethod { get; set; } = "Banking";
