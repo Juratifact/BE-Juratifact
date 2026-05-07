@@ -16,7 +16,6 @@ public class Order: BaseEntity<Guid>,IAuditableEntity
     public DateTimeOffset? DeliveryAt { get; set; }
     public string? EvidenceUrl  { get; set; }
     public string? CancelReason { get; set; }
-    public Guid SellerId { get; set; }
     
     public OrderStatus Status { get; set; }
     public PaymentStatus PaymentStatus { get; set; }
