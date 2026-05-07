@@ -76,21 +76,14 @@ public class CartService : ICartService
         return "New product added to cart successfully.";
     }
 
-    public async Task<string> RemoveProduct(Guid userId, Guid cartDetailId)
+    public async Task<string> RemoveProduct(Guid userId, Guid productId)
     {
         var cartDetail = await _dbContext.CartDetails
-            .Include(cd => cd.Cart)
-            .FirstOrDefaultAsync(cd => cd.Id == cartDetailId);
-
+            .FirstOrDefaultAsync(cd => cd.ProductId == productId && cd.Cart.UserId == userId);
         
         if (cartDetail == null)
         {
             throw new ArgumentException("Cart detail not found.");
-        }
-        
-        if (cartDetail.Cart.UserId != userId)
-        {
-            throw new ArgumentException("You cannot remove the product from the cart");
         }
         
         _dbContext.CartDetails.Remove(cartDetail);

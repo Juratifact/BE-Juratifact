@@ -32,10 +32,10 @@ public class CartController : ControllerBase
         return Ok(ApiResponseFactory.SuccessResponse(result,"successfully", HttpContext.TraceIdentifier));
     }
 
-    [HttpDelete("api/remove-product-from-cart")]
-    public async Task<IActionResult> RemoveProduct(Guid userId, Guid cartDetailId)
+    [HttpDelete("api/carts/items/{productId}")]
+    public async Task<IActionResult> RemoveProduct(Guid userId, Guid productId)
     {
-        var result1 = await _cartService.RemoveProduct(userId, cartDetailId);
+        var result1 = await _cartService.RemoveProduct(userId, productId);
         return Ok(ApiResponseFactory.SuccessResponse(result1, "successfully", HttpContext.TraceIdentifier));
     }
     
