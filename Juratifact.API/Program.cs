@@ -51,7 +51,8 @@ builder.Services.AddCors(options =>
         {
             policy.WithOrigins("http://localhost:5173", 
                                 "https://juratifact.id.vn",        
-                                "https://www.juratifact.id.vn")
+                                "https://www.juratifact.id.vn",
+                                "https://fe-juratifact.vercel.app")
                 .AllowAnyHeader()
                 .AllowAnyMethod()
                 .AllowCredentials(); 
