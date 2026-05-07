@@ -1,5 +1,7 @@
+using Juratifact.API.Extensions;
 using Juratifact.Service.Models;
 using Juratifact.Service.Wallet;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Juratifact.API.Controller;
@@ -14,11 +16,12 @@ public class WalletController:ControllerBase
         _walletService = walletService;
     }
 
-    [HttpGet("api/wallet/get-wallet")]
-    public async Task<IActionResult> GetWallet(Guid userId)
+    [Authorize(Policy = JwtExtensions.BuyerPolicy)]
+    [HttpGet("my-wallet")]
+    public async Task<IActionResult> GetWallet()
     {
-        var result = await _walletService.GetMyWallet(userId);
-        return Ok(ApiResponseFactory.SuccessResponse(result,"successfully",HttpContext.TraceIdentifier));
+        var result = await _walletService.GetMyWallet();
+        return Ok(ApiResponseFactory.SuccessResponse(result,"Get wallet successfully",HttpContext.TraceIdentifier));
     }
     
 }
