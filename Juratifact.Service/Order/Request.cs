@@ -2,17 +2,11 @@ namespace Juratifact.Service.Order;
 
 public class Request
 {
-    public class CreateOrderRequest
+    public class CheckoutRequest
     {
-        public string Name { get; set; }
-        public List<ProductOrderRequest> Products { get; set; }
+        public string? ShippingAddress { get; set; }
     }
     
-    public class ProductOrderRequest
-    {
-        public Guid ProductId { get; set; }
-    }
-
     public class CancelOrderRequest
     {
         public required string Reason { get; set; }

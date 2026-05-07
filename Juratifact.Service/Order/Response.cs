@@ -7,6 +7,7 @@ public class Response
     public class CreateOrderResponse
     {
         public Guid OrderId { get; set; }
+        // public List<Guid> OrderIds { get; set; } = new();
         public required string ReferenceCode { get; set; }
         public required string QrUrl { get; set; }
     }
