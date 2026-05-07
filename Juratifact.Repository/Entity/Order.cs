@@ -8,6 +8,7 @@ public class Order: BaseEntity<Guid>,IAuditableEntity
     public required string Name { get; set; }
     public decimal TotalPrice { get; set; }
     public decimal ShippingPee { get; set; } //
+    public string? ShippingAddress { get; set; }
     public string? ShipperPod1Url { get; set; }
     public string? ShipperPod2Url { get; set; }
     public string PaymentMethod { get; set; } = "Banking";
@@ -15,7 +16,6 @@ public class Order: BaseEntity<Guid>,IAuditableEntity
     public DateTimeOffset? DeliveryAt { get; set; }
     public string? EvidenceUrl  { get; set; }
     public string? CancelReason { get; set; }
-    public Guid SellerId { get; set; }
     
     public OrderStatus Status { get; set; }
     public PaymentStatus PaymentStatus { get; set; }

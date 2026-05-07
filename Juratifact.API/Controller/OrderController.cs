@@ -37,7 +37,7 @@ public class OrderController : ControllerBase
     
     [Authorize(Policy = JwtExtensions.BuyerPolicy)]
     [HttpPost("checkout")]
-    public async Task<IActionResult> CreateOrderProduct(Request.CreateOrderRequest request)
+    public async Task<IActionResult> CreateOrderProduct(Request.CheckoutRequest request)
     {
         var result = await  _orderService.CreateOrderProduct(request);
         return Ok(ApiResponseFactory.SuccessResponse(result, "Create order successfully", HttpContext.TraceIdentifier));
