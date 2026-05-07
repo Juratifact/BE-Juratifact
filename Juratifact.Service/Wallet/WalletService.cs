@@ -12,7 +12,7 @@ public class WalletService: IWalletService
     }
     public async Task<Response.WalletResponse> GetMyWallet(Guid userId)
     {
-        var query = _dbContext.Wallets.Where(u => u.Id == userId);
+        var query = _dbContext.Wallets.Where(u => u.UserId == userId);
 
         var selected = query.Select(x => new Response.WalletResponse()
         {
