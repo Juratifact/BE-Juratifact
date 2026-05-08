@@ -52,8 +52,8 @@ public class SepayService: ISepayService
     }
 
     // 2. Tìm Transaction kèm các liên kết cần thiết (nếu chưa có bản ghi để re-use)
-    var contentUpper = (data.Content ?? string.Empty).ToUpperInvariant();
-    var referenceUpper = (data.ReferenceCode ?? string.Empty).ToUpperInvariant();
+    var contentUpper = (data.Content ?? string.Empty).ToUpper();
+    var referenceUpper = (data.ReferenceCode ?? string.Empty).ToUpper();
 
     if (transaction == null)
     {
@@ -65,9 +65,9 @@ public class SepayService: ISepayService
                 !string.IsNullOrEmpty(t.ReferenceCode) &&
                 (
                     // 1) Trường hợp webhook trả về reference khớp với `des` (referenceCode trong QR)
-                    (!string.IsNullOrEmpty(referenceUpper) && referenceUpper == t.ReferenceCode.ToUpperInvariant()) ||
+                    (!string.IsNullOrEmpty(referenceUpper) && referenceUpper == t.ReferenceCode.ToUpper()) ||
                     // 2) Trường hợp webhook trả về `content` chứa reference
-                    (!string.IsNullOrEmpty(contentUpper) && contentUpper.Contains(t.ReferenceCode.ToUpperInvariant()))
+                    (!string.IsNullOrEmpty(contentUpper) && contentUpper.Contains(t.ReferenceCode.ToUpper()))
                 ) &&
                 // Cho phép xử lý cả Pending và Failed để bắt trường hợp timeout cancel nhưng thực tế vẫn thanh toán thành công.
                 (t.Status == TransactionStatus.Pending || t.Status == TransactionStatus.Failed))
