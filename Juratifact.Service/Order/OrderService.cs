@@ -158,7 +158,7 @@ public class OrderService : IOrderService
 
     public async Task<Response.GetOrderStatusResponse> GetStatusOrder(Guid id)
     {
-        var query = _dbContext.Orders.Where(x => x.Id == id);
+        var query = _dbContext.Orders.Where(x => x.Id == id && x.IsDeleted == false);
 
         var existingOrder = await query.FirstOrDefaultAsync();
 
@@ -170,6 +170,7 @@ public class OrderService : IOrderService
         var response = new Response.GetOrderStatusResponse()
         {
             Status = existingOrder.Status,
+            PaymentStatus = existingOrder.PaymentStatus,
         };
 
         return response;
