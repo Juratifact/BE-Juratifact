@@ -21,13 +21,27 @@ public class SepayService: ISepayService
 
    public async Task<bool> ProcessSePayWebhook(Request.SepayWebhookDto data)
 {
+    var sepayEventId = data.Id > 0 ? data.Id.ToString() : null;
+
+    // Chỉ xử lý giao dịch tiền vào
+    if (!string.IsNullOrWhiteSpace(data.TransferType) &&
+        !string.Equals(data.TransferType, "in", StringComparison.OrdinalIgnoreCase))
+    {
+        _logger.LogInformation("Bỏ qua webhook transferType={TransferType}, id={Id}", data.TransferType, sepayEventId);
+        return true;
+    }
+
     // 1. Chống xử lý trùng (Idempotency)
     // Nếu SepayId đã tồn tại nhưng Order chưa được set `PaymentStatus = Paid` thì cho phép xử lý lại.
-    var existingTransaction = await _dbContext.Transactions
-        .Include(t => t.Order)
-        .Include(t => t.UserPromotionSubscription)
-            .ThenInclude(s => s.PromotionPackage)
-        .FirstOrDefaultAsync(t => t.SepayId == data.SepayId.ToString());
+    Transaction? existingTransaction = null;
+    if (!string.IsNullOrWhiteSpace(sepayEventId))
+    {
+        existingTransaction = await _dbContext.Transactions
+            .Include(t => t.Order)
+            .Include(t => t.UserPromotionSubscription)
+                .ThenInclude(s => s.PromotionPackage)
+            .FirstOrDefaultAsync(t => t.SepayId == sepayEventId);
+    }
 
     Transaction? transaction = null;
 
@@ -39,21 +53,21 @@ public class SepayService: ISepayService
              existingTransaction.Order.PaymentStatus == PaymentStatus.Settled))
         {
             _logger.LogInformation("Giao dịch {Id} đã được xử lý (order payment already {PaymentStatus}).",
-                data.SepayId, existingTransaction.Order.PaymentStatus);
+                sepayEventId, existingTransaction.Order.PaymentStatus);
             return true;
         }
 
         _logger.LogInformation(
             "Giao dịch {Id} đã tồn tại nhưng order payment chưa ở trạng thái Paid (actual: {PaymentStatus}). Tiếp tục xử lý lại.",
-            data.SepayId, existingTransaction.Order?.PaymentStatus);
+            sepayEventId, existingTransaction.Order?.PaymentStatus);
 
         // Re-use bản ghi đã Success để self-heal trạng thái order/subscription nếu lần trước cập nhật dở dang.
         transaction = existingTransaction;
     }
 
     // 2. Tìm Transaction kèm các liên kết cần thiết (nếu chưa có bản ghi để re-use)
-    var contentUpper = (data.Content ?? string.Empty).ToUpper();
-    var referenceUpper = (data.ReferenceCode ?? string.Empty).ToUpper();
+    var content = data.Content ?? string.Empty;
+    var reference = data.ReferenceCode ?? string.Empty;
 
     if (transaction == null)
     {
@@ -65,9 +79,9 @@ public class SepayService: ISepayService
                 !string.IsNullOrEmpty(t.ReferenceCode) &&
                 (
                     // 1) Trường hợp webhook trả về reference khớp với `des` (referenceCode trong QR)
-                    (!string.IsNullOrEmpty(referenceUpper) && referenceUpper == t.ReferenceCode.ToUpper()) ||
-                    // 2) Trường hợp webhook trả về `content` chứa reference
-                    (!string.IsNullOrEmpty(contentUpper) && contentUpper.Contains(t.ReferenceCode.ToUpper()))
+                    (!string.IsNullOrEmpty(reference) && EF.Functions.ILike(t.ReferenceCode, reference)) ||
+                    // 2) Trường hợp webhook trả về `content` chứa reference (không phân biệt hoa thường)
+                    (!string.IsNullOrEmpty(content) && EF.Functions.ILike(content, "%" + t.ReferenceCode + "%"))
                 ) &&
                 // Cho phép xử lý cả Pending và Failed để bắt trường hợp timeout cancel nhưng thực tế vẫn thanh toán thành công.
                 (t.Status == TransactionStatus.Pending || t.Status == TransactionStatus.Failed))
@@ -83,7 +97,7 @@ public class SepayService: ISepayService
 
         _logger.LogWarning(
             "Webhook SePay không match được transaction. SepayId={SepayId}, TransferAmount={TransferAmount}, Gateway={Gateway}, ReferenceCode={ReferenceCode}, ContentPreview={ContentPreview}",
-            data.SepayId, data.TransferAmount, data.Gateway, data.ReferenceCode, contentPreview);
+            sepayEventId, data.TransferAmount, data.Gateway, data.ReferenceCode, contentPreview);
         return false;
     }
 
@@ -101,7 +115,10 @@ public class SepayService: ISepayService
     {
         // Cập nhật thông tin chung cho Transaction
         transaction.Status = TransactionStatus.Success;
-        transaction.SepayId ??= data.SepayId.ToString();
+        if (!string.IsNullOrWhiteSpace(sepayEventId))
+        {
+            transaction.SepayId ??= sepayEventId;
+        }
         transaction.ExternalTransactionId = data.ReferenceCode;
         transaction.Description = $"Thanh toán qua {data.Gateway} lúc {data.TransactionDate}";
         transaction.UpdatedAt = DateTimeOffset.UtcNow;
