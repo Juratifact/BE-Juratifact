@@ -22,23 +22,60 @@ public class SepayService: ISepayService
    public async Task<bool> ProcessSePayWebhook(Request.SepayWebhookDto data)
 {
     // 1. Chống xử lý trùng (Idempotency)
-    if (await _dbContext.Transactions.AnyAsync(t => t.SepayId == data.SepayId.ToString()))
+    // Nếu SepayId đã tồn tại nhưng Order chưa được set `PaymentStatus = Paid` thì cho phép xử lý lại.
+    var existingTransaction = await _dbContext.Transactions
+        .Include(t => t.Order)
+        .FirstOrDefaultAsync(t => t.SepayId == data.SepayId.ToString());
+
+    if (existingTransaction != null && existingTransaction.Status == TransactionStatus.Success)
     {
-        _logger.LogInformation("Giao dịch {Id} đã được xử lý.", data.SepayId);
-        return true; 
+        if (existingTransaction.TransactionType == TransactionType.OrderPayment &&
+            existingTransaction.Order != null &&
+            (existingTransaction.Order.PaymentStatus == PaymentStatus.Paid ||
+             existingTransaction.Order.PaymentStatus == PaymentStatus.Settled))
+        {
+            _logger.LogInformation("Giao dịch {Id} đã được xử lý (order payment already {PaymentStatus}).",
+                data.SepayId, existingTransaction.Order.PaymentStatus);
+            return true;
+        }
+
+        _logger.LogInformation(
+            "Giao dịch {Id} đã tồn tại nhưng order payment chưa ở trạng thái Paid (actual: {PaymentStatus}). Tiếp tục xử lý lại.",
+            data.SepayId, existingTransaction.Order?.PaymentStatus);
     }
 
     // 2. Tìm Transaction kèm các liên kết cần thiết
+    var contentUpper = (data.Content ?? string.Empty).ToUpperInvariant();
+    var referenceUpper = (data.ReferenceCode ?? string.Empty).ToUpperInvariant();
+
     var transaction = await _dbContext.Transactions
         .Include(t => t.UserPromotionSubscription)
             .ThenInclude(s => s.PromotionPackage)
         .Include(t => t.Order) // Giả định bạn có navigation property Order
-        .FirstOrDefaultAsync(t => 
+        .Where(t =>
             !string.IsNullOrEmpty(t.ReferenceCode) &&
-            data.Content.ToUpper().Contains(t.ReferenceCode.ToUpper()) &&
-            t.Status == TransactionStatus.Pending);
+            (
+                // 1) Trường hợp webhook trả về reference khớp với `des` (referenceCode trong QR)
+                (!string.IsNullOrEmpty(referenceUpper) && referenceUpper == t.ReferenceCode.ToUpperInvariant()) ||
+                // 2) Trường hợp webhook trả về `content` chứa reference
+                (!string.IsNullOrEmpty(contentUpper) && contentUpper.Contains(t.ReferenceCode.ToUpperInvariant()))
+            ) &&
+            // Cho phép xử lý cả Pending và Failed để bắt trường hợp timeout cancel nhưng thực tế vẫn thanh toán thành công.
+            (t.Status == TransactionStatus.Pending || t.Status == TransactionStatus.Failed))
+        .OrderByDescending(t => t.CreatedAt)
+        .FirstOrDefaultAsync();
 
-    if (transaction == null) return false;
+    if (transaction == null)
+    {
+        var contentPreview = data.Content?.Length > 200
+            ? data.Content.Substring(0, 200) + "..."
+            : data.Content;
+
+        _logger.LogWarning(
+            "Webhook SePay không match được transaction. SepayId={SepayId}, TransferAmount={TransferAmount}, Gateway={Gateway}, ReferenceCode={ReferenceCode}, ContentPreview={ContentPreview}",
+            data.SepayId, data.TransferAmount, data.Gateway, data.ReferenceCode, contentPreview);
+        return false;
+    }
 
     // 3. Kiểm tra số tiền
     if (data.TransferAmount < transaction.Amount)
@@ -134,10 +171,29 @@ public class SepayService: ISepayService
 
             if (order != null)
             {
+                // Tránh ghi đè trạng thái thanh toán đã đi xa (Settled/Refunded/Completed)
+                if (order.Status == OrderStatus.Completed)
+                {
+                    _logger.LogInformation("Order {OrderId} đã Completed, bỏ qua callback cập nhật payment.", order.Id);
+                    return;
+                }
+
+                if (order.PaymentStatus == PaymentStatus.Settled)
+                {
+                    _logger.LogInformation("Order {OrderId} đã Settled, bỏ qua chuyển ngược về Paid.", order.Id);
+                    return;
+                }
+
+                if (order.PaymentStatus == PaymentStatus.Refunded)
+                {
+                    _logger.LogWarning("Order {OrderId} đã Refunded, bỏ qua callback thanh toán thành công.", order.Id);
+                    return;
+                }
+
                 // 2. Cập nhật trạng thái đơn hàng
-                order.Status = OrderStatus.Paid; // Giả sử bạn có Enum này
-                order.PaymentStatus = PaymentStatus.Paid; // Đảm bảo PaymentStatus cũng cập nhật
-                order.UpdatedAt = DateTimeOffset.UtcNow; // Sử dụng UtcNow đồng bộ với project
+                order.Status = OrderStatus.Paid;
+                order.PaymentStatus = PaymentStatus.Paid;
+                order.UpdatedAt = DateTimeOffset.UtcNow; 
 
                 // 3. Cập nhật trạng thái sản phẩm thành Sold
                 // Lấy danh sách ProductId từ OrderDetails
@@ -153,9 +209,6 @@ public class SepayService: ISepayService
                 {
                     product.Status = ProductStatus.Sold; // Cập nhật sang trạng thái Sold
                 }
-
-                // 4. Lưu tất cả thay đổi
-                await _dbContext.SaveChangesAsync();
 
                 _logger.LogInformation("Đơn hàng {OrderId} đã thanh toán. Đã cập nhật trạng thái {Count} sản phẩm thành Sold.", 
                     order.Id, products.Count);
