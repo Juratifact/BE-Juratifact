@@ -7,4 +7,6 @@ public interface IOrderService
     public Task<List<Response.GetAllOrderResponse>>  GetAllOrders();
     public Task<string> ConfirmReceipt(Guid orderId);
     public Task<string> CancelOrder(Guid orderId, Request.CancelOrderRequest request);
+    public Task<List<Response.GetAllOrderResponse>> GetMyOrder();
+    
 }

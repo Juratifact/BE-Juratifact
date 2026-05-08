@@ -26,6 +26,13 @@ public class OrderController : ControllerBase
         return Ok(ApiResponseFactory.SuccessResponse(result, "Get all order successfully", HttpContext.TraceIdentifier));
     }
     
+    [Authorize(Policy = JwtExtensions.BuyerPolicy)]
+    [HttpGet("my-order")]
+    public async Task<IActionResult> GetMyOrder()
+    {
+        var result = await _orderService.GetMyOrder();
+        return Ok(ApiResponseFactory.SuccessResponse(result, "Get my order successfully", HttpContext.TraceIdentifier));
+    }
     
     [Authorize(Policy = JwtExtensions.BuyerPolicy)]
     [HttpGet("{id}/status")]
