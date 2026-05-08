@@ -19,7 +19,7 @@ public class ShipperController:ControllerBase
 
     
     [Authorize(Policy = JwtExtensions.ShipperPolicy)]
-    [HttpGet("api/shipper/available-orders")]
+    [HttpGet("available-orders")]
     public async Task<IActionResult> GetAvailableOrders()
     {
         var result = await _shipperService.GetListOrder();
@@ -27,15 +27,23 @@ public class ShipperController:ControllerBase
     }
     
     [Authorize(Policy = JwtExtensions.ShipperPolicy)]
-    [HttpPost("api/shipper/accept-order")]
+    [HttpPost("accept-order")]
     public async Task<IActionResult> AcceptOrder(Guid orderId, Guid shipperId)
     {
         var result = await _shipperService.AcceptOrder(orderId, shipperId);
         return Ok(ApiResponseFactory.SuccessResponse(result,"successfully",HttpContext.TraceIdentifier));
     }
+
+    [Authorize(Policy = JwtExtensions.ShipperPolicy)]
+    [HttpGet("{shipperId}/my-orders")]
+    public async Task<IActionResult> GetMyOrdersShipper(Guid shipperId)
+    {
+        var result = await _shipperService.GetMyOrdersShipper(shipperId);
+        return Ok(ApiResponseFactory.SuccessResponse(result,HttpContext.TraceIdentifier));
+    }
     
     [Authorize(Policy = JwtExtensions.ShipperPolicy)]
-    [HttpPost("api/shipment/confirm-pickup")]
+    [HttpPost("confirm-pickup")]
     public async Task<IActionResult> ConfirmPickup(Guid orderId, Guid shipperId, IFormFile pod1Image)
     {
         var result = await _shipperService.ConfirmPickupOrder(orderId, shipperId, pod1Image);
@@ -43,7 +51,7 @@ public class ShipperController:ControllerBase
     }
     
     [Authorize(Policy = JwtExtensions.ShipperPolicy)]
-    [HttpPost("api/shipment/confirm-delivery")]
+    [HttpPost("confirm-delivery")]
     public async Task<IActionResult> ConfirmDelivery(Guid orderId, Guid shipperId, IFormFile pod2Image)
     {
         var result = await _shipperService.ConfirmDelivery(orderId, shipperId, pod2Image);
