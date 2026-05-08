@@ -326,4 +326,26 @@ public class OrderService : IOrderService
             throw; // Ném lỗi ra ngoài cho Controller bắt
         }
     }
+
+    public async Task<List<Response.GetAllOrderResponse>> GetMyOrder()
+    {
+        var userId = _httpContext.HttpContext.User.Claims.FirstOrDefault(x => x.Type == "UserId")?.Value;
+        if (string.IsNullOrEmpty(userId) || !Guid.TryParse(userId, out var userIdGuid))
+            throw new UnauthorizedAccessException("You are not logged in or your session has expired.");
+        
+        var query = _dbContext.Orders.Where(x => 
+            x.UserId == userIdGuid &&
+            x.IsDeleted == false);
+
+        var select = query.Select(x => new Response.GetAllOrderResponse()
+        {
+            OrderId = x.Id,
+            Name = x.Name,
+            Status = x.Status,
+            PaymentStatus = x.PaymentStatus,
+        });
+
+        var result = await select.ToListAsync();
+        return result;
+    }
 }
