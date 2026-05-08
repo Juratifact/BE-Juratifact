@@ -128,4 +128,46 @@ public class ShipperService: IShipperService
         
         return  "Successfully";
     }
+
+    public async Task<List<Response.ShipperActiveOrderResponse>> GetMyOrdersShipper(Guid shipperId)
+    {
+        var query = await _dbContext.Orders
+            .Where(o => o.ShipperId == shipperId 
+                        && o.Status != OrderStatus.Delivered 
+                        && o.Status != OrderStatus.Cancelled)
+            .Select(o => new Response.ShipperActiveOrderResponse()
+            {
+                OrderId       = o.Id,
+                Name          = o.Name,
+                Status        = o.Status,
+
+                TotalPrice    = o.TotalPrice,
+                ShippingFee   = o.ShippingPee,
+                PaymentMethod = o.PaymentMethod,
+                PaymentStatus = o.PaymentStatus,
+
+                ShippingAddress = o.ShippingAddress,
+
+                CustomerName  = o.User.FullName,
+                CustomerPhone = o.User.PhoneNumber,
+
+                PickupAt   = o.PickupAt,
+                DeliveryAt = o.DeliveryAt,
+                CreatedAt  = o.CreatedAt,
+                ExpiresAt  = o.ExpiresAt,
+
+                ShipperPod1Url = o.ShipperPod1Url,
+                ShipperPod2Url = o.ShipperPod2Url,
+
+                Items = o.OrderDetails.Select(od => new Response.OrderDetailDto()
+                {
+                    ProductId   = od.ProductId,
+                    ProductName = od.Product.Title,
+                    Price       = od.Price,
+                }).ToList()
+            })
+            .ToListAsync();
+
+        return query;
+    }
 }
