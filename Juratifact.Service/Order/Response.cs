@@ -15,6 +15,7 @@ public class Response
     public class GetOrderStatusResponse
     {
         public OrderStatus Status { get; set; }
+        public PaymentStatus PaymentStatus { get; set; }
     }
 
     public class GetAllOrderResponse
