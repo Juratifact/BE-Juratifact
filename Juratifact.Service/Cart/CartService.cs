@@ -48,10 +48,11 @@ public class CartService : ICartService
      public async Task<string> AddProduct(Guid userId, Request.CartRequest request)
     {
         var cart = await _dbContext.Carts
-            .Include(c => c.CartDetails)
             .FirstOrDefaultAsync(c => c.UserId == userId);
 
-        var existing = cart?.CartDetails.FirstOrDefault(x => x.ProductId == request.ProductId);
+        var existing = await _dbContext.CartDetails
+            .FirstOrDefaultAsync(x => x.CartId == cart.Id 
+                                      && x.ProductId == request.ProductId && x.IsDeleted == false);
 
         if (existing != null)
         {
