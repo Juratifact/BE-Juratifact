@@ -101,7 +101,7 @@ public class ShipperService: IShipperService
         var query = await _dbContext.Orders
             .FirstOrDefaultAsync(o => o.Id == orderId &&
                                       o.ShipperId == shipperId && 
-                                      o.Status == OrderStatus.Assigned);
+                                      o.Status == OrderStatus.Shipping);
         if (query == null)
         {
             throw new ArgumentException("Order not found or you have not rights");
@@ -114,8 +114,8 @@ public class ShipperService: IShipperService
             throw new ArgumentException("Image not found");
         }
         query.Status = OrderStatus.Delivered;
-        query.ShipperPod1Url = image;
-        query.PickupAt = DateTimeOffset.UtcNow;
+        query.ShipperPod2Url = image;
+        query.DeliveryAt = DateTimeOffset.UtcNow;
         query.UpdatedAt = DateTimeOffset.UtcNow;
 
         await _dbContext.SaveChangesAsync();
