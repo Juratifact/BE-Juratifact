@@ -25,7 +25,11 @@ public class SepayService: ISepayService
     // Nếu SepayId đã tồn tại nhưng Order chưa được set `PaymentStatus = Paid` thì cho phép xử lý lại.
     var existingTransaction = await _dbContext.Transactions
         .Include(t => t.Order)
+        .Include(t => t.UserPromotionSubscription)
+            .ThenInclude(s => s.PromotionPackage)
         .FirstOrDefaultAsync(t => t.SepayId == data.SepayId.ToString());
+
+    Transaction? transaction = null;
 
     if (existingTransaction != null && existingTransaction.Status == TransactionStatus.Success)
     {
@@ -42,28 +46,34 @@ public class SepayService: ISepayService
         _logger.LogInformation(
             "Giao dịch {Id} đã tồn tại nhưng order payment chưa ở trạng thái Paid (actual: {PaymentStatus}). Tiếp tục xử lý lại.",
             data.SepayId, existingTransaction.Order?.PaymentStatus);
+
+        // Re-use bản ghi đã Success để self-heal trạng thái order/subscription nếu lần trước cập nhật dở dang.
+        transaction = existingTransaction;
     }
 
-    // 2. Tìm Transaction kèm các liên kết cần thiết
+    // 2. Tìm Transaction kèm các liên kết cần thiết (nếu chưa có bản ghi để re-use)
     var contentUpper = (data.Content ?? string.Empty).ToUpperInvariant();
     var referenceUpper = (data.ReferenceCode ?? string.Empty).ToUpperInvariant();
 
-    var transaction = await _dbContext.Transactions
-        .Include(t => t.UserPromotionSubscription)
-            .ThenInclude(s => s.PromotionPackage)
-        .Include(t => t.Order) // Giả định bạn có navigation property Order
-        .Where(t =>
-            !string.IsNullOrEmpty(t.ReferenceCode) &&
-            (
-                // 1) Trường hợp webhook trả về reference khớp với `des` (referenceCode trong QR)
-                (!string.IsNullOrEmpty(referenceUpper) && referenceUpper == t.ReferenceCode.ToUpperInvariant()) ||
-                // 2) Trường hợp webhook trả về `content` chứa reference
-                (!string.IsNullOrEmpty(contentUpper) && contentUpper.Contains(t.ReferenceCode.ToUpperInvariant()))
-            ) &&
-            // Cho phép xử lý cả Pending và Failed để bắt trường hợp timeout cancel nhưng thực tế vẫn thanh toán thành công.
-            (t.Status == TransactionStatus.Pending || t.Status == TransactionStatus.Failed))
-        .OrderByDescending(t => t.CreatedAt)
-        .FirstOrDefaultAsync();
+    if (transaction == null)
+    {
+        transaction = await _dbContext.Transactions
+            .Include(t => t.UserPromotionSubscription)
+                .ThenInclude(s => s.PromotionPackage)
+            .Include(t => t.Order) // Giả định bạn có navigation property Order
+            .Where(t =>
+                !string.IsNullOrEmpty(t.ReferenceCode) &&
+                (
+                    // 1) Trường hợp webhook trả về reference khớp với `des` (referenceCode trong QR)
+                    (!string.IsNullOrEmpty(referenceUpper) && referenceUpper == t.ReferenceCode.ToUpperInvariant()) ||
+                    // 2) Trường hợp webhook trả về `content` chứa reference
+                    (!string.IsNullOrEmpty(contentUpper) && contentUpper.Contains(t.ReferenceCode.ToUpperInvariant()))
+                ) &&
+                // Cho phép xử lý cả Pending và Failed để bắt trường hợp timeout cancel nhưng thực tế vẫn thanh toán thành công.
+                (t.Status == TransactionStatus.Pending || t.Status == TransactionStatus.Failed))
+            .OrderByDescending(t => t.CreatedAt)
+            .FirstOrDefaultAsync();
+    }
 
     if (transaction == null)
     {
@@ -91,10 +101,10 @@ public class SepayService: ISepayService
     {
         // Cập nhật thông tin chung cho Transaction
         transaction.Status = TransactionStatus.Success;
-        transaction.SepayId = data.SepayId.ToString();
+        transaction.SepayId ??= data.SepayId.ToString();
         transaction.ExternalTransactionId = data.ReferenceCode;
         transaction.Description = $"Thanh toán qua {data.Gateway} lúc {data.TransactionDate}";
-        transaction.UpdatedAt = DateTime.Now;
+        transaction.UpdatedAt = DateTimeOffset.UtcNow;
 
         // 4. Điều hướng xử lý theo TransactionType
         switch (transaction.TransactionType)
