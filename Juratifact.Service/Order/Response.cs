@@ -24,4 +24,16 @@ public class Response
         public OrderStatus Status { get; set; }
         public PaymentStatus PaymentStatus { get; set; }
     }
+
+    public class GetMyOrderResponse : GetAllOrderResponse
+    {
+        public Guid ProductId { get; set; }
+        public required string Title { get; set; }
+        public required string Condition { get; set; }
+        public decimal Price { get; set; }
+        public Guid SellerId { get; set; }
+        public string? UserName { get; set; }
+        public required string SellerName { get; set; }
+    }
+    
 }
