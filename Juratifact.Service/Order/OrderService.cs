@@ -327,25 +327,39 @@ public class OrderService : IOrderService
         }
     }
 
-    public async Task<List<Response.GetAllOrderResponse>> GetMyOrder()
+    public async Task<List<Response.GetMyOrderResponse>> GetMyOrder()
     {
         var userId = _httpContext.HttpContext.User.Claims.FirstOrDefault(x => x.Type == "UserId")?.Value;
         if (string.IsNullOrEmpty(userId) || !Guid.TryParse(userId, out var userIdGuid))
             throw new UnauthorizedAccessException("You are not logged in or your session has expired.");
-        
-        var query = _dbContext.Orders.Where(x => 
-            x.UserId == userIdGuid &&
-            x.IsDeleted == false);
 
-        var select = query.Select(x => new Response.GetAllOrderResponse()
-        {
-            OrderId = x.Id,
-            Name = x.Name,
-            Status = x.Status,
-            PaymentStatus = x.PaymentStatus,
-        });
+        // 2. Truy vấn và Map dữ liệu thẳng trên Database
+        var result = await _dbContext.Orders
+            .Where(x => x.UserId == userIdGuid && x.IsDeleted == false)
+            // Dùng SelectMany để bóc mỗi OrderDetail thành 1 object GetMyOrderResponse riêng biệt
+            .SelectMany(order => order.OrderDetails.Select(od => new Response.GetMyOrderResponse()
+            {
+                // --- CÁC TRƯỜNG CỦA ORDER ---
+                OrderId = order.Id,
+                Name = order.Name,
+                Status = order.Status,
+                PaymentStatus = order.PaymentStatus,
+            
+                // --- CÁC TRƯỜNG CỦA SẢN PHẨM ---
+                ProductId = od.ProductId,
+                Title = od.Product.Title,
+                Condition = od.Product.Condition,
+            
+                // 🔥 QUAN TRỌNG: Lấy giá từ OrderDetail (giá lúc mua), KHÔNG lấy từ Product!
+                Price = od.Price, 
+            
+                // --- CÁC TRƯỜNG CỦA SELLER ---
+                SellerId = od.Product.SellerId,
+                SellerName = od.Product.Seller.FullName,
+                UserName = od.Product.Seller.UserName
+            }))
+            .ToListAsync(); // Thực thi lệnh SQL dưới Database
 
-        var result = await select.ToListAsync();
         return result;
     }
 }
