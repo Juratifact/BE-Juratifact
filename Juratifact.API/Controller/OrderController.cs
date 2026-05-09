@@ -66,6 +66,14 @@ public class OrderController : ControllerBase
         return Ok(ApiResponseFactory.SuccessResponse(result, "Cancel order successfully", HttpContext.TraceIdentifier));
     }
 
+    [Authorize(Policy = JwtExtensions.BuyerPolicy)]
+    [HttpPut("{orderId}/cancel-checkout")]
+    public async Task<IActionResult> CancelCheckout(Guid orderId)
+    {
+        var result = await _orderService.CancelCheckout(orderId);
+        return Ok(ApiResponseFactory.SuccessResponse(result, "Cancel checkout successfully", HttpContext.TraceIdentifier));
+    }
+
     [HttpGet("get-products-by-orderId")]
     public async Task<IActionResult> GetProductbyOrderId(Guid orderId, Guid productId)
     {
