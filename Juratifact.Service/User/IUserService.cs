@@ -11,4 +11,5 @@ public interface IUserService
     public Task<Response.GetUserResponse>  GetUserProfile(Guid id);
     public Task<Response.GetUserResponse>  GetUserByName(string userName);
     public Task<Base.Response.PageResult<Response.GetUserResponse>> GetAllUser(string? searchTerm, int pageIndex, int pageSize);
+    public Task<string> CreatShipper(Request.CreateShipperRequest request);
 }

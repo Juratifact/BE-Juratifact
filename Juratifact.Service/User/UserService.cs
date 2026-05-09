@@ -67,7 +67,7 @@ public class UserService : IUserService
             HashedPassword = secureHashedPassword, 
             FullName = request.FullName,
             PhoneNumber = request.PhoneNumber,
-            IsVerify = true,
+            IsVerify = false, // xác thực false
             CreatedAt = DateTimeOffset.UtcNow
         };
         
@@ -361,6 +361,136 @@ public class UserService : IUserService
         return result;
         
 
+    }
+
+    public async Task<string> CreatShipper(Request.CreateShipperRequest request)
+    {
+        string secureHashedPassword = Argon2Hasher.HashPassword(request.Password);
+        var existingUserQuery = _dbContext.Users
+            .Where(x => x.Email == request.Email);
+        
+        bool isExistUser = await existingUserQuery.AnyAsync();
+        
+        if (isExistUser)
+        {
+            throw new ArgumentException("User exist with mail.");
+        }
+        
+        // Validate email format
+        if (!IsValidEmail(request.Email))
+        {
+            throw new ArgumentException("Invalid email format.");
+        }
+        
+        // Check PhoneNumber
+        if (!IsValidPhoneNumber(request.PhoneNumber))
+        {
+            throw new ArgumentException("Invalid phone number format.");
+        }
+        
+        // Check duplicate phone number
+        var existingPhoneQuery = _dbContext.Users
+            .Where(x => x.PhoneNumber == request.PhoneNumber);
+        
+        bool isPhoneExist = await existingPhoneQuery.AnyAsync();
+        
+        if (isPhoneExist)
+        {
+            throw new ArgumentException("Phone number already exists.");
+        }
+        
+        
+        var shipper = new Repository.Entity.User()
+        {
+            Email = request.Email,
+            HashedPassword = secureHashedPassword, 
+            FullName = request.FullName,
+            PhoneNumber = request.PhoneNumber,
+            IsVerify = false, // khi mà verify căn cước, thì cái này mới đổi trạng thái
+            CreatedAt = DateTimeOffset.UtcNow
+        };
+        
+        _dbContext.Add(shipper);
+        await _dbContext.SaveChangesAsync();
+        
+        var shipperRole = await _dbContext.Roles
+            .FirstOrDefaultAsync(x => x.Name == "Shipper");
+        
+        if (shipperRole == null)
+        {
+            shipperRole = new Repository.Entity.Role()
+            {
+                Name = "Shipper",
+                CreatedAt = DateTimeOffset.UtcNow
+            };
+            
+            _dbContext.Roles.Add(shipperRole);
+            await _dbContext.SaveChangesAsync();
+        }
+        
+        var userRole = new Repository.Entity.UserRole()
+        {
+            UserId = shipper.Id,
+            RoleId = shipperRole.Id,
+            CreatedAt = DateTimeOffset.UtcNow
+        };
+        
+        _dbContext.UserRoles.Add(userRole);
+        await _dbContext.SaveChangesAsync();
+
+        var userWallet = new Repository.Entity.Wallet()
+        {
+            UserId = shipper.Id,
+            CreatedAt = DateTimeOffset.UtcNow,
+            Balance = 0,
+            PendingBalance = 0
+        };
+        
+        _dbContext.Wallets.Add(userWallet);
+        await _dbContext.SaveChangesAsync();
+
+        var shipperCart = new Repository.Entity.Cart()
+        {
+            UserId = shipper.Id,
+            CreatedAt = DateTimeOffset.UtcNow
+        };
+        
+        _dbContext.Carts.Add(shipperCart);
+        await _dbContext.SaveChangesAsync();
+        
+        // Send welcome email
+        try
+        {
+            var mailContent = new MailContent
+            {
+                To = request.Email,
+                Subject = "Welcome to Juratifact",
+                Body = $@"
+                    <h2>Welcome to Juratifact!</h2>
+                    <p>Hello {request.FullName},</p>
+                    <p>Your account has been successfully created!</p>
+                    <br/>
+                    <p><strong>Account Information:</strong></p>
+                    <ul>
+                        <li>Email: {request.Email}</li>
+                        <li>Full Name: {request.FullName}</li>
+                        <li>Role: Shipper</li>
+                    </ul>
+                    <br/>
+                    <p>You can now log in and start shopping with us.</p>
+                    <br/>
+                    <p>Best regards,<br/><strong>Juratifact Team</strong></p>
+                "
+            };
+            
+            await _mailService.SendMail(mailContent);
+        }
+        catch
+        {
+            throw new Exception("User registered but failed to send welcome email.");
+            // Log email sending error but don't fail the user creation
+        }
+        return "User registered successfully!";
     }
 
     private bool IsValidEmail(string email)

@@ -200,6 +200,11 @@ public class ProductService : IProductService
             throw new ArgumentException("User not found.");
         }
 
+        if (!user.IsVerify)
+        {
+            throw new Exception("You should verify before posting product.");
+        }
+
         // Format condition input to match DB values (case-insensitive)
         var validConditions = new Dictionary<string, string>
         {
@@ -339,6 +344,11 @@ public class ProductService : IProductService
         if (user == null)
         {
             throw new ArgumentException("User not found.");
+        }
+        
+        if (!user.IsVerify)
+        {
+            throw new Exception("You should verify before comment product.");
         }
 
         // If ParentCommentId is provided, check if parent comment exists and belongs to the same product
@@ -509,6 +519,11 @@ public class ProductService : IProductService
         if (user == null)
         {
             throw new ArgumentException("User not found.");
+        }
+        
+        if (!user.IsVerify)
+        {
+            throw new Exception("You should verify before delete product.");
         }
 
         var hasSellerRole = user.UserRoles.Any(ur => ur.Role.Name == "Seller" ||
