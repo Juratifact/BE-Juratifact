@@ -43,6 +43,14 @@ public class ShipperController:ControllerBase
     }
     
     [Authorize(Policy = JwtExtensions.ShipperPolicy)]
+    [HttpGet("my-ordersByOrderID")]
+    public async Task<IActionResult> GetMyOrdersShipperByOrderId(Guid shipperId, Guid orderId)
+    {
+        var result = await _shipperService.GetMyOrdersShipperByOrderId(shipperId, orderId);
+        return Ok(ApiResponseFactory.SuccessResponse(result,HttpContext.TraceIdentifier));
+    }
+    
+    [Authorize(Policy = JwtExtensions.ShipperPolicy)]
     [HttpPost("confirm-pickup")]
     public async Task<IActionResult> ConfirmPickup(Guid orderId, Guid shipperId, IFormFile pod1Image)
     {
