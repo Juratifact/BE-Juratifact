@@ -334,6 +334,72 @@ public class OrderService : IOrderService
         }
     }
 
+    public async Task<string> CancelCheckout(Guid orderId)
+    {
+        var userId = _httpContext.HttpContext?.User.Claims.FirstOrDefault(x => x.Type == "UserId")?.Value;
+        if (string.IsNullOrEmpty(userId) || !Guid.TryParse(userId, out var userIdGuid))
+            throw new UnauthorizedAccessException("You are not logged in or your session has expired.");
+
+        using var transaction = await _dbContext.Database.BeginTransactionAsync();
+
+        try
+        {
+            var order = await _dbContext.Orders
+                .Include(o => o.OrderDetails!)
+                .ThenInclude(od => od.Product)
+                .FirstOrDefaultAsync(x => x.Id == orderId
+                                          && x.UserId == userIdGuid
+                                          && x.IsDeleted == false);
+
+            if (order == null)
+            {
+                throw new Exception("Order not found or you do not have permission to access it.");
+            }
+
+            if (order.Status != OrderStatus.PendingPayment)
+            {
+                throw new Exception("Only orders waiting for payment can be cancelled via this method.");
+            }
+
+            // 1. Update order status
+            order.Status = OrderStatus.Cancelled;
+            order.PaymentStatus = PaymentStatus.Failed; // Mark as failed because user aborted checkout
+            order.CancelReason = "User cancelled checkout";
+            order.UpdatedAt = DateTimeOffset.UtcNow;
+
+            // 2. Update Pending Transactions to Failed
+            var pendingTransactions = await _dbContext.Transactions
+                .Where(t => t.OrderId == orderId && t.Status == TransactionStatus.Pending)
+                .ToListAsync();
+
+            foreach (var tx in pendingTransactions)
+            {
+                tx.Status = TransactionStatus.Failed;
+                tx.UpdatedAt = DateTimeOffset.UtcNow;
+            }
+
+            // 3. Release Inventory (Make products available again)
+            if (order.OrderDetails != null)
+            {
+                foreach (var detail in order.OrderDetails)
+                {
+                    detail.Product.Status = ProductStatus.Available;
+                    detail.Product.UpdatedAt = DateTimeOffset.UtcNow;
+                }
+            }
+
+            await _dbContext.SaveChangesAsync();
+            await transaction.CommitAsync();
+
+            return "Checkout cancelled successfully.";
+        }
+        catch (Exception)
+        {
+            await transaction.RollbackAsync();
+            throw;
+        }
+    }
+
     public async Task<List<Response.GetMyOrderResponse>> GetMyOrder()
     {
         var userId = _httpContext.HttpContext.User.Claims.FirstOrDefault(x => x.Type == "UserId")?.Value;
