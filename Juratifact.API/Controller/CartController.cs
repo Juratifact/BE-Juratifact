@@ -19,9 +19,9 @@ public class CartController : ControllerBase
     }
 
     [HttpGet("my-cart")]
-    public async Task<IActionResult> GetMyCart()
+    public async Task<IActionResult> GetMyCart(int pageIndex = 1, int pageSize = 10)
     {
-        var cart = await _cartService.GetMyCart();
+        var cart = await _cartService.GetMyCart(pageIndex, pageSize);
         return Ok(ApiResponseFactory.SuccessResponse(cart, "Get my cart successfully", HttpContext.TraceIdentifier));
     }
     
