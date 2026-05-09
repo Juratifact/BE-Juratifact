@@ -113,28 +113,32 @@ public class IdentityDocumentService : IIdentityDocumentService
 
     public async Task<Response.IdentityDocumentResponse> GetMyDocumentAsync()
     {
-        var userId = _httpContext.HttpContext.User.Claims.FirstOrDefault(x => x.Type == "UserId")?.Value;
+        var userId = _httpContext.HttpContext.User.Claims
+            .FirstOrDefault(x => x.Type == "UserId")?.Value;
+
+        if (string.IsNullOrEmpty(userId))
+            throw new UnauthorizedAccessException("You are not logged in.");
+
+        var userIdGuid = Guid.Parse(userId);
         
-        var userIdGuid = Guid.Parse(userId!);
-        var identityDocument = await _dbContext.IdentityDocuments.FirstOrDefaultAsync(x => x.UserId == userIdGuid);
+        var identityDocument = await _dbContext.IdentityDocuments
+            .Include(x => x.User)
+            .FirstOrDefaultAsync(x => x.UserId == userIdGuid);
 
         if (identityDocument == null)
-        {
             return null;
-        }
-
-        var query = _dbContext.IdentityDocuments.Include(x => x.User);
 
         var response = new Response.IdentityDocumentResponse
         {
-            Id = identityDocument.Id,
+            Id             = identityDocument.Id,
             IdCardFrontUrl = identityDocument.IdCardFrontUrl,
-            IdCardBackUrl = identityDocument.IdCardBackUrl,
-            SelfieUrl = identityDocument.SelfieUrl,
-            Status = identityDocument.Status,
-            CreatedAt = identityDocument.CreatedAt,
-            Note = identityDocument.Note,
-            VerifiedAt = identityDocument.VerifiedAt
+            IdCardBackUrl  = identityDocument.IdCardBackUrl,
+            SelfieUrl      = identityDocument.SelfieUrl,
+            Status         = identityDocument.Status,
+            CreatedAt      = identityDocument.CreatedAt,
+            Note           = identityDocument.Note,
+            VerifiedAt     = identityDocument.VerifiedAt,
+            IsVerify       = identityDocument.User!.IsVerify,  
         };
 
         return response;
@@ -245,6 +249,7 @@ public class IdentityDocumentService : IIdentityDocumentService
         identityDocument.VerifiedBy = adminIdGuid.ToString();
         identityDocument.UpdatedAt = DateTimeOffset.UtcNow;
         user!.IsVerify = true;
+        user.UpdatedAt = DateTimeOffset.UtcNow;
 
         _dbContext.IdentityDocuments.Update(identityDocument);
         _dbContext.Users.Update(user);
