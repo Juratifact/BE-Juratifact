@@ -65,6 +65,11 @@ public class OrderController : ControllerBase
         var result = await _orderService.CancelOrder(orderId, request);
         return Ok(ApiResponseFactory.SuccessResponse(result, "Cancel order successfully", HttpContext.TraceIdentifier));
     }
-    
 
+    [HttpGet("get-products-by-orderId")]
+    public async Task<IActionResult> GetProductbyOrderId(Guid orderId, Guid productId)
+    {
+        var result = await _orderService.GetProductbyOrderId(orderId, productId);
+        return Ok(ApiResponseFactory.SuccessResponse(result, "Get order successfully", HttpContext.TraceIdentifier));
+    }
 }
