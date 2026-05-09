@@ -236,11 +236,14 @@ public class IdentityDocumentService : IIdentityDocumentService
         {
             throw new Exception("Identity document not found");
         }
+        
+        var user = await _dbContext.Users.FirstOrDefaultAsync(x => x.Id == identityDocument.UserId);
 
         identityDocument.Status = IdentityStatus.Verified;
         identityDocument.VerifiedAt = DateTimeOffset.UtcNow;
         identityDocument.VerifiedBy = adminIdGuid.ToString();
         identityDocument.UpdatedAt = DateTimeOffset.UtcNow;
+        user!.IsVerify = true;
 
         _dbContext.IdentityDocuments.Update(identityDocument);
         var check = await _dbContext.SaveChangesAsync();
