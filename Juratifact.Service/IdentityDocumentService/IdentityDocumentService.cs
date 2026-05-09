@@ -246,6 +246,7 @@ public class IdentityDocumentService : IIdentityDocumentService
         user!.IsVerify = true;
 
         _dbContext.IdentityDocuments.Update(identityDocument);
+        _dbContext.Users.Update(user);
         var check = await _dbContext.SaveChangesAsync();
 
         if (check > 0)
