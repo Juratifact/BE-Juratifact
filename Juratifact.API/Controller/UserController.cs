@@ -66,5 +66,13 @@ public class UserController : ControllerBase
         var result = await _userService.SoftDeleteUser(id);
         return Ok(ApiResponseFactory.SuccessResponse(result, "User removed", HttpContext.TraceIdentifier));
     }
+
+    [Authorize(Policy = JwtExtensions.AdminPolicy)]
+    [HttpPost("admin/register-admin")]
+    public async Task<IActionResult> AdminRegisterAdmin([FromForm] Request.CreateShipperRequest request)
+    {
+        var result = await _userService.CreatShipper(request);
+        return Ok(ApiResponseFactory.SuccessResponse(result, "Shipper created by Admin", HttpContext.TraceIdentifier));
+    }
     
 }
