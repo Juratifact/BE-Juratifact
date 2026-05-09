@@ -77,7 +77,10 @@ public class ReportService: IReportService
 
     public async Task<Base.Response.PageResult<Response.ReportResponse>> GetReport(string? searchTerm,int pageSize, int pageIndex)
     {
-        var query = _dbContext.Reports.Where(x => true);
+        var query = _dbContext.Reports
+            .Include(x => x.Product)
+            .Include(x => x.User)
+            .Where(x => x.Product.Status == ProductStatus.Available);
 
         
         if (searchTerm != null)
@@ -86,16 +89,15 @@ public class ReportService: IReportService
         }
         query = query.OrderBy(x => x.CreatedAt);
         query = query.Skip((pageIndex - 1) * pageSize).Take(pageSize);
-
+        
         var selectedReport = query.Select(x => new Response.ReportResponse()
         {
             Id = x.Id,
-            ProductId = x.ProductId,
-            UserId = x.UserId,
+            Reporter = x.User,
             Reason = x.Reason,
             Description = x.Description,
             Status = x.Status,
-
+            Product = x.Product
         });
         
         var listResult = await selectedReport.ToListAsync();

@@ -40,14 +40,20 @@ public class OrderService : IOrderService
             .FirstOrDefault(x => x.Type == "UserId")?.Value;
         if (string.IsNullOrEmpty(userIdStr) || !Guid.TryParse(userIdStr, out var userIdGuid))
             throw new UnauthorizedAccessException("You are not logged in or your session has expired.");
-
+        
+        
+        
         using var dbTransaction = await _dbContext.Database.BeginTransactionAsync();
         try
         {
             // 2. Lấy thông tin User
             var user = await _dbContext.Users.FirstOrDefaultAsync(u => u.Id == userIdGuid);
             if (user == null) throw new KeyNotFoundException("Account information not found.");
-
+            var identityDocuments = await _dbContext.IdentityDocuments.FirstOrDefaultAsync(x => x.UserId == userIdGuid);
+            if (identityDocuments.Status != IdentityStatus.Verified)
+            {
+                throw new Exception("Your identity document is not verified.");
+            }
             // 3. Xử lý địa chỉ
             string? finalAddress = !string.IsNullOrWhiteSpace(request.ShippingAddress)
                 ? request.ShippingAddress
