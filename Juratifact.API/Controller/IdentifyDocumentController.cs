@@ -59,7 +59,7 @@ public class IdentifyDocumentController: ControllerBase
         var document = await _identityDocumentService.GetMyDocumentAsync();
         if (document == null)
         {
-            return Ok("You have not submitted any identity document yet.");
+            return  Ok(ApiResponseFactory.SuccessResponse(document, "You have not submitted identity document", HttpContext.TraceIdentifier));
         }
         return Ok(ApiResponseFactory.SuccessResponse(document, "Get my identity document successfully", HttpContext.TraceIdentifier));
     }

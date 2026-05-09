@@ -120,7 +120,7 @@ public class IdentityDocumentService : IIdentityDocumentService
 
         if (identityDocument == null)
         {
-            throw new Exception("Identity document not found");
+            return null;
         }
 
         var query = _dbContext.IdentityDocuments.Include(x => x.User);
