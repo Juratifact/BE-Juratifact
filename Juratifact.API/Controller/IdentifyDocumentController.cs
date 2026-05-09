@@ -57,6 +57,10 @@ public class IdentifyDocumentController: ControllerBase
     public async Task<IActionResult> GetMyDocument()
     {
         var document = await _identityDocumentService.GetMyDocumentAsync();
+        if (document == null)
+        {
+            return NotFound();
+        }
         return Ok(ApiResponseFactory.SuccessResponse(document, "Get my identity document successfully", HttpContext.TraceIdentifier));
     }
 
