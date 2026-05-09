@@ -16,7 +16,7 @@ public class CartService : ICartService
         _httpContext = httpContext;
     }
 
-    public async Task<List<Response.GetCartResponse>> GetMyCart()
+    public async Task<Base.Response.PageResult<Response.GetCartResponse>> GetMyCart(int pageIndex, int pageSize)
     {
         var userId = _httpContext.HttpContext.User.Claims.FirstOrDefault(x => x.Type == "UserId")?.Value;
         if (string.IsNullOrEmpty(userId) || !Guid.TryParse(userId, out var userIdGuid))
@@ -24,26 +24,49 @@ public class CartService : ICartService
             throw new UnauthorizedAccessException("You are not logged in or your session has expired.");
         }
 
+        var query = _dbContext.CartDetails
+            .Include(cd => cd.Product)
+            .ThenInclude(p => p.ProductMedias)
+            .Include(cd => cd.Product)
+            .ThenInclude(p => p.Seller)
+            .Where(cd => cd.Cart.UserId == userIdGuid && cd.IsDeleted == false && cd.Cart.IsDeleted == false);
+        
+        query = query.OrderByDescending(cd => cd.CreatedAt);
+        query = query.Where(x => x.Cart.IsDeleted == false);
+        query = query.Skip((pageIndex - 1) * pageSize).Take(pageSize);
+        var totalItems = await query.CountAsync();
 
-        // 2. Lấy dữ liệu trực tiếp và Map thẳng sang Response
-        var cartItems = await _dbContext.Carts
-            .Where(c => c.UserId == userIdGuid && c.IsDeleted == false)
-            .SelectMany(c => c.CartDetails) // Làm phẳng: Lấy toàn bộ CartDetails của cái Cart này
-            .Where(cd => cd.IsDeleted == false) // Đảm bảo sản phẩm trong giỏ chưa bị xóa
-            .Select(cd => new Response.GetCartResponse()
-            {
-                ProductId = cd.ProductId,
-                Title = cd.Product.Title,
-                Condition = cd.Product.Condition,
-                Price = cd.Product.Price,
-                SellerId = cd.Product.SellerId,
-                UserName = cd.Product.Seller.UserName,
-                SellerName = cd.Product.Seller.FullName
-            })
-            .ToListAsync();
 
-        return cartItems;
-     }
+
+        var items = await query.Select(cd => new Response.GetCartResponse
+        {
+            CartDetailId = cd.Id,
+            ProductId = cd.ProductId,
+            ProductTitle = cd.Product.Title,
+            ProductImageUrls = cd.Product.ProductMedias
+                .Where(pm => pm.IsDeleted == false)
+                .Select(pm => pm.ImageUrl).ToList(),
+            ProductVideoUrls = cd.Product.ProductMedias
+                .Where(pm => pm.IsDeleted == false)
+                .Select(pm => pm.Video).ToList(),
+            Price = cd.Product.Price,
+            Quantity = cd.Quantity,
+            Condition = cd.Product.Condition,
+            SellerId = cd.Product.SellerId,
+            SellerName = cd.Product.Seller.FullName,
+            AddedAt = cd.CreatedAt
+        }).ToListAsync();
+            
+        
+
+        return new Base.Response.PageResult<Response.GetCartResponse>
+        {
+            Items = items,
+            TotalItems = totalItems,
+            PageIndex = pageIndex,
+            PageSize = pageSize
+        };
+    }
      
      public async Task<string> AddProduct(Guid userId, Request.CartRequest request)
     {

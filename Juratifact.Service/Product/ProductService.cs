@@ -16,7 +16,8 @@ public class ProductService : IProductService
     private readonly INotificationService _notificationService;
 
 
-    public ProductService(AppDbContext dbContext, IMediaService mediaService, IHttpContextAccessor httpContext,  INotificationService notificationService)
+    public ProductService(AppDbContext dbContext, IMediaService mediaService, IHttpContextAccessor httpContext,
+        INotificationService notificationService)
     {
         _dbContext = dbContext;
         _mediaService = mediaService;
@@ -65,11 +66,11 @@ public class ProductService : IProductService
         }
 
         var userIdGuid = Guid.Parse(userId);
-        
+
         var query = _dbContext.Products
-                                    .Where(x => x.Status == ProductStatus.Available &&
-                                            x.SellerId == userIdGuid &&
-                                            x.IsDeleted  == false);
+            .Where(x => x.Status == ProductStatus.Available &&
+                        x.SellerId == userIdGuid &&
+                        x.IsDeleted == false);
 
         query = query.Skip((pageIndex - 1) * pageSize)
             .Take(pageSize);
@@ -175,7 +176,6 @@ public class ProductService : IProductService
         };
         return result;
     }
-    
 
 
     public async Task<string> CreateProduct(Request.CreateProductRequest request)
@@ -276,28 +276,42 @@ public class ProductService : IProductService
         await _dbContext.SaveChangesAsync();
 
         // Upload image and create ProductMedia
-        string? imageUrl = null;
-        string? videoUrl = null;
+        // Upload tất cả Images và Videos song song
+        var imageUrls = new List<string>();
+        var videoUrls = new List<string>();
 
-        if (request.Image != null)
+        if (request.Images != null && request.Images.Count > 0)
         {
-            imageUrl = await _mediaService.UploadAsync(request.Image);
+            var uploadTasks = request.Images.Select(img => _mediaService.UploadAsync(img));
+            var results = await Task.WhenAll(uploadTasks); // ← upload song song
+            imageUrls.AddRange(results);
         }
 
-        if (request.Video != null)
+        if (request.Videos != null && request.Videos.Count > 0)
         {
-            videoUrl = await _mediaService.UploadVideoAsync(request.Video);
+            var uploadTasks = request.Videos.Select(vid => _mediaService.UploadVideoAsync(vid));
+            var results = await Task.WhenAll(uploadTasks); // ← upload song song
+            videoUrls.AddRange(results);
         }
 
-        var productMedia = new Repository.Entity.ProductMedia()
-        {
-            ImageUrl = imageUrl ?? "",
-            Video = videoUrl,
-            ProductId = product.Id,
-            CreatedAt = DateTimeOffset.UtcNow
-        };
+// Tạo ProductMedia cho từng file
+        var mediaList = new List<Repository.Entity.ProductMedia>();
 
-        _dbContext.ProductMedia.Add(productMedia);
+// Lấy count lớn hơn để loop
+        int maxCount = Math.Max(imageUrls.Count, videoUrls.Count);
+
+        for (int i = 0; i < maxCount; i++)
+        {
+            mediaList.Add(new Repository.Entity.ProductMedia()
+            {
+                ImageUrl   = i < imageUrls.Count ? imageUrls[i] : "",
+                Video      = i < videoUrls.Count ? videoUrls[i] : null,
+                ProductId  = product.Id,
+                CreatedAt  = DateTimeOffset.UtcNow
+            });
+        }
+
+        _dbContext.ProductMedia.AddRange(mediaList);
         await _dbContext.SaveChangesAsync();
 
 
@@ -332,7 +346,7 @@ public class ProductService : IProductService
         // Check if product exists
         var product = await _dbContext.Products
             .FirstOrDefaultAsync(p => p.Id == request.ProductId && p.IsDeleted == false);
-        
+
         if (product == null)
         {
             throw new ArgumentException("Product not found.");
@@ -345,21 +359,22 @@ public class ProductService : IProductService
         {
             throw new ArgumentException("User not found.");
         }
-        
+
         if (!user.IsVerify)
         {
             throw new Exception("You should verify before comment product.");
         }
 
         // If ParentCommentId is provided, check if parent comment exists and belongs to the same product
-        Guid? parentCommentOwnerId = null; 
+        Guid? parentCommentOwnerId = null;
 
         if (request.ParentCommentId.HasValue)
         {
             var parentComment = await _dbContext.ProductComments.FindAsync(request.ParentCommentId.Value);
             if (parentComment == null) throw new ArgumentException("Parent comment not found.");
-            if (parentComment.ProductId != request.ProductId) throw new ArgumentException("Parent comment does not belong to this product.");
-        
+            if (parentComment.ProductId != request.ProductId)
+                throw new ArgumentException("Parent comment does not belong to this product.");
+
             // Lưu lại ID của người cần nhận thông báo
             parentCommentOwnerId = parentComment.UserId;
         }
@@ -375,10 +390,10 @@ public class ProductService : IProductService
 
         _dbContext.Add(newComment);
         await _dbContext.SaveChangesAsync();
-        
+
         if (parentCommentOwnerId.HasValue && parentCommentOwnerId != userIdGuid)
         {
-            await _notificationService.SendNotification(new Notification.Request.SendNotificationRequest() 
+            await _notificationService.SendNotification(new Notification.Request.SendNotificationRequest()
             {
                 UserId = parentCommentOwnerId.Value, // Gửi cho người sở hữu bình luận gốc
                 Type = NotificationType.CommentReply,
@@ -429,13 +444,13 @@ public class ProductService : IProductService
 
         // Get existing product - must belong to the authenticated user
         var product = await _dbContext.Products
-            .FirstOrDefaultAsync(x => x.Id == productId && 
+            .FirstOrDefaultAsync(x => x.Id == productId &&
                                       x.SellerId == userIdGuid &&
-                                      x.IsDeleted ==  false);
+                                      x.IsDeleted == false);
 
         if (product == null)
         {
-            throw new ArgumentException("Product not found or you don't have permission to update it."); 
+            throw new ArgumentException("Product not found or you don't have permission to update it.");
         }
 
         // Update product fields
@@ -520,7 +535,7 @@ public class ProductService : IProductService
         {
             throw new ArgumentException("User not found.");
         }
-        
+
         if (!user.IsVerify)
         {
             throw new Exception("You should verify before delete product.");
@@ -535,9 +550,9 @@ public class ProductService : IProductService
 
         // Get existing product - must belong to the authenticated user
         var product = await _dbContext.Products
-            .FirstOrDefaultAsync(x => x.Id == productId && 
-                                      x.SellerId == userIdGuid && 
-                                      x.IsDeleted ==  false);
+            .FirstOrDefaultAsync(x => x.Id == productId &&
+                                      x.SellerId == userIdGuid &&
+                                      x.IsDeleted == false);
 
         if (product == null)
         {
@@ -657,5 +672,4 @@ public class ProductService : IProductService
 
         return product;
     }
-
 }

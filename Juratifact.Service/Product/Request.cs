@@ -11,8 +11,8 @@ public class Request
         public required string Condition { get; set; }
         public string Description { get; set; } = null!;
         public decimal Price { get; set; }
-        public IFormFile? Image { get; set; }
-        public IFormFile? Video { get; set; }
+        public List<IFormFile>? Images { get; set; }  // ← nhiều ảnh
+        public List<IFormFile>? Videos { get; set; }  // ← nhiều video
         public List<Guid>? CategoryIds { get; set; }
     }
 
