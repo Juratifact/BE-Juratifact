@@ -160,4 +160,42 @@ public class ReportService: IReportService
         return "Report rejected not successfully";
 
     }
+
+    public async Task<Response.ProductResponse> GetProductByReportId(Guid reportId)
+    {
+        var report =_dbContext.Reports.Include(x => x.User)
+            .Include(x => x.Product).ThenInclude(p => p.ProductMedias).Where(x => x.Id == reportId);
+
+        if (report == null)
+        {
+            throw new ArgumentException("Report not found.");
+        }
+
+        var selected = report.Select(x => new Response.ProductResponse()
+        {
+            Id = x.Id,
+            Reason = x.Reason,
+            Description = x.Description,
+            Product = new Response.ProductListResponse()
+            {
+                ProductId = x.Product.Id,
+                SellerId = x.Product.SellerId,
+                Title = x.Product.Title,
+                Description = x.Description,
+                Price = x.Product.Price,
+                Condition = x.Product.Condition,
+                Video = x.Product.ProductMedias.Select(m => m.Video!).ToList(),
+                ImageUrl = x.Product.ProductMedias.Select(m => m.ImageUrl).ToList(),
+            },
+            User = new Response.UserReport()
+            {
+                Id = x.User.Id,
+                FullName = x.User.FullName,
+            }
+        });
+        
+        var result = await selected.FirstOrDefaultAsync();
+        
+        return result!;
+    }
 }
