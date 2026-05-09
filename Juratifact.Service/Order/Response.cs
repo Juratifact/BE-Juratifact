@@ -37,4 +37,15 @@ public class Response
         public required string SellerName { get; set; }
     }
     
+    public class ProductListResponse
+    {
+        public Guid ProductId { get; set; }
+        public Guid SellerId { get; set; }
+        public string Title { get; set; }
+        public string? Description { get; set; }
+        public string Condition { get; set; }
+        public decimal? Price { get; set; }
+        public List<string> ImageUrl { get; set; }
+        public List<string> Video { get; set; }
+    }
 }
