@@ -245,6 +245,7 @@ public class IdentityDocumentService : IIdentityDocumentService
         identityDocument.VerifiedBy = adminIdGuid.ToString();
         identityDocument.UpdatedAt = DateTimeOffset.UtcNow;
         user!.IsVerify = true;
+        user.UpdatedAt = DateTimeOffset.UtcNow;
 
         _dbContext.IdentityDocuments.Update(identityDocument);
         _dbContext.Users.Update(user);
