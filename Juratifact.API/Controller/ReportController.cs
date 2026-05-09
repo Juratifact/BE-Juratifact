@@ -35,6 +35,14 @@ public class ReportController:ControllerBase
         return Ok(ApiResponseFactory.SuccessResponse(reports, HttpContext.TraceIdentifier));
     }
     
+    [Authorize(Policy = JwtExtensions.AdminPolicy)]
+    [HttpGet("GetReport/{id}")]
+    public async Task<IActionResult> GetReportById(Guid id)
+    {
+        var reports = await _reportService.GetProductByReportId(id);
+        return Ok(ApiResponseFactory.SuccessResponse(reports, HttpContext.TraceIdentifier));
+    }
+    
     
     [Authorize(Policy = JwtExtensions.AdminPolicy)]
     [HttpPut("AproveReport/BannedProduct")]
