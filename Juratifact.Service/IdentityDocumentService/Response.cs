@@ -15,6 +15,7 @@ public class Response
         public string? Note          { get; set; } 
         public DateTimeOffset? VerifiedAt { get; set; }
         public DateTimeOffset CreatedAt   { get; set; }
+        public bool IsVerify { get; set; }
     }
 
     public class UserSummary
