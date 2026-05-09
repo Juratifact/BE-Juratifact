@@ -11,6 +11,6 @@ public class Response
         public string? Description { get; set; }
         public ReportStatus Status { get; set; }
         public Repository.Entity.Product Product { get; set; }
-        public Guid UserId { get; set; }
+        public Repository.Entity.User Reporter { get; set; }
     }
 }

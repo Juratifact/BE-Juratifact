@@ -77,7 +77,10 @@ public class ReportService: IReportService
 
     public async Task<Base.Response.PageResult<Response.ReportResponse>> GetReport(string? searchTerm,int pageSize, int pageIndex)
     {
-        var query = _dbContext.Reports.Include(x => x.Product).Where(x => true);
+        var query = _dbContext.Reports
+            .Include(x => x.Product)
+            .Include(x => x.User)
+            .Where(x => x.Product.Status == ProductStatus.Available);
 
         
         if (searchTerm != null)
@@ -90,7 +93,7 @@ public class ReportService: IReportService
         var selectedReport = query.Select(x => new Response.ReportResponse()
         {
             Id = x.Id,
-            UserId = x.UserId,
+            Reporter = x.User,
             Reason = x.Reason,
             Description = x.Description,
             Status = x.Status,
