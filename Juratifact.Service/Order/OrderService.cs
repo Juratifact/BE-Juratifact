@@ -369,4 +369,33 @@ public class OrderService : IOrderService
 
         return result;
     }
+
+    public async Task<Response.ProductListResponse> GetProductbyOrderId(Guid orderId, Guid productId)
+    {
+        var query = _dbContext.OrderDetails
+            .Include(od => od.Product)
+            .ThenInclude(p => p.ProductMedias)
+            .Where(od => od.OrderId == orderId && od.ProductId == productId);
+        
+        
+        var selected = query.Select(x => new Response.ProductListResponse()
+        {
+            ProductId = x.Product.Id,
+            Title = x.Product.Title,
+            Price = x.Price,
+            Description = x.Product.Description,
+            Condition = x.Product.Condition,
+            ImageUrl = x.Product.ProductMedias.Select(m => m.ImageUrl).ToList(),
+            Video = x.Product.ProductMedias.Select(m => m.Video!).ToList(),
+
+        });
+        var result = await selected.FirstOrDefaultAsync();
+        
+        if (result == null)
+        {
+            throw new ArgumentException("Product not found.");
+        }
+        return result;
+
+    }
 }
