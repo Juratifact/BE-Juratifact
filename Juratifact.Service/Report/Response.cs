@@ -10,7 +10,7 @@ public class Response
         public string Reason { get; set; } = "";
         public string? Description { get; set; }
         public ReportStatus Status { get; set; }
-        public Guid ProductId { get; set; }
+        public Repository.Entity.Product Product { get; set; }
         public Guid UserId { get; set; }
     }
 }
