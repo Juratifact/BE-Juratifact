@@ -172,7 +172,8 @@ public class IdentityDocumentService : IIdentityDocumentService
                 Id = x.User.Id,
                 FullName = x.User.FullName,
                 ProfilePicture = x.User.ProfilePicture,
-                Email = x.User.Email
+                Email = x.User.Email,
+                IsVerify = x.User.IsVerify
             }
         });
 
