@@ -75,34 +75,77 @@ public class ReportService: IReportService
         return "Report created successfully";
     }
 
-    public async Task<Base.Response.PageResult<Response.ReportResponse>> GetReport(string? searchTerm,int pageSize, int pageIndex)
+    public async Task<Base.Response.PageResult<Response.ReportResponse>> GetReport(string? searchTerm, int pageSize, int pageIndex)
     {
         var query = _dbContext.Reports
-            .Include(x => x.Product)
             .Include(x => x.User)
+            .Include(x => x.Product)
+                .ThenInclude(p => p.Seller)
+            .Include(x => x.Product)
+                .ThenInclude(p => p.ProductMedias)
+            .Include(x => x.Product)
+                .ThenInclude(p => p.ProductCategories)
+                .ThenInclude(pc => pc.Category)
+            .Include(x => x.Product)
+                .ThenInclude(p => p.ProductPromotions)
+            .Include(x => x.Product)
+                .ThenInclude(p => p.ProductComments)
             .Where(x => x.Product.Status == ProductStatus.Available);
 
-        
-        if (searchTerm != null)
+        if (!string.IsNullOrEmpty(searchTerm))
         {
             query = query.Where(x => x.Reason.Contains(searchTerm));
         }
-        query = query.OrderBy(x => x.CreatedAt);
-        query = query.Skip((pageIndex - 1) * pageSize).Take(pageSize);
-        
-        var selectedReport = query.Select(x => new Response.ReportResponse()
-        {
-            Id = x.Id,
-            Reporter = x.User,
-            Reason = x.Reason,
-            Description = x.Description,
-            Status = x.Status,
-            Product = x.Product
-        });
-        
-        var listResult = await selectedReport.ToListAsync();
-        var totalItems = listResult.Count;
- 
+
+        var totalItems = await query.CountAsync();
+
+        var listResult = await query
+            .OrderBy(x => x.CreatedAt)
+            .Skip((pageIndex - 1) * pageSize)
+            .Take(pageSize)
+            .Select(x => new Response.ReportResponse()
+            {
+                Id = x.Id,
+                Reporter = new Response.UserResponse()
+                {
+                    Id = x.User.Id,
+                    FullName = x.User.FullName,
+                    Email = x.User.Email,
+                    PhoneNumber = x.User.PhoneNumber,
+                    ProfilePicture = x.User.ProfilePicture
+                },
+                Reason = x.Reason,
+                Description = x.Description,
+                Status = x.Status,
+                Product = new Response.ProductDetailResponse()
+                {
+                    Id = x.Product.Id,
+                    Seller = x.Product.Seller != null ? new Response.UserResponse()
+                    {
+                        Id = x.Product.Seller.Id,
+                        FullName = x.Product.Seller.FullName,
+                        Email = x.Product.Seller.Email,
+                        PhoneNumber = x.Product.Seller.PhoneNumber,
+                        ProfilePicture = x.Product.Seller.ProfilePicture
+                    } : null,
+                    Title = x.Product.Title,
+                    Condition = x.Product.Condition,
+                    Description = x.Product.Description,
+                    Price = x.Product.Price,
+                    Status = x.Product.Status,
+                    CreatedAt = x.Product.CreatedAt,
+                    UpdatedAt = x.Product.UpdatedAt,
+                    ImageUrl = x.Product.ProductMedias.Select(m => m.ImageUrl).ToList(),
+                    Video = x.Product.ProductMedias.Select(m => m.Video).ToList(),
+                    ProductCategories = x.Product.ProductCategories.Select(pc => new Response.CategoryResponse()
+                    {
+                        CategoryId = pc.CategoryId,
+                        CategoryName = pc.Category.Name
+                    }).ToList()
+                }
+            })
+            .ToListAsync();
+
         var result = new Base.Response.PageResult<Response.ReportResponse>()
         {
             Items = listResult,
@@ -111,7 +154,6 @@ public class ReportService: IReportService
             TotalItems = totalItems,
         };
         return result;
-
     }
     
 
@@ -163,41 +205,70 @@ public class ReportService: IReportService
 
     }
 
-    public async Task<Response.ProductResponse> GetProductByReportId(Guid reportId)
+    public async Task<Response.ReportResponse> GetProductByReportId(Guid reportId)
     {
-        var report =_dbContext.Reports.Include(x => x.User)
-            .Include(x => x.Product).ThenInclude(p => p.ProductMedias).Where(x => x.Id == reportId);
+        var report = _dbContext.Reports
+            .Include(x => x.User)
+            .Include(x => x.Product)
+                .ThenInclude(p => p.Seller)
+            .Include(x => x.Product)
+                .ThenInclude(p => p.ProductMedias)
+            .Include(x => x.Product)
+                .ThenInclude(p => p.ProductCategories)
+                .ThenInclude(pc => pc.Category)
+            .Include(x => x.Product)
+                .ThenInclude(p => p.ProductPromotions)
+            .Include(x => x.Product)
+                .ThenInclude(p => p.ProductComments)
+            .Where(x => x.Id == reportId);
 
-        if (report == null)
+        var result = await report.Select(x => new Response.ReportResponse()
+        {
+            Id = x.Id,
+            Reporter = new Response.UserResponse()
+            {
+                Id = x.User.Id,
+                FullName = x.User.FullName,
+                Email = x.User.Email,
+                PhoneNumber = x.User.PhoneNumber,
+                ProfilePicture = x.User.ProfilePicture
+            },
+            Reason = x.Reason,
+            Description = x.Description,
+            Status = x.Status,
+            Product = new Response.ProductDetailResponse()
+            {
+                Id = x.Product.Id,
+                Seller = x.Product.Seller! != null ? new Response.UserResponse()
+                {
+                    Id = x.Product.Seller.Id,
+                    FullName = x.Product.Seller.FullName,
+                    Email = x.Product.Seller.Email,
+                    PhoneNumber = x.Product.Seller.PhoneNumber,
+                    ProfilePicture = x.Product.Seller.ProfilePicture
+                } : null,
+                Title = x.Product.Title,
+                Condition = x.Product.Condition,
+                Description = x.Product.Description,
+                Price = x.Product.Price,
+                Status = x.Product.Status,
+                CreatedAt = x.Product.CreatedAt,
+                UpdatedAt = x.Product.UpdatedAt,
+                ImageUrl = x.Product.ProductMedias.Select(m => m.ImageUrl).ToList(),
+                Video = x.Product.ProductMedias.Select(m => m.Video).ToList(),
+                ProductCategories = x.Product.ProductCategories.Select(pc => new Response.CategoryResponse()
+                {
+                    CategoryId = pc.CategoryId,
+                    CategoryName = pc.Category.Name
+                }).ToList()
+            }
+        }).FirstOrDefaultAsync();
+
+        if (result == null)
         {
             throw new ArgumentException("Report not found.");
         }
 
-        var selected = report.Select(x => new Response.ProductResponse()
-        {
-            Id = x.Id,
-            Reason = x.Reason,
-            Description = x.Description,
-            Product = new Response.ProductListResponse()
-            {
-                ProductId = x.Product.Id,
-                SellerId = x.Product.SellerId,
-                Title = x.Product.Title,
-                Description = x.Description,
-                Price = x.Product.Price,
-                Condition = x.Product.Condition,
-                Video = x.Product.ProductMedias.Select(m => m.Video!).ToList(),
-                ImageUrl = x.Product.ProductMedias.Select(m => m.ImageUrl).ToList(),
-            },
-            User = new Response.UserReport()
-            {
-                Id = x.User.Id,
-                FullName = x.User.FullName,
-            }
-        });
-        
-        var result = await selected.FirstOrDefaultAsync();
-        
-        return result!;
+        return result;
     }
 }
