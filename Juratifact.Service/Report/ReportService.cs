@@ -120,7 +120,7 @@ public class ReportService: IReportService
                 Product = new Response.ProductDetailResponse()
                 {
                     Id = x.Product.Id,
-                    Seller = x.Product.Seller != null ? new Response.UserResponse()
+                    Seller = x.Product.Seller! != null ? new Response.UserResponse()
                     {
                         Id = x.Product.Seller.Id,
                         FullName = x.Product.Seller.FullName,
