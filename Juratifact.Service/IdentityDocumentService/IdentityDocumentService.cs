@@ -26,6 +26,12 @@ public class IdentityDocumentService : IIdentityDocumentService
         
         var userIdGuid = Guid.Parse(userId!);
         
+        var checkIdentityDocument = await _dbContext.IdentityDocuments.FirstOrDefaultAsync(x => x.UserId == userIdGuid);
+        if (checkIdentityDocument != null)
+        {
+            throw new Exception("You have already submitted an identity document");
+        }
+        
         var frontIdUrl = string.Empty;
         var backIdUrl = string.Empty;
         var selfieUrl = string.Empty;
