@@ -78,15 +78,15 @@ builder.Services.AddScoped<IDisputeService, DisputeService>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddScoped<ICartService, CartService>();
 
-//test thử discord
+
 builder.Services.Configure<DiscordAlertOptions>(
     builder.Configuration.GetSection("DiscordAlertOptions"));
-builder.Services.AddHttpClient<IDiscordService, DiscordService>(); // AddHttpClient là do nó tự gọi API ở bên ngoài
-// Cụ thể ở đây của mình là tự gọi API webhook của discord
+builder.Services.AddHttpClient<IDiscordService, DiscordService>(); 
+
 
 builder.Services.AddQuartz(q =>
 {
-    // 1. Cấu hình cho CancelOrderJob: Chạy mỗi 1 phút
+   
     var orderJobKey = new JobKey("CancelOrderJob");
     q.AddJob<CancelOrderJob>(opts => opts.WithIdentity(orderJobKey));
     q.AddTrigger(opts => opts
@@ -94,7 +94,7 @@ builder.Services.AddQuartz(q =>
         .WithIdentity("CancelOrderJob-trigger")
         .WithSimpleSchedule(x => x.WithIntervalInMinutes(1).RepeatForever()));
 
-    // 2. Cấu hình cho SubscriptionExpiryJob: Chạy mỗi 1 giờ
+    
     var subJobKey = new JobKey("SubscriptionExpiryJob");
     q.AddJob<SubscriptionExpiryJob>(opts => opts.WithIdentity(subJobKey));
     q.AddTrigger(opts => opts
@@ -107,11 +107,11 @@ builder.Services.AddQuartzHostedService(q => q.WaitForJobsToComplete = true);
 
 builder.Services.AddQuartz(q =>
 {
-    // Đăng ký Job của bạn bình thường
+   
     var jobKey = new JobKey("AutoSettlementJob");
     q.AddJob<AutoSettlementJob>(opts => opts.WithIdentity(jobKey));
     
-    // Hẹn giờ chạy mỗi 1 tiếng
+    
     q.AddTrigger(opts => opts
         .ForJob(jobKey)
         .WithIdentity("AutoSettlementJob-trigger")
@@ -124,7 +124,7 @@ builder.Services.AddTransient<GlobalExceptionHandlerMiddleware>();
 var app = builder.Build();
 
 app.UseMiddleware<GlobalExceptionHandlerMiddleware>();
-// Configure the HTTP request pipeline.
+
 
 app.UseSwaggerAPI();
 app.MapHub<Juratifact.Service.Hubs.NotificationHub>("/notificationHub");

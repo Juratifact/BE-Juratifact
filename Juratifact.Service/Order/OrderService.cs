@@ -35,7 +35,7 @@ public class OrderService : IOrderService
         // K thể chạy được
 
 
-        // 1. Lấy UserId từ Token
+        
         var userIdStr = _httpContext.HttpContext?.User.Claims
             .FirstOrDefault(x => x.Type == "UserId")?.Value;
         if (string.IsNullOrEmpty(userIdStr) || !Guid.TryParse(userIdStr, out var userIdGuid))
@@ -46,7 +46,7 @@ public class OrderService : IOrderService
         using var dbTransaction = await _dbContext.Database.BeginTransactionAsync();
         try
         {
-            // 2. Lấy thông tin User
+           
             var user = await _dbContext.Users.FirstOrDefaultAsync(u => u.Id == userIdGuid);
             if (user == null) throw new KeyNotFoundException("Account information not found.");
             var identityDocuments = await _dbContext.IdentityDocuments.FirstOrDefaultAsync(x => x.UserId == userIdGuid);
@@ -54,7 +54,7 @@ public class OrderService : IOrderService
             {
                 throw new Exception("Your identity document is not verified.");
             }
-            // 3. Xử lý địa chỉ
+            
             string? finalAddress = !string.IsNullOrWhiteSpace(request.ShippingAddress)
                 ? request.ShippingAddress
                 : user.Address;
@@ -63,7 +63,7 @@ public class OrderService : IOrderService
                 throw new InvalidOperationException(
                     "Please provide a shipping address. Your profile currently does not have a default address.");
 
-            // 4. Đọc giỏ hàng
+            
             var cart = await _dbContext.Carts
                 .Include(c => c.CartDetails)
                 .ThenInclude(cd => cd.Product)
@@ -74,7 +74,7 @@ public class OrderService : IOrderService
 
             var activeItems = cart.CartDetails.Where(cd => cd.IsDeleted == false).ToList();
 
-            // 5. Validate & tính tổng tiền (KHÔNG chặn multi-seller nữa)
+           
             decimal totalAmount = 0;
             foreach (var item in activeItems)
             {
@@ -89,7 +89,7 @@ public class OrderService : IOrderService
 
             if (totalAmount <= 0) throw new Exception("Invalid total order amount.");
 
-            // 6. Tạo 1 Order duy nhất (bỏ SellerId vì có nhiều Seller)
+        
             var newOrder = new Repository.Entity.Order()
             {
                 Id = Guid.NewGuid(),
@@ -105,13 +105,13 @@ public class OrderService : IOrderService
             };
             _dbContext.Orders.Add(newOrder);
 
-            // 7. Tạo OrderDetails & dọn giỏ hàng
+          
             foreach (var item in activeItems)
             {
                 _dbContext.OrderDetails.Add(new OrderDetail()
                 {
                     Id = Guid.NewGuid(),
-                    OrderId = newOrder.Id, // ← Tất cả đều chung 1 OrderId
+                    OrderId = newOrder.Id, 
                     ProductId = item.ProductId,
                     Price = item.Product.Price,
                     CreatedAt = DateTimeOffset.UtcNow,
@@ -134,11 +134,11 @@ public class OrderService : IOrderService
                 CreatedAt = DateTimeOffset.UtcNow,
             });
 
-            // 9. Lưu DB & Commit
+           
             await _dbContext.SaveChangesAsync();
             await dbTransaction.CommitAsync();
 
-            // 10. Gửi notification & tạo QR
+           
             await _notificationService.SendNotification(new Notification.Request.SendNotificationRequest()
             {
                 UserId = userIdGuid,
@@ -276,19 +276,18 @@ public class OrderService : IOrderService
                 if (wallet == null)
                     throw new Exception("Buyer's wallet not found for refund.");
 
-                // Calculate total refund amount
+                
                 var totalRefund = order.OrderDetails!.Sum(d => d.Price);
 
-                // Credit the buyer's wallet
+             
                 wallet.Balance += totalRefund;
                 wallet.UpdatedAt = DateTimeOffset.UtcNow;
 
-                // Generate a unique Reference Code for the refund
-                // Example format: RF-20260505162638-A1B2C3D4 (RF-Timestamp-ShortOrderId)
+               
                 string refundRefCode =
                     $"RF-{DateTimeOffset.UtcNow:yyyyMMddHHmmss}-{order.Id.ToString().Substring(0, 8).ToUpper()}";
 
-                // Log the refund transaction
+                
                 var refundTx = new Transaction
                 {
                     Id = Guid.NewGuid(),
@@ -303,18 +302,18 @@ public class OrderService : IOrderService
                 };
                 _dbContext.Transactions.Add(refundTx);
 
-                // Update payment status
+               
                 order.PaymentStatus = PaymentStatus.Refunded;
             }
 
-            // 6. Release Inventory (Make products available again)
+           
             foreach (var detail in order.OrderDetails)
             {
                 detail.Product.Status = ProductStatus.Available;
                 detail.Product.UpdatedAt = DateTimeOffset.UtcNow;
             }
 
-            // 7. Save changes and commit transaction
+      
             await _dbContext.SaveChangesAsync();
             await transaction.CommitAsync();
 
@@ -361,13 +360,13 @@ public class OrderService : IOrderService
                 throw new Exception("Only orders waiting for payment can be cancelled via this method.");
             }
 
-            // 1. Update order status
+           
             order.Status = OrderStatus.Cancelled;
             order.PaymentStatus = PaymentStatus.Failed; // Mark as failed because user aborted checkout
             order.CancelReason = "User cancelled checkout";
             order.UpdatedAt = DateTimeOffset.UtcNow;
 
-            // 2. Update Pending Transactions to Failed
+        
             var pendingTransactions = await _dbContext.Transactions
                 .Where(t => t.OrderId == orderId && t.Status == TransactionStatus.Pending)
                 .ToListAsync();
@@ -378,7 +377,7 @@ public class OrderService : IOrderService
                 tx.UpdatedAt = DateTimeOffset.UtcNow;
             }
 
-            // 3. Release Inventory (Make products available again)
+           
             if (order.OrderDetails != null)
             {
                 foreach (var detail in order.OrderDetails)
@@ -406,32 +405,32 @@ public class OrderService : IOrderService
         if (string.IsNullOrEmpty(userId) || !Guid.TryParse(userId, out var userIdGuid))
             throw new UnauthorizedAccessException("You are not logged in or your session has expired.");
 
-        // 2. Truy vấn và Map dữ liệu thẳng trên Database
+       
         var result = await _dbContext.Orders
             .Where(x => x.UserId == userIdGuid && x.IsDeleted == false)
             // Dùng SelectMany để bóc mỗi OrderDetail thành 1 object GetMyOrderResponse riêng biệt
             .SelectMany(order => order.OrderDetails.Select(od => new Response.GetMyOrderResponse()
             {
-                // --- CÁC TRƯỜNG CỦA ORDER ---
+              
                 OrderId = order.Id,
                 Name = order.Name,
                 Status = order.Status,
                 PaymentStatus = order.PaymentStatus,
             
-                // --- CÁC TRƯỜNG CỦA SẢN PHẨM ---
+               
                 ProductId = od.ProductId,
                 Title = od.Product.Title,
                 Condition = od.Product.Condition,
             
-                // 🔥 QUAN TRỌNG: Lấy giá từ OrderDetail (giá lúc mua), KHÔNG lấy từ Product!
+                
                 Price = od.Price, 
             
-                // --- CÁC TRƯỜNG CỦA SELLER ---
+               
                 SellerId = od.Product.SellerId,
                 SellerName = od.Product.Seller.FullName,
                 UserName = od.Product.Seller.UserName
             }))
-            .ToListAsync(); // Thực thi lệnh SQL dưới Database
+            .ToListAsync(); 
 
         return result;
     }
