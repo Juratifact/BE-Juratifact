@@ -36,6 +36,8 @@ public class Response
         public required string Content { get; set; } //Comment
         public string? UserName { get; set; }
         public Guid? ParentCommentId { get; set; } // If this is a reply
+        public DateTimeOffset CreatedAt { get; set; }
+        public DateTimeOffset? UpdatedAt { get; set; }
     }
 
     public class ProductCommentResponseFull : ProductResponse

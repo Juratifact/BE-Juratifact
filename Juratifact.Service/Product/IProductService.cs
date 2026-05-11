@@ -38,4 +38,10 @@ public interface IProductService
     public Task<Response.ProductCommentsResponse> GetProductCommentsByProductId(
         Guid productId);
 
+    public Task<string> DeleteComment(Guid commentId);
+
+    public Task<string> UpdateComment(Guid commentId, Request.UpdateProductCommentRequest request);
+
+    public Task<List<Response.ProductCommentResponse>> GetMyComments();
+
 }

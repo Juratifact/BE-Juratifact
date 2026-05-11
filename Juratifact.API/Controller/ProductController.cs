@@ -88,5 +88,29 @@ public class ProductController : ControllerBase
         var result = await _productService.SoftDeleteProductPostingById(id);
         return Ok(ApiResponseFactory.SuccessResponse(result, "Product removed", HttpContext.TraceIdentifier));
     }
+
+    [Authorize(Policy = JwtExtensions.BuyerPolicy)]
+    [HttpDelete("Comment/{id}")]
+    public async Task<IActionResult> DeleteComment(Guid id)
+    {
+        var result = await _productService.DeleteComment(id);
+        return Ok(ApiResponseFactory.SuccessResponse(result, "Comment removed", HttpContext.TraceIdentifier));
+    }
+
+    [Authorize(Policy = JwtExtensions.BuyerPolicy)]
+    [HttpPut("Comment/{id}")]
+    public async Task<IActionResult> UpdateComment(Guid id, [FromBody] Request.UpdateProductCommentRequest request)
+    {
+        var result = await _productService.UpdateComment(id, request);
+        return Ok(ApiResponseFactory.SuccessResponse(result, "Comment updated", HttpContext.TraceIdentifier));
+    }
+
+    [Authorize(Policy = JwtExtensions.BuyerPolicy)]
+    [HttpGet("MyComments")]
+    public async Task<IActionResult> GetMyComments()
+    {
+        var result = await _productService.GetMyComments();
+        return Ok(ApiResponseFactory.SuccessResponse(result, HttpContext.TraceIdentifier));
+    }
     
 }
