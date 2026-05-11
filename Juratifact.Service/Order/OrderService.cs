@@ -166,6 +166,7 @@ public class OrderService : IOrderService
     {
         var query = _dbContext.Orders.Where(x => x.Id == id && x.IsDeleted == false);
 
+        query = query.OrderByDescending(x => x.CreatedAt);
         var existingOrder = await query.FirstOrDefaultAsync();
 
         if (existingOrder == null)
@@ -177,6 +178,8 @@ public class OrderService : IOrderService
         {
             Status = existingOrder.Status,
             PaymentStatus = existingOrder.PaymentStatus,
+            CreatedAt = existingOrder.CreatedAt,
+            UpdatedAt = existingOrder.UpdatedAt
         };
 
         return response;
@@ -185,13 +188,15 @@ public class OrderService : IOrderService
     public async Task<List<Response.GetAllOrderResponse>> GetAllOrders()
     {
         var query = _dbContext.Orders.Where(x => x.IsDeleted == false);
-
+        query = query.OrderByDescending(x => x.CreatedAt);
         var select = query.Select(x => new Response.GetAllOrderResponse()
         {
             OrderId = x.Id,
             Name = x.Name,
             Status = x.Status,
             PaymentStatus = x.PaymentStatus,
+            CreatedAt = x.CreatedAt,
+            UpdatedAt = x.UpdatedAt
         });
 
         var result = await select.ToListAsync();
@@ -408,6 +413,7 @@ public class OrderService : IOrderService
        
         var result = await _dbContext.Orders
             .Where(x => x.UserId == userIdGuid && x.IsDeleted == false)
+            .OrderByDescending(x => x.CreatedAt)
             // Dùng SelectMany để bóc mỗi OrderDetail thành 1 object GetMyOrderResponse riêng biệt
             .SelectMany(order => order.OrderDetails.Select(od => new Response.GetMyOrderResponse()
             {
@@ -416,6 +422,8 @@ public class OrderService : IOrderService
                 Name = order.Name,
                 Status = order.Status,
                 PaymentStatus = order.PaymentStatus,
+                CreatedAt = order.CreatedAt,
+                UpdatedAt = order.UpdatedAt,
             
                
                 ProductId = od.ProductId,

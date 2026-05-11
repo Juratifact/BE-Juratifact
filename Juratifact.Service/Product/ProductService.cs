@@ -29,6 +29,7 @@ public class ProductService : IProductService
     {
         var query = _dbContext.Products.Where(x => x.Status == ProductStatus.Available && x.IsDeleted == false);
 
+        query = query.OrderByDescending(x => x.CreatedAt);
         query = query.Skip((pageIndex - 1) * pageSize)
             .Take(pageSize);
         var selected = query.Select(x => new Response.ProductResponse()
@@ -42,6 +43,8 @@ public class ProductService : IProductService
             Condition = x.Condition,
             Video = x.ProductMedias.Select(m => m.Video!).ToList(),
             ImageUrl = x.ProductMedias.Select(m => m.ImageUrl).ToList(),
+            CreatedAt = x.CreatedAt,
+            UpdatedAt = x.UpdatedAt
         });
         var listResult = await selected.ToListAsync();
         var totalItems = listResult.Count;
@@ -72,6 +75,7 @@ public class ProductService : IProductService
                         x.SellerId == userIdGuid &&
                         x.IsDeleted == false);
 
+        query = query.OrderByDescending(x => x.CreatedAt);
         query = query.Skip((pageIndex - 1) * pageSize)
             .Take(pageSize);
         var selected = query.Select(x => new Response.ProductResponse()
@@ -85,6 +89,8 @@ public class ProductService : IProductService
             Condition = x.Condition,
             Video = x.ProductMedias.Select(m => m.Video!).ToList(),
             ImageUrl = x.ProductMedias.Select(m => m.ImageUrl).ToList(),
+            CreatedAt = x.CreatedAt,
+            UpdatedAt = x.UpdatedAt
         });
         var listResult = await selected.ToListAsync();
         var totalItems = listResult.Count;
@@ -123,6 +129,8 @@ public class ProductService : IProductService
             Condition = x.Condition,
             Video = x.ProductMedias.Select(m => m.Video!).ToList(),
             ImageUrl = x.ProductMedias.Select(m => m.ImageUrl).ToList(),
+            CreatedAt = x.CreatedAt,
+            UpdatedAt = x.UpdatedAt
         });
         var listResult = await selected.ToListAsync();
         var totalItems = listResult.Count;
@@ -163,6 +171,8 @@ public class ProductService : IProductService
             Condition = x.Condition,
             Video = x.ProductMedias.Select(m => m.Video!).ToList(),
             ImageUrl = x.ProductMedias.Select(m => m.ImageUrl).ToList(),
+            CreatedAt = x.CreatedAt,
+            UpdatedAt = x.UpdatedAt
         });
         var listResult = await selected.ToListAsync();
         var totalItems = listResult.Count;
@@ -592,6 +602,8 @@ public class ProductService : IProductService
             Condition = x.Condition,
             Video = x.ProductMedias.Select(m => m.Video!).ToList(),
             ImageUrl = x.ProductMedias.Select(m => m.ImageUrl).ToList(),
+            CreatedAt = x.CreatedAt,
+            UpdatedAt = x.UpdatedAt
         });
         var listResult = await selected.ToListAsync();
         var totalItems = listResult.Count;
@@ -622,6 +634,8 @@ public class ProductService : IProductService
                 Condition = x.Condition,
                 Video = x.ProductMedias.Select(m => m.Video!).ToList(),
                 ImageUrl = x.ProductMedias.Select(m => m.ImageUrl).ToList(),
+                CreatedAt = x.CreatedAt,
+                UpdatedAt = x.UpdatedAt
             })
             .FirstOrDefaultAsync();
 

@@ -17,6 +17,8 @@ public class Response
         public ProductStatus Status { get; set; }
         // public string ImageUrl { get; set; }
         // public string VideoUrl { get; set; }
+        public DateTimeOffset? CreatedAt { get; set; }
+        public DateTimeOffset? UpdatedAt { get; set; }
     }
 
     public class ProductMedia
