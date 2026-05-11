@@ -258,6 +258,30 @@ public class ProductService : IProductService
             _dbContext.UserRoles.Add(userRole);
             await _dbContext.SaveChangesAsync();
         }
+        if (request.Images != null)
+        {
+            foreach (var img in request.Images)
+            {
+                // 10MB = 10 * 1024 * 1024 bytes
+                if (img.Length > 10 * 1024 * 1024) 
+                {
+                    throw new ArgumentException("photo is too large");
+                }
+            }
+        }
+
+
+        if (request.Videos != null)
+        {
+            foreach (var vid in request.Videos)
+            {
+               
+                if (vid.Length > 100 * 1024 * 1024)
+                {
+                    throw new ArgumentException("The Video is too large.");
+                }
+            }
+        }
 
 
         // Create product
@@ -343,6 +367,15 @@ public class ProductService : IProductService
 
         var userIdGuid = Guid.Parse(userId);
 
+        if (string.IsNullOrWhiteSpace(request.Content))
+        {
+            throw new ArgumentException("The comment section cannot be left blank.");
+        }
+
+        if (request.Content.Length > 500)
+        {
+            throw new ArgumentException("The comment is too long. The maximum character limit is 500.");
+        }
         // Check if product exists
         var product = await _dbContext.Products
             .FirstOrDefaultAsync(p => p.Id == request.ProductId && p.IsDeleted == false);
