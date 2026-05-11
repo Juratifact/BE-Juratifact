@@ -129,12 +129,19 @@ public class ShipperService: IShipperService
         return  "Successfully";
     }
 
-    public async Task<List<Response.ShipperActiveOrderResponse>> GetMyOrdersShipper(Guid shipperId)
+    public async Task<Base.Response.PageResult<Response.ShipperActiveOrderResponse>> GetMyOrdersShipper(Guid shipperId, int pageSize, int pageIndex)
     {
-        var query = await _dbContext.Orders
+        var query = _dbContext.Orders
             .Where(o => o.ShipperId == shipperId 
                         && o.Status != OrderStatus.Delivered 
-                        && o.Status != OrderStatus.Cancelled)
+                        && o.Status != OrderStatus.Cancelled);
+
+        var totalItems = await query.CountAsync();
+
+        var items = await query
+            .OrderByDescending(o => o.CreatedAt)
+            .Skip((pageIndex - 1) * pageSize)
+            .Take(pageSize)
             .Select(o => new Response.ShipperActiveOrderResponse()
             {
                 OrderId       = o.Id,
@@ -167,8 +174,14 @@ public class ShipperService: IShipperService
                 }).ToList()
             })
             .ToListAsync();
-
-        return query;
+        
+        return new Base.Response.PageResult<Response.ShipperActiveOrderResponse>
+        {
+            Items = items,
+            TotalItems = totalItems,
+            PageIndex = pageIndex,
+            PageSize = pageSize
+        };
     }
 
     public async Task<Response.ShipperActiveOrderResponse?> GetMyOrdersShipperByOrderId(Guid shipperId, Guid orderId)
