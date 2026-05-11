@@ -36,10 +36,10 @@ public class ShipperController:ControllerBase
 
     [Authorize(Policy = JwtExtensions.ShipperPolicy)]
     [HttpGet("{shipperId}/my-orders")]
-    public async Task<IActionResult> GetMyOrdersShipper(Guid shipperId)
+    public async Task<IActionResult> GetMyOrdersShipper(Guid shipperId, [FromQuery] int pageSize = 10, [FromQuery] int pageIndex = 1)
     {
-        var result = await _shipperService.GetMyOrdersShipper(shipperId);
-        return Ok(ApiResponseFactory.SuccessResponse(result,HttpContext.TraceIdentifier));
+        var result = await _shipperService.GetMyOrdersShipper(shipperId, pageSize, pageIndex);
+        return Ok(ApiResponseFactory.SuccessResponse(result, HttpContext.TraceIdentifier));
     }
     
     [Authorize(Policy = JwtExtensions.ShipperPolicy)]
