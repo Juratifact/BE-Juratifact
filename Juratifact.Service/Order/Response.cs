@@ -16,6 +16,8 @@ public class Response
     {
         public OrderStatus Status { get; set; }
         public PaymentStatus PaymentStatus { get; set; }
+        public DateTimeOffset? CreatedAt { get; set; }
+        public DateTimeOffset? UpdatedAt { get; set; }
     }
 
     public class GetAllOrderResponse
@@ -24,6 +26,8 @@ public class Response
         public string Name { get; set; }
         public OrderStatus Status { get; set; }
         public PaymentStatus PaymentStatus { get; set; }
+        public DateTimeOffset? CreatedAt { get; set; }
+        public DateTimeOffset? UpdatedAt { get; set; }
     }
 
     public class GetMyOrderResponse : GetAllOrderResponse
@@ -35,6 +39,9 @@ public class Response
         public Guid SellerId { get; set; }
         public string? UserName { get; set; }
         public required string SellerName { get; set; }
+        
+        public DateTimeOffset? CreatedAt { get; set; }
+        public DateTimeOffset? UpdatedAt { get; set; }
     }
     
     public class ProductListResponse

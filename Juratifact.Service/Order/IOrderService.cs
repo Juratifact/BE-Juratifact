@@ -10,4 +10,5 @@ public interface IOrderService
     public Task<string> CancelCheckout(Guid orderId);
     public Task<List<Response.GetMyOrderResponse>> GetMyOrder();
     public Task<Response.ProductListResponse> GetProductbyOrderId(Guid orderId, Guid productId);
+    public Task<string> UpdateShippingAddress(Guid orderId, Request.UpdateShippingAddressRequest request);
 }

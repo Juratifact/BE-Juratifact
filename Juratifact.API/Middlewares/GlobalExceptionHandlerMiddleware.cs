@@ -1,4 +1,4 @@
-﻿using Juratifact.Service.DiscordService;
+using Juratifact.Service.DiscordService;
 using Juratifact.Service.Models;
 
 namespace Juratifact.API.Middlewares;

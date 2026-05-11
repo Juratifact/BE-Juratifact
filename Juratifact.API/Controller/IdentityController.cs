@@ -1,6 +1,8 @@
 using Juratifact.Service.Identity;
 using Juratifact.Service.Models;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Logging;
 
 namespace Juratifact.API.Controller;
 
@@ -9,17 +11,18 @@ namespace Juratifact.API.Controller;
 public class IdentityController : ControllerBase
 {
     private readonly IIdentityService _indentityService;
+    private readonly ILogger<IdentityController> _logger;
 
-    public IdentityController(IIdentityService indentityService)
+    public IdentityController(IIdentityService indentityService, ILogger<IdentityController> logger)
     {
         _indentityService = indentityService;
+        _logger = logger;
     }
 
-    [HttpGet("login")]
-    public async Task<IActionResult> Login(string  email, string password)
+    [HttpPost("login")]
+    public async Task<IActionResult> Login([FromBody] Request.LoginRequest request)
     {
-        // throw new Exception("Cảnh báo giả: Test thử xem Discord có réo tên không nè!");
-        var result = await _indentityService.Login(email, password);
+        var result = await _indentityService.Login(request);
         return Ok(ApiResponseFactory.SuccessResponse(result, "Login successful", HttpContext.TraceIdentifier));
     }
 }
