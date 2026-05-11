@@ -268,6 +268,30 @@ public class ProductService : IProductService
             _dbContext.UserRoles.Add(userRole);
             await _dbContext.SaveChangesAsync();
         }
+        if (request.Images != null)
+        {
+            foreach (var img in request.Images)
+            {
+                // 10MB = 10 * 1024 * 1024 bytes
+                if (img.Length > 10 * 1024 * 1024) 
+                {
+                    throw new ArgumentException("photo is too large");
+                }
+            }
+        }
+
+
+        if (request.Videos != null)
+        {
+            foreach (var vid in request.Videos)
+            {
+               
+                if (vid.Length > 100 * 1024 * 1024)
+                {
+                    throw new ArgumentException("The Video is too large.");
+                }
+            }
+        }
 
 
         // Create product
