@@ -472,7 +472,9 @@ public class ProductService : IProductService
             ProductName = product.Title,
             Content = newComment.Content,
             UserName = user.FullName,
-            ParentCommentId = newComment.ParentCommentId
+            ParentCommentId = newComment.ParentCommentId,
+            CreatedAt = newComment.CreatedAt,
+            UpdatedAt = newComment.UpdatedAt
         };
 
         return commentResponse;
@@ -740,5 +742,109 @@ public class ProductService : IProductService
         product.Comments = rootComments.OrderByDescending(c => c.CreatedAt).ToList();
 
         return product;
+    }
+
+    public async Task<string> DeleteComment(Guid commentId)
+    {
+        var userId = _httpContext.HttpContext.User.Claims.FirstOrDefault(x => x.Type == "UserId")?.Value;
+
+        if (string.IsNullOrEmpty(userId))
+        {
+            throw new UnauthorizedAccessException("User not authenticated.");
+        }
+
+        var userIdGuid = Guid.Parse(userId);
+
+        var comment = await _dbContext.ProductComments
+            .FirstOrDefaultAsync(c => c.Id == commentId && !c.IsDeleted);
+
+        if (comment == null)
+        {
+            throw new ArgumentException("Comment not found.");
+        }
+
+        if (comment.UserId != userIdGuid)
+        {
+            throw new UnauthorizedAccessException("You don't have permission to delete this comment.");
+        }
+
+        comment.IsDeleted = true;
+        comment.UpdatedAt = DateTimeOffset.UtcNow;
+
+        _dbContext.ProductComments.Update(comment);
+        await _dbContext.SaveChangesAsync();
+
+        return "Comment deleted successfully!";
+    }
+
+    public async Task<string> UpdateComment(Guid commentId, Request.UpdateProductCommentRequest request)
+    {
+        var userId = _httpContext.HttpContext.User.Claims.FirstOrDefault(x => x.Type == "UserId")?.Value;
+
+        if (string.IsNullOrEmpty(userId))
+        {
+            throw new UnauthorizedAccessException("User not authenticated.");
+        }
+
+        var userIdGuid = Guid.Parse(userId);
+
+        var comment = await _dbContext.ProductComments
+            .FirstOrDefaultAsync(c => c.Id == commentId && !c.IsDeleted);
+
+        if (comment == null)
+        {
+            throw new ArgumentException("Comment not found.");
+        }
+
+        if (comment.UserId != userIdGuid)
+        {
+            throw new UnauthorizedAccessException("You don't have permission to update this comment.");
+        }
+
+        if (string.IsNullOrWhiteSpace(request.Content) || request.Content.Length < 2)
+            throw new ArgumentException("Comment content is too short.");
+
+        if (request.Content.Length > 300)
+            throw new ArgumentException("Comment content cannot exceed 300 characters.");
+
+        comment.Content = request.Content;
+        comment.UpdatedAt = DateTimeOffset.UtcNow;
+
+        _dbContext.ProductComments.Update(comment);
+        await _dbContext.SaveChangesAsync();
+
+        return "Comment updated successfully!";
+    }
+
+    public async Task<List<Response.ProductCommentResponse>> GetMyComments()
+    {
+        var userId = _httpContext.HttpContext.User.Claims.FirstOrDefault(x => x.Type == "UserId")?.Value;
+
+        if (string.IsNullOrEmpty(userId))
+        {
+            throw new UnauthorizedAccessException("User not authenticated.");
+        }
+
+        var userIdGuid = Guid.Parse(userId);
+
+        var comments = await _dbContext.ProductComments
+            .Include(c => c.Product)
+            .Include(c => c.User)
+            .Where(c => c.UserId == userIdGuid && !c.IsDeleted)
+            .OrderByDescending(c => c.CreatedAt)
+            .Select(c => new Response.ProductCommentResponse
+            {
+                CommentId = c.Id,
+                ProductId = c.ProductId,
+                ProductName = c.Product.Title,
+                Content = c.Content,
+                UserName = c.User.FullName,
+                ParentCommentId = c.ParentCommentId,
+                CreatedAt = c.CreatedAt,
+                UpdatedAt = c.UpdatedAt
+            })
+            .ToListAsync();
+
+        return comments;
     }
 }

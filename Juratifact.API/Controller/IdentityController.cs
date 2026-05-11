@@ -1,8 +1,6 @@
 using Juratifact.Service.Identity;
 using Juratifact.Service.Models;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.Logging;
 
 namespace Juratifact.API.Controller;
 
@@ -11,12 +9,10 @@ namespace Juratifact.API.Controller;
 public class IdentityController : ControllerBase
 {
     private readonly IIdentityService _indentityService;
-    private readonly ILogger<IdentityController> _logger;
 
     public IdentityController(IIdentityService indentityService, ILogger<IdentityController> logger)
     {
         _indentityService = indentityService;
-        _logger = logger;
     }
 
     [HttpPost("login")]

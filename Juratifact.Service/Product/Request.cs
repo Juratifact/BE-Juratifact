@@ -37,4 +37,9 @@ public class Request
         public decimal Price { get; set; }
         public ProductStatus Status { get; set; }
     }
+
+    public class UpdateProductCommentRequest
+    {
+        public required string Content { get; set; }
+    }
 }
