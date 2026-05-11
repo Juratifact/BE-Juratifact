@@ -20,24 +20,24 @@ public class IdentityService: IIdentityService
         configuration.GetSection(nameof(Jwtoptions)).Bind(_jwtOption);
     }
 
-    public async Task<Response.IdentityResponse> Login(string email, string password)
+    public async Task<Response.IdentityResponse> Login(Request.LoginRequest request)
     {
         var user = await _dbContext.Users
             .Include(u => u.UserRoles)
             .ThenInclude(ur => ur.Role)
-            .FirstOrDefaultAsync(u => u.Email == email);
+            .FirstOrDefaultAsync(u => u.Email == request.Email);
 
         if (user == null)
         {
-            throw new Exception("User not found");
+            throw new UnauthorizedAccessException("Invalid email or password");
         }
         
         // // Kiểm tra mật khẩu bằng Argon2
-        bool isPasswordValid = Argon2Hasher.VerifyHash(password, user.HashedPassword);
+        bool isPasswordValid = Argon2Hasher.VerifyHash(request.Password, user.HashedPassword);
         
         if (!isPasswordValid) //user.HashedPassword != password
         {
-            throw new Exception("Invalid password");
+            throw new UnauthorizedAccessException("Invalid email or password");
         }
         
         var claims = new List<Claim>

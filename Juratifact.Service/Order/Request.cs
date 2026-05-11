@@ -11,4 +11,9 @@ public class Request
     {
         public required string Reason { get; set; }
     }
+
+    public class UpdateShippingAddressRequest
+    {
+        public required string NewAddress { get; set; }
+    }
 }

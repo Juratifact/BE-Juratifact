@@ -80,4 +80,12 @@ public class OrderController : ControllerBase
         var result = await _orderService.GetProductbyOrderId(orderId, productId);
         return Ok(ApiResponseFactory.SuccessResponse(result, "Get order successfully", HttpContext.TraceIdentifier));
     }
+
+    [Authorize(Policy = JwtExtensions.BuyerPolicy)]
+    [HttpPut("{orderId}/shipping-address")]
+    public async Task<IActionResult> UpdateShippingAddress([FromRoute] Guid orderId, [FromBody] Request.UpdateShippingAddressRequest request)
+    {
+        var result = await _orderService.UpdateShippingAddress(orderId, request);
+        return Ok(ApiResponseFactory.SuccessResponse(result, "Update shipping address successfully", HttpContext.TraceIdentifier));
+    }
 }

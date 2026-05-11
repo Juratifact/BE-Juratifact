@@ -10,16 +10,15 @@ public class IdentityController : ControllerBase
 {
     private readonly IIdentityService _indentityService;
 
-    public IdentityController(IIdentityService indentityService)
+    public IdentityController(IIdentityService indentityService, ILogger<IdentityController> logger)
     {
         _indentityService = indentityService;
     }
 
-    [HttpGet("login")]
-    public async Task<IActionResult> Login(string  email, string password)
+    [HttpPost("login")]
+    public async Task<IActionResult> Login([FromBody] Request.LoginRequest request)
     {
-        // throw new Exception("Cảnh báo giả: Test thử xem Discord có réo tên không nè!");
-        var result = await _indentityService.Login(email, password);
+        var result = await _indentityService.Login(request);
         return Ok(ApiResponseFactory.SuccessResponse(result, "Login successful", HttpContext.TraceIdentifier));
     }
 }

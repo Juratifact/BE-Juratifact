@@ -17,6 +17,8 @@ public class Response
         public ProductStatus Status { get; set; }
         // public string ImageUrl { get; set; }
         // public string VideoUrl { get; set; }
+        public DateTimeOffset? CreatedAt { get; set; }
+        public DateTimeOffset? UpdatedAt { get; set; }
     }
 
     public class ProductMedia
@@ -34,6 +36,8 @@ public class Response
         public required string Content { get; set; } //Comment
         public string? UserName { get; set; }
         public Guid? ParentCommentId { get; set; } // If this is a reply
+        public DateTimeOffset CreatedAt { get; set; }
+        public DateTimeOffset? UpdatedAt { get; set; }
     }
 
     public class ProductCommentResponseFull : ProductResponse
@@ -51,16 +55,6 @@ public class Response
         public string Name { get; set; } = null!;
     }
     
-    public class ReplyDto
-    {
-        public Guid CommentId { get; set; }
-        public Guid? ParentCommentId { get; set; }
-
-        public string Content { get; set; } = null!;
-        public UserInfo User { get; set; } = null!;
-        public DateTimeOffset CreatedAt { get; set; }
-    }
-    
     public class CommentDto
     {
         public Guid CommentId { get; set; }
@@ -71,10 +65,7 @@ public class Response
         public DateTimeOffset CreatedAt { get; set; }
 
         public int ReplyCount { get; set; }
-        // public bool HasMoreReplies { get; set; }
-        // public string? NextCursor { get; set; }
-
-        public List<ReplyDto> Replies { get; set; } = new();
+        public List<CommentDto> Replies { get; set; } = new();
     }
     
     public class ProductCommentsResponse : ProductResponse

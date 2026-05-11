@@ -166,6 +166,7 @@ public class OrderService : IOrderService
     {
         var query = _dbContext.Orders.Where(x => x.Id == id && x.IsDeleted == false);
 
+        query = query.OrderByDescending(x => x.CreatedAt);
         var existingOrder = await query.FirstOrDefaultAsync();
 
         if (existingOrder == null)
@@ -177,6 +178,8 @@ public class OrderService : IOrderService
         {
             Status = existingOrder.Status,
             PaymentStatus = existingOrder.PaymentStatus,
+            CreatedAt = existingOrder.CreatedAt,
+            UpdatedAt = existingOrder.UpdatedAt
         };
 
         return response;
@@ -185,13 +188,15 @@ public class OrderService : IOrderService
     public async Task<List<Response.GetAllOrderResponse>> GetAllOrders()
     {
         var query = _dbContext.Orders.Where(x => x.IsDeleted == false);
-
+        query = query.OrderByDescending(x => x.CreatedAt);
         var select = query.Select(x => new Response.GetAllOrderResponse()
         {
             OrderId = x.Id,
             Name = x.Name,
             Status = x.Status,
             PaymentStatus = x.PaymentStatus,
+            CreatedAt = x.CreatedAt,
+            UpdatedAt = x.UpdatedAt
         });
 
         var result = await select.ToListAsync();
@@ -408,6 +413,7 @@ public class OrderService : IOrderService
        
         var result = await _dbContext.Orders
             .Where(x => x.UserId == userIdGuid && x.IsDeleted == false)
+            .OrderByDescending(x => x.CreatedAt)
             // Dùng SelectMany để bóc mỗi OrderDetail thành 1 object GetMyOrderResponse riêng biệt
             .SelectMany(order => order.OrderDetails.Select(od => new Response.GetMyOrderResponse()
             {
@@ -416,6 +422,8 @@ public class OrderService : IOrderService
                 Name = order.Name,
                 Status = order.Status,
                 PaymentStatus = order.PaymentStatus,
+                CreatedAt = order.CreatedAt,
+                UpdatedAt = order.UpdatedAt,
             
                
                 ProductId = od.ProductId,
@@ -462,5 +470,42 @@ public class OrderService : IOrderService
         }
         return result;
 
+    }
+
+    public async Task<string> UpdateShippingAddress(Guid orderId, Request.UpdateShippingAddressRequest request)
+    {
+        var userId = _httpContext.HttpContext?.User.Claims.FirstOrDefault(x => x.Type == "UserId")?.Value;
+        if (string.IsNullOrEmpty(userId) || !Guid.TryParse(userId, out var userIdGuid))
+            throw new UnauthorizedAccessException("You are not logged in or your session has expired.");
+
+        var order = await _dbContext.Orders
+            .FirstOrDefaultAsync(x => x.Id == orderId
+                                      && x.UserId == userIdGuid
+                                      && x.IsDeleted == false);
+
+        if (order == null)
+        {
+            throw new KeyNotFoundException("Order not found or you do not have permission to access it.");
+        }
+
+        // Kiểm tra điều kiện: Đã thanh toán và chưa giao cho shipper (trước khi shipper nhận đơn)
+        // Status < OrderStatus.Shipping (có nghĩa là đang ở trạng thái Paid hoặc Assigned)
+        if (order.PaymentStatus != PaymentStatus.Paid)
+        {
+            throw new InvalidOperationException("Shipping address can only be updated for paid orders.");
+        }
+
+        if ((int)order.Status >= (int)OrderStatus.Shipping)
+        {
+            throw new InvalidOperationException("Cannot update shipping address once the order has been handed over to the shipper.");
+        }
+
+        order.ShippingAddress = request.NewAddress;
+        order.UpdatedAt = DateTimeOffset.UtcNow;
+
+        _dbContext.Orders.Update(order);
+        await _dbContext.SaveChangesAsync();
+
+        return "Shipping address updated successfully.";
     }
 }
