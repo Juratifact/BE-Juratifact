@@ -303,11 +303,9 @@ public class ProductService : IProductService
             var results = await Task.WhenAll(uploadTasks); // ← upload song song
             videoUrls.AddRange(results);
         }
-
-// Tạo ProductMedia cho từng file
+        
         var mediaList = new List<Repository.Entity.ProductMedia>();
-
-// Lấy count lớn hơn để loop
+        
         int maxCount = Math.Max(imageUrls.Count, videoUrls.Count);
 
         for (int i = 0; i < maxCount; i++)
@@ -343,7 +341,6 @@ public class ProductService : IProductService
 
     public async Task<Response.ProductCommentResponse> CreateComment(Request.ProductCommentRequest request)
     {
-        // Get authenticated user
         var userId = _httpContext.HttpContext.User.Claims.FirstOrDefault(x => x.Type == "UserId")?.Value;
 
         if (string.IsNullOrEmpty(userId))
@@ -352,8 +349,7 @@ public class ProductService : IProductService
         }
 
         var userIdGuid = Guid.Parse(userId);
-
-        // Check if product exists
+        
         var product = await _dbContext.Products
             .FirstOrDefaultAsync(p => p.Id == request.ProductId && p.IsDeleted == false);
 
@@ -361,9 +357,8 @@ public class ProductService : IProductService
         {
             throw new ArgumentException("Product not found.");
         }
-
-        // Check if user exists
-        var user = await _dbContext.Users.FindAsync(userIdGuid); // Tìm theo khóa chính
+        
+        var user = await _dbContext.Users.FindAsync(userIdGuid); 
 
         if (user == null)
         {
@@ -375,7 +370,42 @@ public class ProductService : IProductService
             throw new Exception("You should verify before comment product.");
         }
 
-        // If ParentCommentId is provided, check if parent comment exists and belongs to the same product
+        // spam
+        if (string.IsNullOrWhiteSpace(request.Content) || request.Content.Length < 2)
+            throw new ArgumentException("Comment content is too short.");
+
+        if (request.Content.Length > 300)
+            throw new ArgumentException("Comment content cannot exceed 300 characters.");
+
+        var now = DateTimeOffset.UtcNow;
+        
+        // 1. Check for duplicate content within the last 5 minutes
+        var isDuplicate = await _dbContext.ProductComments
+            .AnyAsync(c => c.UserId == userIdGuid 
+                           && c.ProductId == request.ProductId 
+                           && c.Content.Trim() == request.Content.Trim()
+                           && c.CreatedAt >= now.AddMinutes(-5)
+                           && !c.IsDeleted);
+
+        if (isDuplicate)
+        {
+            throw new InvalidOperationException("You have already posted this comment recently.");
+        }
+
+        // 2. Rate limiting (Cool-down period): 30 seconds
+        var lastCommentTime = await _dbContext.ProductComments
+            .Where(c => c.UserId == userIdGuid && !c.IsDeleted)
+            .OrderByDescending(c => c.CreatedAt)
+            .Select(c => c.CreatedAt)
+            .FirstOrDefaultAsync();
+
+        if (lastCommentTime != default && (now - lastCommentTime).TotalSeconds < 30)
+        {
+            throw new InvalidOperationException("You are commenting too fast. Please wait 30 seconds.");
+        }
+
+
+        // parentCommentOwnerId kiểm tra xem có parentCommentId hay ko ?
         Guid? parentCommentOwnerId = null;
 
         if (request.ParentCommentId.HasValue)
@@ -642,47 +672,48 @@ public class ProductService : IProductService
         if (product == null)
             throw new Exception("Product not found.");
 
-        var previewLimit = 2;
-
-        var comments = await _dbContext.ProductComments
-            .Where(c => c.ProductId == productId
-                        && c.ParentCommentId == null
-                        && !c.IsDeleted)
-            .OrderByDescending(c => c.CreatedAt)
-            .Select(c => new Response.CommentDto
-            {
-                CommentId = c.Id,
-                Content = c.Content,
-                ParentCommentId = c.ParentCommentId,
-                CreatedAt = c.CreatedAt,
-
-                User = new Response.UserInfo
-                {
-                    UserId = c.User.Id,
-                    Name = c.User.FullName
-                },
-
-                ReplyCount = c.Children.Count(),
-
-                Replies = c.Children
-                    .OrderBy(r => r.CreatedAt)
-                    .Take(previewLimit)
-                    .Select(r => new Response.ReplyDto
-                    {
-                        CommentId = r.Id,
-                        ParentCommentId = r.ParentCommentId,
-                        Content = r.Content,
-                        CreatedAt = r.CreatedAt,
-                        User = new Response.UserInfo
-                        {
-                            UserId = r.User.Id,
-                            Name = r.User.FullName
-                        }
-                    }).ToList()
-            })
+        // Fetch all comments for this product in one go
+        var allComments = await _dbContext.ProductComments
+            .Include(c => c.User)
+            .Where(c => c.ProductId == productId && !c.IsDeleted)
+            .OrderBy(c => c.CreatedAt)
             .ToListAsync();
 
-        product.Comments = comments;
+        // Map to DTOs
+        var commentDtos = allComments.Select(c => new Response.CommentDto
+        {
+            CommentId = c.Id,
+            Content = c.Content,
+            ParentCommentId = c.ParentCommentId,
+            CreatedAt = c.CreatedAt,
+            User = new Response.UserInfo
+            {
+                UserId = c.User.Id,
+                Name = c.User.FullName
+            },
+            ReplyCount = 0,
+            Replies = new List<Response.CommentDto>()
+        }).ToList();
+
+        // Build the tree
+        var commentLookup = commentDtos.ToDictionary(c => c.CommentId);
+        var rootComments = new List<Response.CommentDto>();
+
+        foreach (var commentDto in commentDtos)
+        {
+            if (commentDto.ParentCommentId == null)
+            {
+                rootComments.Add(commentDto);
+            }
+            else if (commentLookup.TryGetValue(commentDto.ParentCommentId.Value, out var parent))
+            {
+                parent.Replies.Add(commentDto);
+                parent.ReplyCount++;
+            }
+        }
+
+        // root comments mới nhất lên đầu
+        product.Comments = rootComments.OrderByDescending(c => c.CreatedAt).ToList();
 
         return product;
     }
