@@ -1,5 +1,6 @@
 using Juratifact.API.Extensions;
 using Juratifact.API.Middlewares;
+using Microsoft.AspNetCore.Mvc;
 using Juratifact.Repository;
 using Juratifact.Service.BackgroundJobService;
 using Juratifact.Service.Cart;
@@ -29,6 +30,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllers();
+builder.Services.AddEnvelopeModelValidation();
 builder.Services.AddHttpContextAccessor();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();

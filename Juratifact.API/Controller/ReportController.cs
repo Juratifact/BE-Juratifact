@@ -32,7 +32,7 @@ public class ReportController:ControllerBase
     public async Task<IActionResult> GetReport(string? searchTerm, int pageSize = 10, int pageIndex = 1)
     {
         var reports = await _reportService.GetReport(searchTerm, pageSize, pageIndex);
-        return Ok(ApiResponseFactory.SuccessResponse(reports, HttpContext.TraceIdentifier));
+        return Ok(ApiResponseFactory.SuccessResponse(reports, traceId: HttpContext.TraceIdentifier));
     }
     
     [Authorize(Policy = JwtExtensions.AdminPolicy)]
@@ -40,7 +40,7 @@ public class ReportController:ControllerBase
     public async Task<IActionResult> GetReportById(Guid id)
     {
         var reports = await _reportService.GetProductByReportId(id);
-        return Ok(ApiResponseFactory.SuccessResponse(reports, HttpContext.TraceIdentifier));
+        return Ok(ApiResponseFactory.SuccessResponse(reports, traceId: HttpContext.TraceIdentifier));
     }
     
     
@@ -49,7 +49,7 @@ public class ReportController:ControllerBase
     public async Task<IActionResult> ApproveReport(Guid reportId)
     {
         var result = await _reportService.ApproveReport(reportId);
-        return Ok(ApiResponseFactory.SuccessResponse(result, HttpContext.TraceIdentifier));
+        return Ok(ApiResponseFactory.SuccessResponse(result, traceId: HttpContext.TraceIdentifier));
     }
     
     [Authorize(Policy = JwtExtensions.AdminPolicy)]
@@ -57,6 +57,6 @@ public class ReportController:ControllerBase
     public async Task<IActionResult> RejectReport(Guid reportId)
     {
         var result = await _reportService.RejectReport(reportId);
-        return Ok(ApiResponseFactory.SuccessResponse(result, HttpContext.TraceIdentifier));
+        return Ok(ApiResponseFactory.SuccessResponse(result, traceId: HttpContext.TraceIdentifier));
     }
 }

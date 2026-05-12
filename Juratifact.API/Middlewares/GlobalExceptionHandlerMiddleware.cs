@@ -1,5 +1,6 @@
 using Juratifact.Service.DiscordService;
 using Juratifact.Service.Models;
+using Microsoft.EntityFrameworkCore;
 
 namespace Juratifact.API.Middlewares;
 
@@ -54,9 +55,9 @@ public class GlobalExceptionHandlerMiddleware: IMiddleware
             }
 
             var response = ApiResponseFactory.ErrorResponse(
-                message: ResolveClientMessage(ex, statusCode),
-                errors: _environment.IsDevelopment() ? new { detail = ex.Message } : null,
-                traceId: context.TraceIdentifier);
+                ResolveClientMessage(ex, statusCode),
+                _environment.IsDevelopment() ? new { detail = ex.Message } : null,
+                context.TraceIdentifier);
 
             await context.Response.WriteAsJsonAsync(response);
         }
@@ -70,12 +71,18 @@ public class GlobalExceptionHandlerMiddleware: IMiddleware
             InvalidOperationException => StatusCodes.Status400BadRequest,
             UnauthorizedAccessException => StatusCodes.Status401Unauthorized,
             KeyNotFoundException => StatusCodes.Status404NotFound,
+            DbUpdateConcurrencyException => StatusCodes.Status409Conflict,
+            DbUpdateException => StatusCodes.Status400BadRequest,
             _ => StatusCodes.Status500InternalServerError
         };
     }
 
     private static string ResolveClientMessage(Exception ex, int statusCode)
     {
-        return statusCode >= 500 ? "An unexpected error occurred" : ex.Message;
+        if (statusCode >= 500)
+            return "An unexpected error occurred";
+        if (ex is DbUpdateException)
+            return "The data could not be saved. Please check your input and try again.";
+        return ex.Message;
     }
 }
