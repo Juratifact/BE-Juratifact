@@ -314,39 +314,39 @@ public class ProductService : IProductService
         var imageUrls = new List<string>();
         var videoUrls = new List<string>();
 
-        if (request.Images != null && request.Images.Count > 0)
-        {
-            var uploadTasks = request.Images.Select(img => _mediaService.UploadAsync(img));
-            var results = await Task.WhenAll(uploadTasks); // ← upload song song
-            imageUrls.AddRange(results);
-        }
+        var mediaList = new List<ProductMedia>();
 
-        if (request.Videos != null && request.Videos.Count > 0)
-        {
-            var uploadTasks = request.Videos.Select(vid => _mediaService.UploadVideoAsync(vid));
-            var results = await Task.WhenAll(uploadTasks); // ← upload song song
-            videoUrls.AddRange(results);
-        }
-        
-        var mediaList = new List<Repository.Entity.ProductMedia>();
-        
-        int maxCount = Math.Max(imageUrls.Count, videoUrls.Count);
 
-        for (int i = 0; i < maxCount; i++)
+        if (imageUrls != null && imageUrls.Any())
         {
-            mediaList.Add(new Repository.Entity.ProductMedia()
+            var imageMedia = imageUrls.Select(url => new ProductMedia
             {
-                ImageUrl   = i < imageUrls.Count ? imageUrls[i] : "",
-                Video      = i < videoUrls.Count ? videoUrls[i] : null,
-                ProductId  = product.Id,
-                CreatedAt  = DateTimeOffset.UtcNow
+                ImageUrl = url,
+                Video = null,
+                ProductId = product.Id,
+                CreatedAt = DateTimeOffset.UtcNow
             });
+            mediaList.AddRange(imageMedia);
         }
 
-        _dbContext.ProductMedia.AddRange(mediaList);
-        await _dbContext.SaveChangesAsync();
+        if (videoUrls != null && videoUrls.Any())
+        {
+            var videoMedia = videoUrls.Select(x => new ProductMedia
+            {
+                ImageUrl = "", 
+                Video = x,
+                ProductId = product.Id,
+                CreatedAt = DateTimeOffset.UtcNow
+            });
+            mediaList.AddRange(videoMedia);
+        }
 
 
+        if (mediaList.Any())
+        {
+            _dbContext.ProductMedia.AddRange(mediaList);
+            await _dbContext.SaveChangesAsync();
+        }
         if (request.CategoryIds != null && request.CategoryIds.Count > 0)
         {
             var productCateList = request.CategoryIds.Select(id => new ProductCategory()
@@ -365,6 +365,9 @@ public class ProductService : IProductService
 
     public async Task<Response.ProductCommentResponse> CreateComment(Request.ProductCommentRequest request)
     {
+        if (request.ProductId == Guid.Empty)
+            throw new ArgumentException("ProductId is required.");
+
         var userId = _httpContext.HttpContext.User.Claims.FirstOrDefault(x => x.Type == "UserId")?.Value;
 
         if (string.IsNullOrEmpty(userId))
