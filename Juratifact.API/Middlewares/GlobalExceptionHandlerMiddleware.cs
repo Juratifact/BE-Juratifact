@@ -69,6 +69,8 @@ public class GlobalExceptionHandlerMiddleware: IMiddleware
         {
             ArgumentException => StatusCodes.Status400BadRequest,
             InvalidOperationException => StatusCodes.Status400BadRequest,
+            BadHttpRequestException => StatusCodes.Status413PayloadTooLarge,
+            InvalidDataException => StatusCodes.Status413PayloadTooLarge,
             UnauthorizedAccessException => StatusCodes.Status401Unauthorized,
             KeyNotFoundException => StatusCodes.Status404NotFound,
             DbUpdateConcurrencyException => StatusCodes.Status409Conflict,
@@ -81,6 +83,8 @@ public class GlobalExceptionHandlerMiddleware: IMiddleware
     {
         if (statusCode >= 500)
             return "An unexpected error occurred";
+        if (statusCode == StatusCodes.Status413PayloadTooLarge)
+            return "Video vượt quá dung lượng tối đa 100MB.";
         if (ex is DbUpdateException)
             return "The data could not be saved. Please check your input and try again.";
         return ex.Message;

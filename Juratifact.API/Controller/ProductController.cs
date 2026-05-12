@@ -58,6 +58,8 @@ public class ProductController : ControllerBase
 
     [Authorize(Policy = JwtExtensions.BuyerPolicy)]
     [HttpPost("Post")]
+    [DisableRequestSizeLimit]
+    [RequestFormLimits(MultipartBodyLengthLimit = long.MaxValue)]
     public async Task<IActionResult> CreateProduct([FromForm] Request.CreateProductRequest request)
     {
         var result = await _productService.CreateProduct(request);
@@ -75,6 +77,8 @@ public class ProductController : ControllerBase
 
     [Authorize(Policy = JwtExtensions.BuyerPolicy)]
     [HttpPut("Post/{id}")]
+    [DisableRequestSizeLimit]
+    [RequestFormLimits(MultipartBodyLengthLimit = long.MaxValue)]
     public async Task<IActionResult> UpdateProductPostingById(Guid id, [FromForm] Request.UpdateProductRequest request)
     {
         var result = await _productService.UpdateProductPostingById(id, request);
