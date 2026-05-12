@@ -10,6 +10,10 @@ namespace Juratifact.Service.Product;
 
 public class ProductService : IProductService
 {
+    private const long MaxImageFileSizeBytes = 10 * 1024 * 1024;
+    private const long MaxVideoFileSizeBytes = 100 * 1024 * 1024;
+    private const string VideoTooLargeMessage = "Video vượt quá dung lượng tối đa 100MB.";
+
     private readonly AppDbContext _dbContext;
     private readonly IMediaService _mediaService;
     private readonly IHttpContextAccessor _httpContext;
@@ -272,8 +276,7 @@ public class ProductService : IProductService
         {
             foreach (var img in request.Images)
             {
-                // 10MB = 10 * 1024 * 1024 bytes
-                if (img.Length > 10 * 1024 * 1024) 
+                if (img.Length > MaxImageFileSizeBytes) 
                 {
                     throw new ArgumentException("photo is too large");
                 }
@@ -286,9 +289,9 @@ public class ProductService : IProductService
             foreach (var vid in request.Videos)
             {
                
-                if (vid.Length > 100 * 1024 * 1024)
+                if (vid.Length > MaxVideoFileSizeBytes)
                 {
-                    throw new ArgumentException("The Video is too large.");
+                    throw new ArgumentException(VideoTooLargeMessage);
                 }
             }
         }
@@ -549,6 +552,11 @@ public class ProductService : IProductService
 
             if (request.Video != null)
             {
+                if (request.Video.Length > MaxVideoFileSizeBytes)
+                {
+                    throw new ArgumentException(VideoTooLargeMessage);
+                }
+
                 videoUrl = await _mediaService.UploadVideoAsync(request.Video);
             }
 

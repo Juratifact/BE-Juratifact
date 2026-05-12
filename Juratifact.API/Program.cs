@@ -24,12 +24,23 @@ using Juratifact.Service.Shipper;
 using Juratifact.Service.User;
 using Juratifact.Service.Wallet;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Http.Features;
 using Quartz;
 
 var builder = WebApplication.CreateBuilder(args);
+const long MaxUploadRequestBodySizeBytes = 512L * 1024 * 1024;
 
 // Add services to the container.
+builder.WebHost.ConfigureKestrel(options =>
+{
+    options.Limits.MaxRequestBodySize = MaxUploadRequestBodySizeBytes;
+});
+
 builder.Services.AddControllers();
+builder.Services.Configure<FormOptions>(options =>
+{
+    options.MultipartBodyLengthLimit = MaxUploadRequestBodySizeBytes;
+});
 builder.Services.AddEnvelopeModelValidation();
 builder.Services.AddHttpContextAccessor();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
