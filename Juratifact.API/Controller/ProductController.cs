@@ -62,7 +62,9 @@ public class ProductController : ControllerBase
     }
 
     [Authorize(Policy = JwtExtensions.BuyerPolicy)]
-    [HttpPost]
+    [HttpPost("Post")]
+    [DisableRequestSizeLimit]
+    [RequestFormLimits(MultipartBodyLengthLimit = long.MaxValue)]
     public async Task<IActionResult> CreateProduct([FromForm] Request.CreateProductRequest request)
     {
         var result = await _productService.CreateProduct(request);
@@ -80,6 +82,8 @@ public class ProductController : ControllerBase
 
     [Authorize(Policy = JwtExtensions.BuyerPolicy)]
     [HttpPut("{id:guid}")]
+    [DisableRequestSizeLimit]
+    [RequestFormLimits(MultipartBodyLengthLimit = long.MaxValue)]
     public async Task<IActionResult> UpdateProductPostingById(Guid id, [FromForm] Request.UpdateProductRequest request)
     {
         var result = await _productService.UpdateProductPostingById(id, request);
@@ -109,4 +113,5 @@ public class ProductController : ControllerBase
         var result = await _productService.UpdateComment(id, request);
         return Ok(ApiResponseFactory.SuccessResponse(result, "Comment updated", HttpContext.TraceIdentifier));
     }
+    
 }
