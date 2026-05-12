@@ -365,6 +365,9 @@ public class ProductService : IProductService
 
     public async Task<Response.ProductCommentResponse> CreateComment(Request.ProductCommentRequest request)
     {
+        if (request.ProductId == Guid.Empty)
+            throw new ArgumentException("ProductId is required.");
+
         var userId = _httpContext.HttpContext.User.Claims.FirstOrDefault(x => x.Type == "UserId")?.Value;
 
         if (string.IsNullOrEmpty(userId))
