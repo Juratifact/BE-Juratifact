@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace Juratifact.API.Controller;
 
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/orders")]
 public class OrderController : ControllerBase
 {
     private readonly IOrderService _orderService;
@@ -16,42 +16,41 @@ public class OrderController : ControllerBase
     {
         _orderService = orderService;
     }
-    
-    // get để trên này cho dễ đọc nha -> ai "đọc comment xong thì xóa" nhen
+
     [Authorize(Policy = JwtExtensions.AdminPolicy)]
-    [HttpGet("all-orders")]
+    [HttpGet]
     public async Task<IActionResult> GetAllOrder()
     {
         var result = await _orderService.GetAllOrders();
         return Ok(ApiResponseFactory.SuccessResponse(result, "Get all order successfully", HttpContext.TraceIdentifier));
     }
-    
+
     [Authorize(Policy = JwtExtensions.BuyerPolicy)]
-    [HttpGet("my-order")]
+    [HttpGet("me")]
     public async Task<IActionResult> GetMyOrder()
     {
         var result = await _orderService.GetMyOrder();
         return Ok(ApiResponseFactory.SuccessResponse(result, "Get my order successfully", HttpContext.TraceIdentifier));
     }
-    
+
     [Authorize(Policy = JwtExtensions.BuyerPolicy)]
-    [HttpGet("{id}/status")]
+    [HttpGet("{id:guid}/status")]
     public async Task<IActionResult> GetStatusOrder(Guid id)
     {
         var result = await _orderService.GetStatusOrder(id);
         return Ok(ApiResponseFactory.SuccessResponse(result, "Get status order successfully", HttpContext.TraceIdentifier));
     }
-    
+
     [Authorize(Policy = JwtExtensions.BuyerPolicy)]
-    [HttpPost("checkout")]
+    [HttpPost]
     public async Task<IActionResult> CreateOrderProduct(Request.CheckoutRequest request)
     {
-        var result = await  _orderService.CreateOrderProduct(request);
+        var result = await _orderService.CreateOrderProduct(request);
         return Ok(ApiResponseFactory.SuccessResponse(result, "Create order successfully", HttpContext.TraceIdentifier));
     }
-    
+
     [Authorize(Policy = JwtExtensions.BuyerPolicy)]
-    [HttpPut("{orderId}/confirm-receipt")]
+    [HttpPut("{orderId:guid}/confirm-receipt")]
     public async Task<IActionResult> ConfirmReceipt(Guid orderId)
     {
         var result = await _orderService.ConfirmReceipt(orderId);
@@ -59,7 +58,7 @@ public class OrderController : ControllerBase
     }
 
     [Authorize(Policy = JwtExtensions.BuyerPolicy)]
-    [HttpPut("{orderId}/cancel")]
+    [HttpPut("{orderId:guid}/cancel")]
     public async Task<IActionResult> CancelOrder([FromRoute] Guid orderId, [FromBody] Request.CancelOrderRequest request)
     {
         var result = await _orderService.CancelOrder(orderId, request);
@@ -67,14 +66,14 @@ public class OrderController : ControllerBase
     }
 
     [Authorize(Policy = JwtExtensions.BuyerPolicy)]
-    [HttpPut("{orderId}/cancel-checkout")]
+    [HttpPut("{orderId:guid}/cancel-checkout")]
     public async Task<IActionResult> CancelCheckout(Guid orderId)
     {
         var result = await _orderService.CancelCheckout(orderId);
         return Ok(ApiResponseFactory.SuccessResponse(result, "Cancel checkout successfully", HttpContext.TraceIdentifier));
     }
 
-    [HttpGet("get-products-by-orderId")]
+    [HttpGet("{orderId:guid}/products/{productId:guid}")]
     public async Task<IActionResult> GetProductbyOrderId(Guid orderId, Guid productId)
     {
         var result = await _orderService.GetProductbyOrderId(orderId, productId);
@@ -82,8 +81,9 @@ public class OrderController : ControllerBase
     }
 
     [Authorize(Policy = JwtExtensions.BuyerPolicy)]
-    [HttpPut("{orderId}/shipping-address")]
-    public async Task<IActionResult> UpdateShippingAddress([FromRoute] Guid orderId, [FromBody] Request.UpdateShippingAddressRequest request)
+    [HttpPut("{orderId:guid}/shipping-address")]
+    public async Task<IActionResult> UpdateShippingAddress([FromRoute] Guid orderId,
+        [FromBody] Request.UpdateShippingAddressRequest request)
     {
         var result = await _orderService.UpdateShippingAddress(orderId, request);
         return Ok(ApiResponseFactory.SuccessResponse(result, "Update shipping address successfully", HttpContext.TraceIdentifier));

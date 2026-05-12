@@ -1,5 +1,5 @@
-﻿using Juratifact.Service.Sepay;
-using Juratifact.Service.Models;
+﻿using Juratifact.Service.Models;
+using Juratifact.Service.Sepay;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -7,8 +7,8 @@ namespace Juratifact.API.Controller;
 
 [Authorize]
 [ApiController]
-[Route("api/[controller]")]
-public class SepayController: ControllerBase
+[Route("api/sepay")]
+public class SepayController : ControllerBase
 {
     private readonly ISepayService _sepayService;
 
@@ -17,7 +17,6 @@ public class SepayController: ControllerBase
         _sepayService = sepayService;
     }
 
-    
     [AllowAnonymous]
     [HttpPost("webhook")]
     public async Task<IActionResult> Webhook([FromBody] Request.SepayWebhookDto payload)
@@ -26,12 +25,12 @@ public class SepayController: ControllerBase
         if (result)
             return Ok(ApiResponseFactory.SuccessResponse(null, "Webhook processed", HttpContext.TraceIdentifier));
 
-        return BadRequest(ApiResponseFactory.ErrorResponse("Failed to match transaction for webhook", null, HttpContext.TraceIdentifier));
+        return BadRequest(ApiResponseFactory.ErrorResponse("Failed to match transaction for webhook", null,
+            HttpContext.TraceIdentifier));
     }
 
-    
     [AllowAnonymous]
-    [HttpGet("qrcode")]
+    [HttpGet("qr-code")]
     public async Task<IActionResult> GenerateQr([FromQuery] decimal amount, [FromQuery] string referenceCode)
     {
         var url = await _sepayService.GenerateQrCode(amount, referenceCode);

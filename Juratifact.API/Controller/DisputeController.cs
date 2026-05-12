@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace Juratifact.API.Controller;
 
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/disputes")]
 public class DisputeController : ControllerBase
 {
     private readonly IDisputeService _disputeService;
@@ -19,24 +19,24 @@ public class DisputeController : ControllerBase
     }
 
     [Authorize(Policy = JwtExtensions.BuyerPolicy)]
-    [HttpPost("create/{orderId}")]
+    [HttpPost("~/api/orders/{orderId:guid}/disputes")]
     public async Task<IActionResult> CreateDispute([FromRoute] Guid orderId,
         [FromBody] Request.CreateDisputeRequest request)
     {
-        var result = await  _disputeService.CreateDispute(orderId, request);
+        var result = await _disputeService.CreateDispute(orderId, request);
         return Ok(ApiResponseFactory.SuccessResponse(result, "Created Dispute successfully", HttpContext.TraceIdentifier));
     }
-    
+
     [Authorize(Policy = JwtExtensions.BuyerPolicy)]
-    [HttpGet("my-disputes")]
-    public async Task<IActionResult> CreateDisputes(int pageSize = 10, int pageIndex = 1)
+    [HttpGet("me")]
+    public async Task<IActionResult> GetMyDisputes(int pageSize = 10, int pageIndex = 1)
     {
         var result = await _disputeService.GetMyDispute(pageSize, pageIndex);
         return Ok(ApiResponseFactory.SuccessResponse(result, "Get my disputes successfully", HttpContext.TraceIdentifier));
     }
 
     [Authorize(Policy = JwtExtensions.BuyerPolicy)]
-    [HttpPost("{disputeId}/cancel")]
+    [HttpPost("{disputeId:guid}/cancellation")]
     public async Task<IActionResult> CancelDispute(Guid disputeId)
     {
         var result = await _disputeService.CancelDispute(disputeId);
@@ -44,7 +44,7 @@ public class DisputeController : ControllerBase
     }
 
     [Authorize(Policy = JwtExtensions.AdminPolicy)]
-    [HttpGet("admin/disputes")]
+    [HttpGet]
     public async Task<IActionResult> GetAllDisputes(DisputeStatus? status, int pageSize = 10, int pageIndex = 1)
     {
         var result = await _disputeService.GetDisputes(status, pageSize, pageIndex);
@@ -52,21 +52,19 @@ public class DisputeController : ControllerBase
     }
 
     [Authorize(Policy = JwtExtensions.AdminPolicy)]
-    [HttpPatch("admin/{disputeId}/assign")]
+    [HttpPatch("{disputeId:guid}/assignment")]
     public async Task<IActionResult> AssignDispute(Guid disputeId, [FromBody] Request.AssignDisputeRequest request)
     {
-        // thằng admin nào nhận cái ca này
         var result = await _disputeService.AssignDispute(disputeId, request);
         return Ok(ApiResponseFactory.SuccessResponse(result, "Assigned Dispute successfully", HttpContext.TraceIdentifier));
     }
-    
+
     [Authorize(Policy = JwtExtensions.AdminPolicy)]
-    [HttpPost("admin/{disputeId}/resolve")]
+    [HttpPost("{disputeId:guid}/resolution")]
     public async Task<IActionResult> ResolveDispute([FromRoute] Guid disputeId,
         [FromBody] Request.ResolveDisputeRequest request)
     {
         var result = await _disputeService.ResolveDispute(disputeId, request);
         return Ok(ApiResponseFactory.SuccessResponse(result, "Resolved Dispute successfully", HttpContext.TraceIdentifier));
     }
-    
 }

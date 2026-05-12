@@ -5,12 +5,12 @@ using Microsoft.AspNetCore.Mvc;
 namespace Juratifact.API.Controller;
 
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/auth")]
 public class IdentityController : ControllerBase
 {
     private readonly IIdentityService _indentityService;
 
-    public IdentityController(IIdentityService indentityService, ILogger<IdentityController> logger)
+    public IdentityController(IIdentityService indentityService)
     {
         _indentityService = indentityService;
     }
@@ -21,5 +21,4 @@ public class IdentityController : ControllerBase
         var result = await _indentityService.Login(request);
         return Ok(ApiResponseFactory.SuccessResponse(result, "Login successful", HttpContext.TraceIdentifier));
     }
-    
 }
