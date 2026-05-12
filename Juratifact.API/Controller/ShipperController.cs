@@ -23,7 +23,7 @@ public class ShipperController:ControllerBase
     public async Task<IActionResult> GetAvailableOrders()
     {
         var result = await _shipperService.GetListOrder();
-        return Ok(ApiResponseFactory.SuccessResponse(result,HttpContext.TraceIdentifier));
+        return Ok(ApiResponseFactory.SuccessResponse(result, traceId: HttpContext.TraceIdentifier));
     }
     
     [Authorize(Policy = JwtExtensions.ShipperPolicy)]
@@ -39,7 +39,7 @@ public class ShipperController:ControllerBase
     public async Task<IActionResult> GetMyOrdersShipper(Guid shipperId, [FromQuery] int pageSize = 10, [FromQuery] int pageIndex = 1)
     {
         var result = await _shipperService.GetMyOrdersShipper(shipperId, pageSize, pageIndex);
-        return Ok(ApiResponseFactory.SuccessResponse(result, HttpContext.TraceIdentifier));
+        return Ok(ApiResponseFactory.SuccessResponse(result, traceId: HttpContext.TraceIdentifier));
     }
     
     [Authorize(Policy = JwtExtensions.ShipperPolicy)]
@@ -47,7 +47,7 @@ public class ShipperController:ControllerBase
     public async Task<IActionResult> GetMyOrdersShipperByOrderId(Guid shipperId, Guid orderId)
     {
         var result = await _shipperService.GetMyOrdersShipperByOrderId(shipperId, orderId);
-        return Ok(ApiResponseFactory.SuccessResponse(result,HttpContext.TraceIdentifier));
+        return Ok(ApiResponseFactory.SuccessResponse(result, traceId: HttpContext.TraceIdentifier));
     }
     
     [Authorize(Policy = JwtExtensions.ShipperPolicy)]

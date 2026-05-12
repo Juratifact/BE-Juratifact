@@ -22,7 +22,7 @@ public class ProductController : ControllerBase
     public async Task<IActionResult> GetProducts(int pageSize = 10, int pageIndex = 1)
     {
         var product = await _productService.GetAll(pageSize, pageIndex);
-        return Ok(ApiResponseFactory.SuccessResponse(product,HttpContext.TraceIdentifier));
+        return Ok(ApiResponseFactory.SuccessResponse(product, traceId: HttpContext.TraceIdentifier));
     }
     
     [Authorize(Policy = JwtExtensions.BuyerPolicy)]
@@ -30,21 +30,21 @@ public class ProductController : ControllerBase
     public async Task<IActionResult> GetAllMyProduct(int pageSize = 10, int pageIndex = 1)
     {
         var product = await _productService.GetAllMyProduct(pageSize, pageIndex);
-        return Ok(ApiResponseFactory.SuccessResponse(product,HttpContext.TraceIdentifier));
+        return Ok(ApiResponseFactory.SuccessResponse(product, traceId: HttpContext.TraceIdentifier));
     }
     
     [HttpGet("Title")]
     public async Task<IActionResult> GetByTitle(string? searchTerm,int pageSize = 10, int pageIndex = 1)
     {
         var product = await _productService.GetByTitle(searchTerm,pageSize, pageIndex);
-        return Ok(ApiResponseFactory.SuccessResponse(product,HttpContext.TraceIdentifier));
+        return Ok(ApiResponseFactory.SuccessResponse(product, traceId: HttpContext.TraceIdentifier));
     }
 
     [HttpGet("Condition")]
     public async Task<IActionResult> GetByCondition(string? searchTerm, int pageSize = 10, int pageIndex = 1)
     {
         var product = await _productService.GetByCondition(searchTerm, pageSize, pageIndex);
-        return Ok(ApiResponseFactory.SuccessResponse(product, HttpContext.TraceIdentifier));
+        return Ok(ApiResponseFactory.SuccessResponse(product, traceId: HttpContext.TraceIdentifier));
 
     }
     
@@ -52,7 +52,7 @@ public class ProductController : ControllerBase
     public async Task<IActionResult> GetCommentsByProductId(Guid productId)
     {
         var comments = await _productService.GetProductCommentsByProductId(productId);
-        return Ok(ApiResponseFactory.SuccessResponse(comments, HttpContext.TraceIdentifier));
+        return Ok(ApiResponseFactory.SuccessResponse(comments, traceId: HttpContext.TraceIdentifier));
     }
     
 
@@ -110,7 +110,7 @@ public class ProductController : ControllerBase
     public async Task<IActionResult> GetMyComments()
     {
         var result = await _productService.GetMyComments();
-        return Ok(ApiResponseFactory.SuccessResponse(result, HttpContext.TraceIdentifier));
+        return Ok(ApiResponseFactory.SuccessResponse(result, traceId: HttpContext.TraceIdentifier));
     }
     
 }
