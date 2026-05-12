@@ -62,9 +62,7 @@ public class ProductController : ControllerBase
     }
 
     [Authorize(Policy = JwtExtensions.BuyerPolicy)]
-    [HttpPost("Post")]
-    [DisableRequestSizeLimit]
-    [RequestFormLimits(MultipartBodyLengthLimit = long.MaxValue)]
+    [HttpPost]
     public async Task<IActionResult> CreateProduct([FromForm] Request.CreateProductRequest request)
     {
         var result = await _productService.CreateProduct(request);
@@ -81,9 +79,7 @@ public class ProductController : ControllerBase
     }
 
     [Authorize(Policy = JwtExtensions.BuyerPolicy)]
-    [HttpPut("{id:guid}")
-    [DisableRequestSizeLimit]
-    [RequestFormLimits(MultipartBodyLengthLimit = long.MaxValue)]
+    [HttpPut("{id:guid}")]
     public async Task<IActionResult> UpdateProductPostingById(Guid id, [FromForm] Request.UpdateProductRequest request)
     {
         var result = await _productService.UpdateProductPostingById(id, request);
@@ -113,13 +109,4 @@ public class ProductController : ControllerBase
         var result = await _productService.UpdateComment(id, request);
         return Ok(ApiResponseFactory.SuccessResponse(result, "Comment updated", HttpContext.TraceIdentifier));
     }
-
-    [Authorize(Policy = JwtExtensions.BuyerPolicy)]
-    [HttpGet("MyComments")]
-    public async Task<IActionResult> GetMyComments()
-    {
-        var result = await _productService.GetMyComments();
-        return Ok(ApiResponseFactory.SuccessResponse(result, traceId: HttpContext.TraceIdentifier));
-    }
-    
 }
