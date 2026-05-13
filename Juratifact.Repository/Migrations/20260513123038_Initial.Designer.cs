@@ -12,7 +12,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Juratifact.Repository.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260513094155_Initial")]
+    [Migration("20260513123038_Initial")]
     partial class Initial
     {
         /// <inheritdoc />
@@ -363,6 +363,12 @@ namespace Juratifact.Repository.Migrations
                     b.Property<decimal>("ShippingFee")
                         .HasColumnType("numeric");
 
+                    b.Property<double?>("ShippingLatitude")
+                        .HasColumnType("double precision");
+
+                    b.Property<double?>("ShippingLongitude")
+                        .HasColumnType("double precision");
+
                     b.Property<int>("Status")
                         .HasColumnType("integer");
 
@@ -377,6 +383,9 @@ namespace Juratifact.Repository.Migrations
 
                     b.Property<Guid>("UserId")
                         .HasColumnType("uuid");
+
+                    b.Property<string>("VietMapRefId")
+                        .HasColumnType("text");
 
                     b.HasKey("Id");
 
