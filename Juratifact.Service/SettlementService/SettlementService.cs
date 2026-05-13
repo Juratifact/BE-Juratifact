@@ -22,14 +22,26 @@ public class SettlementService: ISettlementService
     
     public async Task<bool> ProcessSettlementAsync(Guid orderId)
     {
-        // Process settlement per seller for a multi-seller order.
         using var transaction = await _context.Database.BeginTransactionAsync();
         try
         {
-            // 1. Load order with details and product info (so we can get SellerId)
+            var sellerOrder = await _context.SellerOrders
+                .Include(so => so.OrderDetails)
+                .Include(so => so.Order)
+                    .ThenInclude(o => o.SellerOrders)
+                .FirstOrDefaultAsync(so => so.Id == orderId);
+
+            if (sellerOrder != null)
+            {
+                var settledSingle = await SettleSellerOrderAsync(sellerOrder);
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+                return settledSingle;
+            }
+
             var order = await _context.Orders
-                .Include(o => o.OrderDetails!)
-                    .ThenInclude(od => od.Product)
+                .Include(o => o.SellerOrders)
+                    .ThenInclude(so => so.OrderDetails)
                 .FirstOrDefaultAsync(o => o.Id == orderId);
 
             if (order == null)
@@ -51,98 +63,137 @@ public class SettlementService: ISettlementService
                 return false;
             }
 
-            // 2. Group order details by seller
-            var details = order.OrderDetails ?? Enumerable.Empty<OrderDetail>();
-
-            var bySeller = details
-                .Where(d => d.Product != null)
-                .GroupBy(d => d.Product.SellerId)
+            var sellerOrders = order.SellerOrders
+                .Where(so => so.Status == OrderStatus.Delivered)
                 .ToList();
 
-            if (!bySeller.Any())
+            if (!sellerOrders.Any())
             {
-                _logger.LogWarning("ProcessSettlement: order {OrderId} has no order details to settle", orderId);
+                _logger.LogWarning("ProcessSettlement: order {OrderId} has no delivered seller orders to settle", orderId);
                 return false;
             }
 
-            const decimal commissionRate = 0.05m;
-            var transactionsToAdd = new List<Transaction>();
-
-            foreach (var group in bySeller)
+            var settledAny = false;
+            foreach (var item in sellerOrders)
             {
-                var sellerId = group.Key;
-                // Sum prices for this seller
-                var sellerGross = group.Sum(d => d.Price);
-                var commission = Math.Round(sellerGross * commissionRate, 2);
-                var sellerNet = sellerGross - commission;
-
-                // Get or create seller wallet
-                var wallet = await _context.Wallets.FirstOrDefaultAsync(w => w.UserId == sellerId);
-                if (wallet == null)
-                {
-                    wallet = new Repository.Entity.Wallet()
-                    {
-                        Id = Guid.NewGuid(),
-                        UserId = sellerId,
-                        Balance = 0m,
-                        PendingBalance = 0m,
-                        IsDeleted = false,
-                        CreatedAt = DateTimeOffset.UtcNow
-                    };
-                    _context.Wallets.Add(wallet);
-                }
-
-                // Credit seller
-                wallet.Balance += sellerNet;
-                wallet.UpdatedAt = DateTimeOffset.UtcNow;
-
-                // Create transactions: seller settlement (credit to wallet) and commission record
-                var sellerTx = new Transaction
-                {
-                    Id = Guid.NewGuid(),
-                    OrderId = orderId,
-                    WalletId = wallet.Id,
-                    Amount = sellerNet,
-                    TransactionType = TransactionType.SellerSettlement,
-                    Status = TransactionStatus.Success,
-                    ReferenceCode = $"SETTLE-{Guid.NewGuid():N}",
-                    Description = $"Seller settlement for order {orderId}",
-                    CreatedAt = DateTimeOffset.UtcNow
-                };
-
-                var commissionTx = new Transaction
-                {
-                    Id = Guid.NewGuid(),
-                    OrderId = orderId,
-                    Amount = commission,
-                    TransactionType = TransactionType.CommisionDeduction,
-                    Status = TransactionStatus.Success,
-                    ReferenceCode = $"COMM-{Guid.NewGuid():N}",
-                    Description = $"Platform commission for seller {sellerId} on order {orderId}",
-                    CreatedAt = DateTimeOffset.UtcNow
-                };
-
-                transactionsToAdd.Add(sellerTx);
-                transactionsToAdd.Add(commissionTx);
+                settledAny |= await SettleSellerOrderAsync(item);
             }
 
-            // 3. Mark order completed and payment as settled
-            order.Status = OrderStatus.Completed;
-            order.PaymentStatus = PaymentStatus.Settled;
-            order.UpdatedAt = DateTimeOffset.UtcNow;
-
-            // 4. Persist
-            _context.Transactions.AddRange(transactionsToAdd);
             await _context.SaveChangesAsync();
             await transaction.CommitAsync();
 
-            return true;
+            return settledAny;
         }
         catch (Exception ex)
         {
             await transaction.RollbackAsync();
             _logger.LogError(ex, "Error processing settlement for order {OrderId}", orderId);
             return false;
+        }
+    }
+
+    private async Task<bool> SettleSellerOrderAsync(SellerOrder sellerOrder)
+    {
+        if (sellerOrder.Order.PaymentStatus != PaymentStatus.Paid)
+        {
+            _logger.LogWarning("SettleSellerOrder: parent order {OrderId} payment status is not Paid", sellerOrder.OrderId);
+            return false;
+        }
+
+        if (sellerOrder.Status == OrderStatus.Completed)
+        {
+            _logger.LogInformation("SettleSellerOrder: seller order {SellerOrderId} already completed", sellerOrder.Id);
+            return false;
+        }
+
+        if (sellerOrder.Status != OrderStatus.Delivered)
+        {
+            _logger.LogWarning("SettleSellerOrder: seller order {SellerOrderId} is not Delivered", sellerOrder.Id);
+            return false;
+        }
+
+        var alreadySettled = await _context.Transactions.AnyAsync(t =>
+            t.SellerOrderId == sellerOrder.Id &&
+            t.TransactionType == TransactionType.SellerSettlement &&
+            t.Status == TransactionStatus.Success);
+
+        if (alreadySettled)
+        {
+            sellerOrder.Status = OrderStatus.Completed;
+            sellerOrder.UpdatedAt = DateTimeOffset.UtcNow;
+            UpdateParentSettlementStatus(sellerOrder.Order);
+            return false;
+        }
+
+        var sellerGross = sellerOrder.SubtotalPrice > 0
+            ? sellerOrder.SubtotalPrice
+            : sellerOrder.OrderDetails.Sum(d => d.Price * d.Quantity);
+        var commission = sellerOrder.PlatformFee > 0
+            ? sellerOrder.PlatformFee
+            : Math.Round(sellerGross * 0.05m, 2);
+        var sellerNet = sellerOrder.SellerReceivableAmount > 0
+            ? sellerOrder.SellerReceivableAmount
+            : sellerGross - commission;
+
+        var wallet = await _context.Wallets.FirstOrDefaultAsync(w => w.UserId == sellerOrder.SellerId);
+        if (wallet == null)
+        {
+            wallet = new Repository.Entity.Wallet()
+            {
+                Id = Guid.NewGuid(),
+                UserId = sellerOrder.SellerId,
+                Balance = 0m,
+                PendingBalance = 0m,
+                IsDeleted = false,
+                CreatedAt = DateTimeOffset.UtcNow
+            };
+            _context.Wallets.Add(wallet);
+        }
+
+        wallet.Balance += sellerNet;
+        wallet.UpdatedAt = DateTimeOffset.UtcNow;
+
+        _context.Transactions.Add(new Transaction
+        {
+            Id = Guid.NewGuid(),
+            OrderId = sellerOrder.OrderId,
+            SellerOrderId = sellerOrder.Id,
+            WalletId = wallet.Id,
+            Amount = sellerNet,
+            FeeAmount = commission,
+            TransactionType = TransactionType.SellerSettlement,
+            Status = TransactionStatus.Success,
+            ReferenceCode = $"SETTLE-{Guid.NewGuid():N}",
+            Description = $"Seller settlement for seller order {sellerOrder.Id}",
+            CreatedAt = DateTimeOffset.UtcNow
+        });
+
+        _context.Transactions.Add(new Transaction
+        {
+            Id = Guid.NewGuid(),
+            OrderId = sellerOrder.OrderId,
+            SellerOrderId = sellerOrder.Id,
+            Amount = commission,
+            TransactionType = TransactionType.CommisionDeduction,
+            Status = TransactionStatus.Success,
+            ReferenceCode = $"COMM-{Guid.NewGuid():N}",
+            Description = $"Platform commission for seller order {sellerOrder.Id}",
+            CreatedAt = DateTimeOffset.UtcNow
+        });
+
+        sellerOrder.Status = OrderStatus.Completed;
+        sellerOrder.UpdatedAt = DateTimeOffset.UtcNow;
+        UpdateParentSettlementStatus(sellerOrder.Order);
+        return true;
+    }
+
+    private static void UpdateParentSettlementStatus(Repository.Entity.Order order)
+    {
+        if (order.SellerOrders.All(so => so.Status is OrderStatus.Completed or OrderStatus.Cancelled))
+        {
+            order.Status = OrderStatus.Completed;
+            order.PaymentStatus = PaymentStatus.Settled;
+            order.UpdatedAt = DateTimeOffset.UtcNow;
         }
     }
 }

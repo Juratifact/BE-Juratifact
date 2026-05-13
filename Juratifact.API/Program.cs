@@ -19,6 +19,7 @@ using Juratifact.Service.Product;
 using Juratifact.Service.Promotion;
 using Juratifact.Service.Report;
 using Juratifact.Service.Sepay;
+using Juratifact.Service.SellerOrders;
 using Juratifact.Service.SettlementService;
 using Juratifact.Service.Shipper;
 using Juratifact.Service.User;
@@ -79,6 +80,7 @@ builder.Services.AddScoped<IWalletService, WalletService>();
 builder.Services.AddScoped<IDisputeService, DisputeService>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddScoped<ICartService, CartService>();
+builder.Services.AddScoped<ISellerOrderService, SellerOrderService>();
 
 
 builder.Services.Configure<DiscordAlertOptions>(
