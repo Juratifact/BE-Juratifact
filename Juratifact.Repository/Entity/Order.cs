@@ -11,6 +11,9 @@ public class Order: BaseEntity<Guid>,IAuditableEntity
     public decimal ShippingFee { get; set; }
     public decimal DiscountAmount { get; set; }
     public string? ShippingAddress { get; set; }
+    public string? VietMapRefId { get; set; }
+    public double? ShippingLatitude { get; set; }
+    public double? ShippingLongitude { get; set; }
     public string? ShipperPod1Url { get; set; }
     public string? ShipperPod2Url { get; set; }
     public string PaymentMethod { get; set; } = "Banking";
