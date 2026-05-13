@@ -20,6 +20,9 @@ public class Transaction: BaseEntity<Guid>,IAuditableEntity
 
     public Guid? OrderId { get; set; }
     public Order? Order { get; set; }
+
+    public Guid? SellerOrderId { get; set; }
+    public SellerOrder? SellerOrder { get; set; }
     
     public Guid? UserPromotionSubscriptionId { get; set; }
     public UserPromotionSubscription? UserPromotionSubscription { get; set; }

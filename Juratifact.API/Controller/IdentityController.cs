@@ -15,7 +15,7 @@ public class IdentityController : ControllerBase
         _indentityService = indentityService;
     }
 
-    [HttpPost("login")]
+    [HttpGet("login")]
     public async Task<IActionResult> Login([FromBody] Request.LoginRequest request)
     {
         var result = await _indentityService.Login(request);

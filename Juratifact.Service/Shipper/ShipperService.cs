@@ -22,15 +22,33 @@ public class ShipperService: IShipperService
 
     public async Task<List<Response.ShipperResponse>> GetListOrder()
     {
-        var query = _dbContext.Orders
-            .Where(o => o.PaymentStatus == PaymentStatus.Paid && o.ShipperId == null);
+        var query = _dbContext.SellerOrders
+            .Where(so => so.Order.PaymentStatus == PaymentStatus.Paid
+                         && so.Status == OrderStatus.Paid
+                         && so.ShipperId == null);
 
-        var selected = query.Select(o => new Response.ShipperResponse()
+        var selected = query.Select(so => new Response.ShipperResponse()
         {
-            OrderId =  o.Id,
-            AddressSeller = o.OrderDetails.Select(od => od.Product.Seller.Address).FirstOrDefault(),
-            AddressBuyer = o.User.Address,
-            TotalPrice = o.TotalPrice
+            OrderId = so.Id,
+            SellerOrderId = so.Id,
+            ParentOrderId = so.OrderId,
+            Code = so.Code,
+            Status = so.Status,
+            PaymentStatus = so.Order.PaymentStatus,
+            SellerId = so.SellerId,
+            SellerName = so.Seller.FullName,
+            AddressSeller = so.Seller.Address,
+            AddressBuyer = so.Order.ShippingAddress,
+            CustomerName = so.Order.User.FullName,
+            CustomerPhone = so.Order.User.PhoneNumber,
+            ShippingFee = so.ShippingFee,
+            TotalPrice = so.TotalPrice,
+            Items = so.OrderDetails.Select(od => new Response.OrderDetailDto()
+            {
+                ProductId = od.ProductId,
+                ProductName = od.Product.Title,
+                Price = od.Price * od.Quantity
+            }).ToList()
         });
         var result = await selected.ToListAsync();
         return result;
@@ -40,9 +58,10 @@ public class ShipperService: IShipperService
     {
         await using var transaction = await _dbContext.Database.BeginTransactionAsync();
         
-        var order = await _dbContext.Orders
-            .FirstOrDefaultAsync(o => o.Id == orderId 
-                                      && o.PaymentStatus == PaymentStatus.Paid 
+        var order = await _dbContext.SellerOrders
+            .FirstOrDefaultAsync(o => o.Id == orderId
+                                      && o.Order.PaymentStatus == PaymentStatus.Paid
+                                      && o.Status == OrderStatus.Paid
                                       && o.ShipperId == null);
 
         
@@ -65,7 +84,8 @@ public class ShipperService: IShipperService
 
     public async Task<string> ConfirmPickupOrder(Guid orderId, Guid shipperId, IFormFile pod1Image)
     {
-        var query = await _dbContext.Orders
+        var query = await _dbContext.SellerOrders
+            .Include(o => o.Order)
             .FirstOrDefaultAsync(o => o.Id == orderId &&
                                       o.ShipperId == shipperId && 
                                       o.Status == OrderStatus.Assigned);
@@ -88,9 +108,9 @@ public class ShipperService: IShipperService
         await _dbContext.SaveChangesAsync();
         
         await _notificationService.SendNotification(new Notification.Request.SendNotificationRequest() {
-            UserId = query.UserId,
+            UserId = query.Order.UserId,
             Type = NotificationType.OrderShipped,
-            Data = query.Name, 
+            Data = query.Code, 
         });
         
         return  "Successfully shipped order";
@@ -98,7 +118,8 @@ public class ShipperService: IShipperService
 
     public async Task<string> ConfirmDelivery(Guid orderId, Guid shipperId, IFormFile pod2Image)
     {
-        var query = await _dbContext.Orders
+        var query = await _dbContext.SellerOrders
+            .Include(o => o.Order)
             .FirstOrDefaultAsync(o => o.Id == orderId &&
                                       o.ShipperId == shipperId && 
                                       o.Status == OrderStatus.Shipping);
@@ -118,12 +139,22 @@ public class ShipperService: IShipperService
         query.DeliveryAt = DateTimeOffset.UtcNow;
         query.UpdatedAt = DateTimeOffset.UtcNow;
 
+        var parentOrder = await _dbContext.Orders
+            .Include(o => o.SellerOrders)
+            .FirstOrDefaultAsync(o => o.Id == query.OrderId);
+
+        if (parentOrder != null && parentOrder.SellerOrders.All(so => so.Status == OrderStatus.Delivered))
+        {
+            parentOrder.Status = OrderStatus.Delivered;
+            parentOrder.UpdatedAt = DateTimeOffset.UtcNow;
+        }
+
         await _dbContext.SaveChangesAsync();
         
         await _notificationService.SendNotification(new Notification.Request.SendNotificationRequest() {
-            UserId = query.UserId,
+            UserId = query.Order.UserId,
             Type = NotificationType.OrderDelivered,
-            Data = query.Name, 
+            Data = query.Code, 
         });
         
         return  "Successfully";
@@ -131,7 +162,7 @@ public class ShipperService: IShipperService
 
     public async Task<Base.Response.PageResult<Response.ShipperActiveOrderResponse>> GetMyOrdersShipper(Guid shipperId, int pageSize, int pageIndex)
     {
-        var query = _dbContext.Orders
+        var query = _dbContext.SellerOrders
             .Where(o => o.ShipperId == shipperId 
                         && o.Status != OrderStatus.Delivered 
                         && o.Status != OrderStatus.Cancelled);
@@ -145,23 +176,26 @@ public class ShipperService: IShipperService
             .Select(o => new Response.ShipperActiveOrderResponse()
             {
                 OrderId       = o.Id,
-                Name          = o.Name,
+                ParentOrderId = o.OrderId,
+                SellerId      = o.SellerId,
+                SellerName    = o.Seller.FullName,
+                Name          = o.Code,
                 Status        = o.Status,
 
                 TotalPrice    = o.TotalPrice,
-                ShippingFee   = o.ShippingPee,
-                PaymentMethod = o.PaymentMethod,
-                PaymentStatus = o.PaymentStatus,
+                ShippingFee   = o.ShippingFee,
+                PaymentMethod = o.Order.PaymentMethod,
+                PaymentStatus = o.Order.PaymentStatus,
 
-                ShippingAddress = o.ShippingAddress,
+                ShippingAddress = o.Order.ShippingAddress,
 
-                CustomerName  = o.User.FullName,
-                CustomerPhone = o.User.PhoneNumber,
+                CustomerName  = o.Order.User.FullName,
+                CustomerPhone = o.Order.User.PhoneNumber,
 
                 PickupAt   = o.PickupAt,
                 DeliveryAt = o.DeliveryAt,
                 CreatedAt  = o.CreatedAt,
-                ExpiresAt  = o.ExpiresAt,
+                ExpiresAt  = o.Order.ExpiresAt,
 
                 ShipperPod1Url = o.ShipperPod1Url,
                 ShipperPod2Url = o.ShipperPod2Url,
@@ -186,7 +220,7 @@ public class ShipperService: IShipperService
 
     public async Task<Response.ShipperActiveOrderResponse?> GetMyOrdersShipperByOrderId(Guid shipperId, Guid orderId)
     {
-        var query = await _dbContext.Orders
+        var query = await _dbContext.SellerOrders
             .Where(o => o.ShipperId == shipperId 
                         && o.Id == orderId
                         && o.Status != OrderStatus.Delivered 
@@ -194,23 +228,26 @@ public class ShipperService: IShipperService
             .Select(o => new Response.ShipperActiveOrderResponse()
             {
                 OrderId       = o.Id,
-                Name          = o.Name,
+                ParentOrderId = o.OrderId,
+                SellerId      = o.SellerId,
+                SellerName    = o.Seller.FullName,
+                Name          = o.Code,
                 Status        = o.Status,
 
                 TotalPrice    = o.TotalPrice,
-                ShippingFee   = o.ShippingPee,
-                PaymentMethod = o.PaymentMethod,
-                PaymentStatus = o.PaymentStatus,
+                ShippingFee   = o.ShippingFee,
+                PaymentMethod = o.Order.PaymentMethod,
+                PaymentStatus = o.Order.PaymentStatus,
 
-                ShippingAddress = o.ShippingAddress,
+                ShippingAddress = o.Order.ShippingAddress,
 
-                CustomerName  = o.User.FullName,
-                CustomerPhone = o.User.PhoneNumber,
+                CustomerName  = o.Order.User.FullName,
+                CustomerPhone = o.Order.User.PhoneNumber,
 
                 PickupAt   = o.PickupAt,
                 DeliveryAt = o.DeliveryAt,
                 CreatedAt  = o.CreatedAt,
-                ExpiresAt  = o.ExpiresAt,
+                ExpiresAt  = o.Order.ExpiresAt,
 
                 ShipperPod1Url = o.ShipperPod1Url,
                 ShipperPod2Url = o.ShipperPod2Url,

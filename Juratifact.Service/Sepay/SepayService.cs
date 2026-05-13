@@ -192,7 +192,8 @@ public class SepayService: ISepayService
         {
             
             var order = await _dbContext.Orders
-                .Include(o => o.OrderDetails) 
+                .Include(o => o.OrderDetails)
+                .Include(o => o.SellerOrders)
                 .FirstOrDefaultAsync(o => o.Id == transaction.OrderId);
 
             if (order != null)
@@ -220,6 +221,12 @@ public class SepayService: ISepayService
                 order.Status = OrderStatus.Paid;
                 order.PaymentStatus = PaymentStatus.Paid;
                 order.UpdatedAt = DateTimeOffset.UtcNow; 
+
+                foreach (var sellerOrder in order.SellerOrders.Where(so => so.Status == OrderStatus.PendingPayment))
+                {
+                    sellerOrder.Status = OrderStatus.Paid;
+                    sellerOrder.UpdatedAt = DateTimeOffset.UtcNow;
+                }
 
                 
                 var productIds = order.OrderDetails.Select(od => od.ProductId).ToList();
