@@ -8,6 +8,9 @@ public class Dispute : BaseEntity<Guid>, IAuditableEntity
     // Liên kết với Order (Quan hệ 1:n )
     public Guid OrderId { get; set; }
     public Order Order { get; set; }
+
+    public Guid? SellerOrderId { get; set; }
+    public SellerOrder? SellerOrder { get; set; }
     
     // Liên kết với Buyer (Người tạo khiến nại)
     public Guid BuyerId { get; set; }

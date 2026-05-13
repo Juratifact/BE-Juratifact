@@ -18,7 +18,8 @@ public class Request
 
     public class ProductCommentRequest
     {
-        public required Guid ProductId { get; set; }
+        /// <summary>May be set from route (<c>POST .../products/{{id}}/comments</c>) instead of body.</summary>
+        public Guid ProductId { get; set; }
         public required string Content { get; set; }
         public Guid? ParentCommentId { get; set; } // For replies/answers
         

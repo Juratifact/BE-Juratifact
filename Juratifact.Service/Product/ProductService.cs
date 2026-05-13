@@ -41,8 +41,8 @@ public class ProductService : IProductService
             Price = x.Price,
             Status = x.Status,
             Condition = x.Condition,
-            Video = x.ProductMedias.Select(m => m.Video!).ToList(),
-            ImageUrl = x.ProductMedias.Select(m => m.ImageUrl).ToList(),
+            Video = x.ProductMedias.Where(m => m.Video != null).Select(m => m.Video!).ToList(),
+            ImageUrl = x.ProductMedias.Where(m => !string.IsNullOrEmpty(m.ImageUrl)).Select(m => m.ImageUrl).ToList(),
             CreatedAt = x.CreatedAt,
             UpdatedAt = x.UpdatedAt
         });
@@ -87,8 +87,8 @@ public class ProductService : IProductService
             Price = x.Price,
             Status = x.Status,
             Condition = x.Condition,
-            Video = x.ProductMedias.Select(m => m.Video!).ToList(),
-            ImageUrl = x.ProductMedias.Select(m => m.ImageUrl).ToList(),
+            Video = x.ProductMedias.Where(m => m.Video != null).Select(m => m.Video!).ToList(),
+            ImageUrl = x.ProductMedias.Where(m => !string.IsNullOrEmpty(m.ImageUrl)).Select(m => m.ImageUrl).ToList(),
             CreatedAt = x.CreatedAt,
             UpdatedAt = x.UpdatedAt
         });
@@ -127,8 +127,8 @@ public class ProductService : IProductService
             Price = x.Price,
             Status = x.Status,
             Condition = x.Condition,
-            Video = x.ProductMedias.Select(m => m.Video!).ToList(),
-            ImageUrl = x.ProductMedias.Select(m => m.ImageUrl).ToList(),
+            Video = x.ProductMedias.Where(m => m.Video != null).Select(m => m.Video!).ToList(),
+            ImageUrl = x.ProductMedias.Where(m => !string.IsNullOrEmpty(m.ImageUrl)).Select(m => m.ImageUrl).ToList(),
             CreatedAt = x.CreatedAt,
             UpdatedAt = x.UpdatedAt
         });
@@ -169,8 +169,8 @@ public class ProductService : IProductService
             Price = x.Price,
             Status = x.Status,
             Condition = x.Condition,
-            Video = x.ProductMedias.Select(m => m.Video!).ToList(),
-            ImageUrl = x.ProductMedias.Select(m => m.ImageUrl).ToList(),
+            Video = x.ProductMedias.Where(m => m.Video != null).Select(m => m.Video!).ToList(),
+            ImageUrl = x.ProductMedias.Where(m => !string.IsNullOrEmpty(m.ImageUrl)).Select(m => m.ImageUrl).ToList(),
             CreatedAt = x.CreatedAt,
             UpdatedAt = x.UpdatedAt
         });
@@ -239,6 +239,8 @@ public class ProductService : IProductService
             throw new ArgumentException("User must have Buyer role to create products.");
         }
 
+        ValidateCreateProductMedia(request);
+
         // Check if user already has Seller role, if not, add it
         var hasSellerRole = user.UserRoles.Any(ur => ur.Role.Name == "Seller");
         if (!hasSellerRole)
@@ -268,31 +270,6 @@ public class ProductService : IProductService
             _dbContext.UserRoles.Add(userRole);
             await _dbContext.SaveChangesAsync();
         }
-        if (request.Images != null)
-        {
-            foreach (var img in request.Images)
-            {
-                // 10MB = 10 * 1024 * 1024 bytes
-                if (img.Length > 10 * 1024 * 1024) 
-                {
-                    throw new ArgumentException("photo is too large");
-                }
-            }
-        }
-
-
-        if (request.Videos != null)
-        {
-            foreach (var vid in request.Videos)
-            {
-               
-                if (vid.Length > 100 * 1024 * 1024)
-                {
-                    throw new ArgumentException("The Video is too large.");
-                }
-            }
-        }
-
 
         // Create product
         var product = new Repository.Entity.Product()
@@ -312,33 +289,35 @@ public class ProductService : IProductService
         // Upload image and create ProductMedia
         // Upload tất cả Images và Videos song song
         var imageUrls = new List<string>();
-        var videoUrls = new List<string>();
-
-        var mediaList = new List<ProductMedia>();
-
-
-        if (imageUrls != null && imageUrls.Any())
+        if (request.Images != null)
         {
-            var imageMedia = imageUrls.Select(url => new ProductMedia
+            foreach (var image in request.Images)
             {
-                ImageUrl = url,
-                Video = null,
-                ProductId = product.Id,
-                CreatedAt = DateTimeOffset.UtcNow
-            });
-            mediaList.AddRange(imageMedia);
+                imageUrls.Add(await _mediaService.UploadAsync(image));
+            }
         }
 
-        if (videoUrls != null && videoUrls.Any())
+        var videoUrls = new List<string>();
+        if (request.Videos != null)
         {
-            var videoMedia = videoUrls.Select(x => new ProductMedia
+            foreach (var video in request.Videos)
             {
-                ImageUrl = "", 
-                Video = x,
+                videoUrls.Add(await _mediaService.UploadVideoAsync(video));
+            }
+        }
+
+        var mediaList = new List<ProductMedia>();
+        var mediaCount = Math.Max(imageUrls.Count, videoUrls.Count);
+
+        for (var i = 0; i < mediaCount; i++)
+        {
+            mediaList.Add(new ProductMedia
+            {
+                ImageUrl = i < imageUrls.Count ? imageUrls[i] : "",
+                Video = i < videoUrls.Count ? videoUrls[i] : null,
                 ProductId = product.Id,
                 CreatedAt = DateTimeOffset.UtcNow
             });
-            mediaList.AddRange(videoMedia);
         }
 
 
@@ -365,6 +344,9 @@ public class ProductService : IProductService
 
     public async Task<Response.ProductCommentResponse> CreateComment(Request.ProductCommentRequest request)
     {
+        if (request.ProductId == Guid.Empty)
+            throw new ArgumentException("ProductId is required.");
+
         var userId = _httpContext.HttpContext.User.Claims.FirstOrDefault(x => x.Type == "UserId")?.Value;
 
         if (string.IsNullOrEmpty(userId))
@@ -519,6 +501,8 @@ public class ProductService : IProductService
             throw new ArgumentException("Product not found or you don't have permission to update it.");
         }
 
+        ValidateProductMedia(request.Image, request.Video);
+
         // Update product fields
         product.Title = request.Title;
         product.Condition = request.Condition;
@@ -656,8 +640,8 @@ public class ProductService : IProductService
             Price = x.Price,
             Status = x.Status,
             Condition = x.Condition,
-            Video = x.ProductMedias.Select(m => m.Video!).ToList(),
-            ImageUrl = x.ProductMedias.Select(m => m.ImageUrl).ToList(),
+            Video = x.ProductMedias.Where(m => m.Video != null).Select(m => m.Video!).ToList(),
+            ImageUrl = x.ProductMedias.Where(m => !string.IsNullOrEmpty(m.ImageUrl)).Select(m => m.ImageUrl).ToList(),
             CreatedAt = x.CreatedAt,
             UpdatedAt = x.UpdatedAt
         });
@@ -688,8 +672,8 @@ public class ProductService : IProductService
                 Price = x.Price,
                 Status = x.Status,
                 Condition = x.Condition,
-                Video = x.ProductMedias.Select(m => m.Video!).ToList(),
-                ImageUrl = x.ProductMedias.Select(m => m.ImageUrl).ToList(),
+                Video = x.ProductMedias.Where(m => m.Video != null).Select(m => m.Video!).ToList(),
+                ImageUrl = x.ProductMedias.Where(m => !string.IsNullOrEmpty(m.ImageUrl)).Select(m => m.ImageUrl).ToList(),
                 CreatedAt = x.CreatedAt,
                 UpdatedAt = x.UpdatedAt
             })
@@ -846,5 +830,55 @@ public class ProductService : IProductService
             .ToListAsync();
 
         return comments;
+    }
+
+    private static void ValidateCreateProductMedia(Request.CreateProductRequest request)
+    {
+        if (request.Images != null)
+        {
+            foreach (var image in request.Images)
+            {
+                ValidateImage(image);
+            }
+        }
+
+        if (request.Videos != null)
+        {
+            foreach (var video in request.Videos)
+            {
+                ValidateVideo(video);
+            }
+        }
+    }
+
+    private static void ValidateProductMedia(IFormFile? image, IFormFile? video)
+    {
+        if (image != null)
+        {
+            ValidateImage(image);
+        }
+
+        if (video != null)
+        {
+            ValidateVideo(video);
+        }
+    }
+
+    private static void ValidateImage(IFormFile file)
+    {
+        if (file.Length > MediaUploadLimits.MaxImageBytes)
+        {
+            throw new ArgumentException(
+                $"Image '{file.FileName}' is too large. Maximum allowed size is {MediaUploadLimits.MaxImageMb} MB.");
+        }
+    }
+
+    private static void ValidateVideo(IFormFile file)
+    {
+        if (file.Length > MediaUploadLimits.MaxVideoBytes)
+        {
+            throw new ArgumentException(
+                $"Video '{file.FileName}' is too large. Maximum allowed size is {MediaUploadLimits.MaxVideoMb} MB.");
+        }
     }
 }

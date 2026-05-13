@@ -6,9 +6,8 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Juratifact.API.Controller;
 
-
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/products")]
 public class ProductController : ControllerBase
 {
     private readonly IProductService _productService;
@@ -18,46 +17,54 @@ public class ProductController : ControllerBase
         _productService = productService;
     }
 
-    [HttpGet("")]
+    [HttpGet]
     public async Task<IActionResult> GetProducts(int pageSize = 10, int pageIndex = 1)
     {
         var product = await _productService.GetAll(pageSize, pageIndex);
         return Ok(ApiResponseFactory.SuccessResponse(product, traceId: HttpContext.TraceIdentifier));
     }
-    
+
     [Authorize(Policy = JwtExtensions.BuyerPolicy)]
-    [HttpGet("MyProducts")]
+    [HttpGet("me")]
     public async Task<IActionResult> GetAllMyProduct(int pageSize = 10, int pageIndex = 1)
     {
         var product = await _productService.GetAllMyProduct(pageSize, pageIndex);
         return Ok(ApiResponseFactory.SuccessResponse(product, traceId: HttpContext.TraceIdentifier));
     }
-    
-    [HttpGet("Title")]
-    public async Task<IActionResult> GetByTitle(string? searchTerm,int pageSize = 10, int pageIndex = 1)
+
+    [HttpGet("by-title")]
+    public async Task<IActionResult> GetByTitle(string? searchTerm, int pageSize = 10, int pageIndex = 1)
     {
-        var product = await _productService.GetByTitle(searchTerm,pageSize, pageIndex);
+        var product = await _productService.GetByTitle(searchTerm, pageSize, pageIndex);
         return Ok(ApiResponseFactory.SuccessResponse(product, traceId: HttpContext.TraceIdentifier));
     }
 
-    [HttpGet("Condition")]
+    [HttpGet("by-condition")]
     public async Task<IActionResult> GetByCondition(string? searchTerm, int pageSize = 10, int pageIndex = 1)
     {
         var product = await _productService.GetByCondition(searchTerm, pageSize, pageIndex);
         return Ok(ApiResponseFactory.SuccessResponse(product, traceId: HttpContext.TraceIdentifier));
-
     }
-    
-    [HttpGet("{productId}/comments")]
+
+    [Authorize(Policy = JwtExtensions.BuyerPolicy)]
+    [HttpGet("comments/me")]
+    public async Task<IActionResult> GetMyComments()
+    {
+        var result = await _productService.GetMyComments();
+        return Ok(ApiResponseFactory.SuccessResponse(result, traceId: HttpContext.TraceIdentifier));
+    }
+
+    [HttpGet("{productId:guid}/comments")]
     public async Task<IActionResult> GetCommentsByProductId(Guid productId)
     {
         var comments = await _productService.GetProductCommentsByProductId(productId);
         return Ok(ApiResponseFactory.SuccessResponse(comments, traceId: HttpContext.TraceIdentifier));
     }
-    
 
     [Authorize(Policy = JwtExtensions.BuyerPolicy)]
-    [HttpPost("Post")]
+    [HttpPost]
+    [DisableRequestSizeLimit]
+    [RequestFormLimits(MultipartBodyLengthLimit = long.MaxValue)]
     public async Task<IActionResult> CreateProduct([FromForm] Request.CreateProductRequest request)
     {
         var result = await _productService.CreateProduct(request);
@@ -65,16 +72,18 @@ public class ProductController : ControllerBase
     }
 
     [Authorize(Policy = JwtExtensions.BuyerPolicy)]
-    [HttpPost("Comment")]
-    public async Task<IActionResult> CreateComment([FromBody] Request.ProductCommentRequest request)
+    [HttpPost("{productId:guid}/comments")]
+    public async Task<IActionResult> CreateComment(Guid productId, [FromBody] Request.ProductCommentRequest request)
     {
-        // Thêm ParentCommentId vào request nếu có, thì là reply luôn
+        request.ProductId = productId;
         var result = await _productService.CreateComment(request);
         return Ok(ApiResponseFactory.SuccessResponse(result, "Comment created", HttpContext.TraceIdentifier));
     }
 
     [Authorize(Policy = JwtExtensions.BuyerPolicy)]
-    [HttpPut("Post/{id}")]
+    [HttpPut("{id:guid}")]
+    [DisableRequestSizeLimit]
+    [RequestFormLimits(MultipartBodyLengthLimit = long.MaxValue)]
     public async Task<IActionResult> UpdateProductPostingById(Guid id, [FromForm] Request.UpdateProductRequest request)
     {
         var result = await _productService.UpdateProductPostingById(id, request);
@@ -82,7 +91,7 @@ public class ProductController : ControllerBase
     }
 
     [Authorize(Policy = JwtExtensions.AdminOrSellerPolicy)]
-    [HttpDelete("Post/{id}")]
+    [HttpDelete("{id:guid}")]
     public async Task<IActionResult> SoftDeleteProductPostingById(Guid id)
     {
         var result = await _productService.SoftDeleteProductPostingById(id);
@@ -90,7 +99,7 @@ public class ProductController : ControllerBase
     }
 
     [Authorize(Policy = JwtExtensions.BuyerPolicy)]
-    [HttpDelete("Comment/{id}")]
+    [HttpDelete("comments/{id:guid}")]
     public async Task<IActionResult> DeleteComment(Guid id)
     {
         var result = await _productService.DeleteComment(id);
@@ -98,19 +107,11 @@ public class ProductController : ControllerBase
     }
 
     [Authorize(Policy = JwtExtensions.BuyerPolicy)]
-    [HttpPut("Comment/{id}")]
+    [HttpPut("comments/{id:guid}")]
     public async Task<IActionResult> UpdateComment(Guid id, [FromBody] Request.UpdateProductCommentRequest request)
     {
         var result = await _productService.UpdateComment(id, request);
         return Ok(ApiResponseFactory.SuccessResponse(result, "Comment updated", HttpContext.TraceIdentifier));
-    }
-
-    [Authorize(Policy = JwtExtensions.BuyerPolicy)]
-    [HttpGet("MyComments")]
-    public async Task<IActionResult> GetMyComments()
-    {
-        var result = await _productService.GetMyComments();
-        return Ok(ApiResponseFactory.SuccessResponse(result, traceId: HttpContext.TraceIdentifier));
     }
     
 }
