@@ -50,7 +50,7 @@ public class OrderService : IOrderService
             var user = await _dbContext.Users.FirstOrDefaultAsync(u => u.Id == userIdGuid);
             if (user == null) throw new KeyNotFoundException("Account information not found.");
             var identityDocuments = await _dbContext.IdentityDocuments.FirstOrDefaultAsync(x => x.UserId == userIdGuid);
-            if (identityDocuments.Status != IdentityStatus.Verified)
+            if (identityDocuments == null || identityDocuments.Status != IdentityStatus.Verified)
             {
                 throw new Exception("Your identity document is not verified.");
             }
@@ -72,7 +72,27 @@ public class OrderService : IOrderService
             if (cart == null || cart.CartDetails.All(cd => cd.IsDeleted))
                 throw new InvalidOperationException("Your cart is empty, cannot proceed to checkout.");
 
-            var activeItems = cart.CartDetails.Where(cd => cd.IsDeleted == false).ToList();
+            var selectedCartDetailIds = request.CartDetailIds?
+                .Where(id => id != Guid.Empty)
+                .Distinct()
+                .ToList();
+
+            var activeItems = cart.CartDetails
+                .Where(cd => cd.IsDeleted == false)
+                .ToList();
+
+            if (selectedCartDetailIds is { Count: > 0 })
+            {
+                activeItems = activeItems
+                    .Where(cd => selectedCartDetailIds.Contains(cd.Id))
+                    .ToList();
+
+                if (activeItems.Count != selectedCartDetailIds.Count)
+                    throw new InvalidOperationException("One or more selected cart items were not found in your cart.");
+            }
+
+            if (activeItems.Count == 0)
+                throw new InvalidOperationException("Please select at least one cart item to checkout.");
 
            
             decimal totalAmount = 0;
