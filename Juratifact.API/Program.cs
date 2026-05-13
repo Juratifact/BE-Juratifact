@@ -22,6 +22,7 @@ using Juratifact.Service.Sepay;
 using Juratifact.Service.SellerOrders;
 using Juratifact.Service.SettlementService;
 using Juratifact.Service.Shipper;
+using Juratifact.Service.Transactionss;
 using Juratifact.Service.User;
 using Juratifact.Service.Wallet;
 using Microsoft.EntityFrameworkCore;
@@ -80,6 +81,7 @@ builder.Services.AddScoped<IWalletService, WalletService>();
 builder.Services.AddScoped<IDisputeService, DisputeService>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddScoped<ICartService, CartService>();
+builder.Services.AddScoped<ITransactionServices, TransactionServices>();
 builder.Services.AddScoped<ISellerOrderService, SellerOrderService>();
 
 
