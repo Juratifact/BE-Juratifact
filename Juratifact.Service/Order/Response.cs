@@ -7,7 +7,7 @@ public class Response
     public class CreateOrderResponse
     {
         public Guid OrderId { get; set; }
-        // public List<Guid> OrderIds { get; set; } = new();
+        public List<Guid> SellerOrderIds { get; set; } = new();
         public required string ReferenceCode { get; set; }
         public required string QrUrl { get; set; }
     }
@@ -36,6 +36,7 @@ public class Response
         public required string Title { get; set; }
         public required string Condition { get; set; }
         public decimal Price { get; set; }
+        public Guid? SellerOrderId { get; set; }
         public Guid SellerId { get; set; }
         public string? UserName { get; set; }
         public required string SellerName { get; set; }
