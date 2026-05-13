@@ -1,4 +1,5 @@
 using Juratifact.Service.DiscordService;
+using Juratifact.Service.MediaService;
 using Juratifact.Service.Models;
 using Microsoft.EntityFrameworkCore;
 
@@ -67,6 +68,8 @@ public class GlobalExceptionHandlerMiddleware: IMiddleware
     {
         return ex switch
         {
+            BadHttpRequestException badHttpRequestException => badHttpRequestException.StatusCode,
+            InvalidDataException => StatusCodes.Status413PayloadTooLarge,
             ArgumentException => StatusCodes.Status400BadRequest,
             InvalidOperationException => StatusCodes.Status400BadRequest,
             UnauthorizedAccessException => StatusCodes.Status401Unauthorized,
@@ -79,6 +82,8 @@ public class GlobalExceptionHandlerMiddleware: IMiddleware
 
     private static string ResolveClientMessage(Exception ex, int statusCode)
     {
+        if (statusCode == StatusCodes.Status413PayloadTooLarge)
+            return $"Uploaded file is too large. Maximum allowed video size is {MediaUploadLimits.MaxVideoMb} MB.";
         if (statusCode >= 500)
             return "An unexpected error occurred";
         if (ex is DbUpdateException)
