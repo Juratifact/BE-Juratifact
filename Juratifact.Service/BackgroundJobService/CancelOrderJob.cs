@@ -6,6 +6,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Juratifact.Service.BackgroundJobService;
 
+[DisallowConcurrentExecution]
 public class CancelOrderJob : IJob
 {
     private readonly AppDbContext _dbContext;
@@ -18,58 +19,94 @@ public class CancelOrderJob : IJob
     }
 
     public async Task Execute(IJobExecutionContext context)
-{
-    _logger.LogInformation("Đang chạy CancelOrderJob: Quét các đơn hàng hết hạn thanh toán...");
-    
-    // Ngưỡng thời gian: 10 phút trước
-    var timeoutThreshold = DateTimeOffset.UtcNow.AddMinutes(-10);
-
-    // Tìm các giao dịch OrderPayment đang Pending và quá 10 phút
-    var pendingTransactions = await _dbContext.Transactions
-        .Include(t => t.Order)
-            .ThenInclude(o => o.OrderDetails) 
-        .Where(t => t.TransactionType == TransactionType.OrderPayment 
-                    && t.Status == TransactionStatus.Pending 
-                    && t.CreatedAt < timeoutThreshold)
-        .ToListAsync();
-
-    if (pendingTransactions.Any())
     {
-        // 1. Lấy tất cả Product ID cần giải phóng để load một lần (tối ưu hiệu năng)
-        var productIds = pendingTransactions
-            .SelectMany(t => t.Order?.OrderDetails?.Select(d => d.ProductId) ?? Enumerable.Empty<Guid>())
+        _logger.LogInformation("Đang chạy CancelOrderJob: quét các đơn hàng hết hạn thanh toán...");
+
+        var now = DateTimeOffset.UtcNow;
+        var timeoutThreshold = now.AddMinutes(-10);
+
+        // Luồng order mới tạo nhiều SellerOrders; khi hết hạn thanh toán cần hủy parent order + toàn bộ seller orders,
+        // đánh dấu transaction pending là Expired, và trả product về Available.
+        var orderIdsToCancel = await _dbContext.Transactions
+            .Where(t => t.TransactionType == TransactionType.OrderPayment
+                        && t.Status == TransactionStatus.Pending
+                        && t.CreatedAt < timeoutThreshold
+                        && t.OrderId != null
+                        && t.Order != null
+                        && t.Order.IsDeleted == false
+                        && t.Order.Status == OrderStatus.PendingPayment
+                        && t.Order.PaymentStatus == PaymentStatus.UnPaid)
+            .Select(t => t.OrderId!.Value)
+            .Distinct()
+            .ToListAsync();
+
+        if (!orderIdsToCancel.Any())
+        {
+            return;
+        }
+
+        var orders = await _dbContext.Orders
+            .AsSplitQuery()
+            .Include(o => o.SellerOrders)
+            .Include(o => o.OrderDetails)
+            .Where(o => orderIdsToCancel.Contains(o.Id) && o.IsDeleted == false)
+            .ToListAsync();
+
+        if (!orders.Any())
+        {
+            return;
+        }
+
+        var productIds = orders
+            .SelectMany(o => o.OrderDetails.Select(d => d.ProductId))
             .Distinct()
             .ToList();
 
-        var products = await _dbContext.Products
+        var productsById = await _dbContext.Products
             .Where(p => productIds.Contains(p.Id))
+            .ToDictionaryAsync(p => p.Id);
+
+        var pendingTransactions = await _dbContext.Transactions
+            .Where(t => t.TransactionType == TransactionType.OrderPayment
+                        && t.Status == TransactionStatus.Pending
+                        && t.OrderId != null
+                        && orderIdsToCancel.Contains(t.OrderId.Value))
             .ToListAsync();
 
         foreach (var trans in pendingTransactions)
         {
-            // Hủy giao dịch
-            trans.Status = TransactionStatus.Failed;
+            trans.Status = TransactionStatus.Expired;
             trans.Description = "Hệ thống tự động hủy do quá 10 phút không thanh toán.";
-            
-            if (trans.Order != null)
-            {
-                trans.Order.Status = OrderStatus.Cancelled;
-                trans.Order.UpdatedAt = DateTimeOffset.UtcNow;
+            trans.UpdatedAt = now;
+        }
 
-                // 2. Chỉ cần reset trạng thái về Available (Không cần đụng đến StockQuantity)
-                foreach (var detail in trans.Order.OrderDetails)
+        foreach (var order in orders)
+        {
+            order.Status = OrderStatus.Cancelled;
+            order.PaymentStatus = PaymentStatus.Failed;
+            order.CancelReason = "Payment timeout (>= 10 minutes)";
+            order.UpdatedAt = now;
+
+            foreach (var sellerOrder in order.SellerOrders)
+            {
+                sellerOrder.Status = OrderStatus.Cancelled;
+                sellerOrder.CancelReason = "Payment timeout (>= 10 minutes)";
+                sellerOrder.UpdatedAt = now;
+            }
+
+            foreach (var detail in order.OrderDetails)
+            {
+                if (productsById.TryGetValue(detail.ProductId, out var product) &&
+                    product.Status == ProductStatus.OnHold)
                 {
-                    var product = products.FirstOrDefault(p => p.Id == detail.ProductId);
-                    if (product != null)
-                    {
-                        product.Status = ProductStatus.Available; 
-                    }
+                    product.Status = ProductStatus.Available;
+                    product.UpdatedAt = now;
                 }
             }
         }
 
         await _dbContext.SaveChangesAsync();
-        _logger.LogInformation("Đã hủy {Count} đơn hàng và giải phóng sản phẩm về Available.", pendingTransactions.Count);
+        _logger.LogInformation("Đã auto-cancel {Count} đơn hàng quá hạn thanh toán.", orders.Count);
     }
 }
-}
+
