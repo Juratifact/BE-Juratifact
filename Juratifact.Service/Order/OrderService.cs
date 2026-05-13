@@ -4,6 +4,7 @@ using Juratifact.Repository.Enum;
 using Juratifact.Service.Notification;
 using Juratifact.Service.Sepay;
 using Juratifact.Service.SettlementService;
+using Juratifact.Service.VietMap;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 
@@ -16,16 +17,18 @@ public class OrderService : IOrderService
     private readonly ISepayService _sepayService;
     private readonly ISettlementService _settlementService;
     private readonly INotificationService _notificationService;
+    private readonly IVietMapService _vietMapService;
 
 
     public OrderService(AppDbContext dbContext, IHttpContextAccessor httpContextAccessor, ISepayService sepayService,
-        ISettlementService settlementService, INotificationService notificationService)
+        ISettlementService settlementService, INotificationService notificationService, IVietMapService vietMapService)
     {
         _dbContext = dbContext;
         _httpContext = httpContextAccessor;
         _sepayService = sepayService;
         _settlementService = settlementService;
         _notificationService = notificationService;
+        _vietMapService = vietMapService;
     }
 
     public async Task<Response.CreateOrderResponse> CreateOrderProduct(Request.CheckoutRequest request)
@@ -55,9 +58,25 @@ public class OrderService : IOrderService
                 throw new Exception("Your identity document is not verified.");
             }
             
-            string? finalAddress = !string.IsNullOrWhiteSpace(request.ShippingAddress)
-                ? request.ShippingAddress
-                : user.Address;
+            string? finalAddress;
+            string? vietMapRefId = null;
+            double? shippingLatitude = null;
+            double? shippingLongitude = null;
+
+            if (!string.IsNullOrWhiteSpace(request.VietMapRefId))
+            {
+                var place = await _vietMapService.GetPlaceDetailAsync(request.VietMapRefId);
+                finalAddress = place.Display;
+                vietMapRefId = request.VietMapRefId;
+                shippingLatitude = place.Latitude;
+                shippingLongitude = place.Longitude;
+            }
+            else
+            {
+                finalAddress = !string.IsNullOrWhiteSpace(request.ShippingAddress)
+                    ? request.ShippingAddress
+                    : user.Address;
+            }
 
             if (string.IsNullOrWhiteSpace(finalAddress))
                 throw new InvalidOperationException(
@@ -122,6 +141,9 @@ public class OrderService : IOrderService
                 UserId = userIdGuid,
                 Name = orderCode,
                 ShippingAddress = finalAddress,
+                VietMapRefId = vietMapRefId,
+                ShippingLatitude = shippingLatitude,
+                ShippingLongitude = shippingLongitude,
                 SubtotalPrice = subtotalAmount,
                 TotalPrice = totalAmount,
                 ShippingFee = shippingFee,
