@@ -16,6 +16,9 @@ public class Request
 
     public class UpdateShippingAddressRequest
     {
-        public required string NewAddress { get; set; }
+        public string? NewAddress { get; set; }
+        // Optional: VietMap reference id. If provided the service will resolve and store
+        // the full place display and coordinates instead of using NewAddress directly.
+        public string? VietMapRefId { get; set; }
     }
 }

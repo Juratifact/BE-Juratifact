@@ -9,6 +9,11 @@ public class User: BaseEntity<Guid>,IAuditableEntity
     public required string FullName { get; set; }
     public required string PhoneNumber { get; set; }
     public string? Address { get; set; }
+    // VietMap references: prefer storing place reference and coordinates instead of free-text address
+    public string? VietMapRefId { get; set; }
+    public string? VietMapDisplay { get; set; }
+    public double? Latitude { get; set; }
+    public double? Longitude { get; set; }
     
     public string? UserName { get; set; } // ko bắt buộc
     public string? ProfilePicture { get; set; }
