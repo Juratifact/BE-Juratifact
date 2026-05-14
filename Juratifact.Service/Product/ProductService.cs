@@ -215,6 +215,12 @@ public class ProductService : IProductService
             throw new Exception("You should verify before posting product.");
         }
 
+        // Require that seller has an address (prefer VietMap). Do not allow creating products without address.
+        if (string.IsNullOrWhiteSpace(user.VietMapRefId) && string.IsNullOrWhiteSpace(user.Address))
+        {
+            throw new InvalidOperationException("You must set your address (use VietMap in profile) before creating a product.");
+        }
+
         // Format condition input to match DB values (case-insensitive)
         var validConditions = new Dictionary<string, string>
         {
