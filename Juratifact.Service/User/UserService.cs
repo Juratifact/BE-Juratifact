@@ -312,12 +312,17 @@ public class UserService : IUserService
     
         var selectedQuery = query.Select(x => new Response.GetUserResponse()
         {
-            UserName = x.UserName!,
+            Id = x.Id,
+            UserName = x.UserName,
             FullName = x.FullName,
             Email = x.Email,
             PhoneNumber = x.PhoneNumber,
-            Address = x.Address!,
-            ProfilePicture = x.ProfilePicture!,
+            Address = x.Address,
+            VietMapRefId = x.VietMapRefId,
+            VietMapDisplay = x.VietMapDisplay,
+            Latitude = x.Latitude,
+            Longitude = x.Longitude,
+            ProfilePicture = x.ProfilePicture,
             TrustScore = x.TrustScore,
         });
         var result = await selectedQuery.FirstOrDefaultAsync();
@@ -336,12 +341,17 @@ public class UserService : IUserService
     
         var selectedQuery = query.Select(x => new Response.GetUserResponse()
         {
-            UserName = x.UserName!,
+            Id = x.Id,
+            UserName = x.UserName,
             FullName = x.FullName,
             Email = x.Email,
             PhoneNumber = x.PhoneNumber,
-            Address = x.Address!,
-            ProfilePicture = x.ProfilePicture!,
+            Address = x.Address,
+            VietMapRefId = x.VietMapRefId,
+            VietMapDisplay = x.VietMapDisplay,
+            Latitude = x.Latitude,
+            Longitude = x.Longitude,
+            ProfilePicture = x.ProfilePicture,
         });
         var result = await selectedQuery.FirstOrDefaultAsync();
         
@@ -363,12 +373,16 @@ public class UserService : IUserService
         var selectedQuery = query.Select(x => new Response.GetUserResponse()
         {
             Id = x.Id,
-            UserName = x.UserName!,
+            UserName = x.UserName,
             FullName = x.FullName,
             Email = x.Email,
             PhoneNumber = x.PhoneNumber,
-            Address = x.Address!,
-            ProfilePicture = x.ProfilePicture!,
+            Address = x.Address,
+            VietMapRefId = x.VietMapRefId,
+            VietMapDisplay = x.VietMapDisplay,
+            Latitude = x.Latitude,
+            Longitude = x.Longitude,
+            ProfilePicture = x.ProfilePicture,
             TrustScore = x.TrustScore,
         });
         
