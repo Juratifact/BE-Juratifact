@@ -591,8 +591,7 @@ public class OrderService : IOrderService
             throw new KeyNotFoundException("Order not found or you do not have permission to access it.");
         }
 
-        // Kiểm tra điều kiện: Đã thanh toán và chưa giao cho shipper (trước khi shipper nhận đơn)
-        // Status < OrderStatus.Shipping (có nghĩa là đang ở trạng thái Paid hoặc Assigned)
+        
         if (order.PaymentStatus != PaymentStatus.Paid)
         {
             throw new InvalidOperationException("Shipping address can only be updated for paid orders.");
@@ -603,7 +602,27 @@ public class OrderService : IOrderService
             throw new InvalidOperationException("Cannot update shipping address once the order has been handed over to the shipper.");
         }
 
-        order.ShippingAddress = request.NewAddress;
+        
+        if (!string.IsNullOrWhiteSpace(request.VietMapRefId))
+        {
+            var place = await _vietMapService.GetPlaceDetailAsync(request.VietMapRefId);
+            if (place == null)
+                throw new InvalidOperationException("VietMap reference is invalid or could not be resolved.");
+
+            order.ShippingAddress = place.Display;
+            order.VietMapRefId = request.VietMapRefId;
+            order.ShippingLatitude = place.Latitude;
+            order.ShippingLongitude = place.Longitude;
+        }
+        else
+        {
+            
+            order.ShippingAddress = request.NewAddress;
+            order.VietMapRefId = null;
+            order.ShippingLatitude = null;
+            order.ShippingLongitude = null;
+        }
+
         order.UpdatedAt = DateTimeOffset.UtcNow;
 
         _dbContext.Orders.Update(order);

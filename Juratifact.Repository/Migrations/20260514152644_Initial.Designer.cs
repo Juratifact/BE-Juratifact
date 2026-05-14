@@ -12,7 +12,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Juratifact.Repository.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260513123038_Initial")]
+    [Migration("20260514152644_Initial")]
     partial class Initial
     {
         /// <inheritdoc />
@@ -981,6 +981,12 @@ namespace Juratifact.Repository.Migrations
                     b.Property<bool>("IsVerify")
                         .HasColumnType("boolean");
 
+                    b.Property<double?>("Latitude")
+                        .HasColumnType("double precision");
+
+                    b.Property<double?>("Longitude")
+                        .HasColumnType("double precision");
+
                     b.Property<string>("PhoneNumber")
                         .IsRequired()
                         .HasMaxLength(20)
@@ -1010,6 +1016,12 @@ namespace Juratifact.Repository.Migrations
 
                     b.Property<int?>("VerifyCode")
                         .HasColumnType("integer");
+
+                    b.Property<string>("VietMapDisplay")
+                        .HasColumnType("text");
+
+                    b.Property<string>("VietMapRefId")
+                        .HasColumnType("text");
 
                     b.HasKey("Id");
 

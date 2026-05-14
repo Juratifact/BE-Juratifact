@@ -1,6 +1,7 @@
 using Juratifact.Repository;
 using Juratifact.Service.MailService;
 using Juratifact.Service.MediaService;
+using Juratifact.Service.VietMap;
 using Microsoft.EntityFrameworkCore;
 using System.Text.RegularExpressions;
 using Juratifact.Service.Util;
@@ -14,14 +15,16 @@ public class UserService : IUserService
     private readonly IMailService _mailService;
     private readonly IHttpContextAccessor _httpContext;
     private readonly IMediaService _mediaService;
+    private readonly IVietMapService _vietMapService;
     
     
-    public UserService(AppDbContext dbContext, IMailService mailService, IHttpContextAccessor httpContext, IMediaService mediaService)
+    public UserService(AppDbContext dbContext, IMailService mailService, IHttpContextAccessor httpContext, IMediaService mediaService, IVietMapService vietMapService)
     {
         _dbContext = dbContext;
         _mailService = mailService;
         _httpContext = httpContext;
         _mediaService = mediaService;
+        _vietMapService = vietMapService;
     }
     public async Task<string> CreateUser(Request.CreateUserRequest request)
     {
@@ -192,7 +195,27 @@ public class UserService : IUserService
 
         if (!string.IsNullOrWhiteSpace(request.Address))
         {
+            // Legacy: if caller provided free-text address and did not provide a VietMapRefId, store it
+            // Note: prefer using VietMapRefId (see below) as primary source of address data.
             user.Address = request.Address;
+        }
+
+        if (!string.IsNullOrWhiteSpace(request.VietMapRefId))
+        {
+            // Resolve vietmap place and store vietmap fields on the user
+            var place = await _vietMapService.GetPlaceDetailAsync(request.VietMapRefId);
+            if (place == null)
+            {
+                throw new ArgumentException("Invalid VietMapRefId or place could not be resolved.");
+            }
+
+            user.VietMapRefId = request.VietMapRefId;
+            user.VietMapDisplay = place.Display;
+            user.Latitude = place.Latitude;
+            user.Longitude = place.Longitude;
+
+            // Do not keep legacy free-text address when VietMap is used
+            user.Address = null;
         }
         
         if (!string.IsNullOrWhiteSpace(request.UserName))
