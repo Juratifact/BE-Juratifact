@@ -14,6 +14,12 @@ public class TransactionServices: ITransactionServices
     {
         var query = _dbContext.Transactions.Where(x => true);
 
+
+        if (query == null)
+        {
+            throw new ArgumentException("No transactions found");
+        }
+        
         if (request.TransactionType.HasValue)
         {
             query = query.Where(x =>
@@ -61,6 +67,13 @@ public class TransactionServices: ITransactionServices
             .ThenInclude(od => od.Product) 
             .Where(t => t.Order != null && t.Order.OrderDetails
                 .Any(z => z.Product.SellerId == sellerId));
+
+        if (query == null)
+        {
+            throw new ArgumentException("No transactions found");
+        }        
+        
+        
         if (request.TransactionType.HasValue)
         {
             query = query.Where(x =>

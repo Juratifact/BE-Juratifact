@@ -31,6 +31,8 @@ public class Response
         public Guid ParentOrderId { get; set; }
         public Guid SellerId { get; set; }
         public string? SellerName { get; set; }
+        public string? SellerPhone { get; set; }
+        public string? SellerAddress { get; set; }
         public string Name { get; set; }
         public OrderStatus Status { get; set; }
 

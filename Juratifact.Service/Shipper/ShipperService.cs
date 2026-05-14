@@ -179,6 +179,8 @@ public class ShipperService: IShipperService
                 ParentOrderId = o.OrderId,
                 SellerId      = o.SellerId,
                 SellerName    = o.Seller.FullName,
+                SellerPhone = o.Seller.PhoneNumber,
+                SellerAddress = o.Seller.Address,
                 Name          = o.Code,
                 Status        = o.Status,
 
