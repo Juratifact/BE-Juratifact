@@ -339,6 +339,7 @@ public class UserService : IUserService
 
         var selectedQuery = query.Select(x => new Response.GetUserResponse()
         {
+            Id = x.Id,
             UserName = x.UserName!,
             FullName = x.FullName,
             Email = x.Email,
