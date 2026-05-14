@@ -19,7 +19,7 @@ public class TransactionController: ControllerBase
 
     [Authorize(Policy = JwtExtensions.AdminPolicy)]
     [HttpGet("")]
-    public async Task<IActionResult> GetAllTransaction(Request.TransactionRequest request, int pageSize = 10, int pageIndex = 1)
+    public async Task<IActionResult> GetAllTransaction([FromQuery]Request.TransactionRequest request, int pageSize = 10, int pageIndex = 1)
     {
         var result = await _transactionServices.GetAllTransactions(request, pageSize, pageIndex);
         return Ok(ApiResponseFactory.SuccessResponse(result,HttpContext.TraceIdentifier));
@@ -27,7 +27,7 @@ public class TransactionController: ControllerBase
     
     [Authorize(Policy = JwtExtensions.SellerPolicy)]
     [HttpGet("seller/{sellerId}")]
-    public async Task<IActionResult> GetTransactionBySellerId(Request.TransactionRequest request, Guid sellerId, int pageSize = 10, int pageIndex = 1)
+    public async Task<IActionResult> GetTransactionBySellerId([FromQuery]Request.TransactionRequest request, Guid sellerId, int pageSize = 10, int pageIndex = 1)
     {
         var result = await _transactionServices.GetTransactionsBySellerId(request, sellerId, pageSize, pageIndex);
         return Ok(ApiResponseFactory.SuccessResponse(result,HttpContext.TraceIdentifier));
