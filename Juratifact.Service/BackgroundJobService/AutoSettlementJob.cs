@@ -7,7 +7,7 @@ using Quartz;
 
 namespace Juratifact.Service.BackgroundJobService;
 
-[DisallowConcurrentExecution] 
+[DisallowConcurrentExecution]
 public class AutoSettlementJob : IJob
 {
     private readonly AppDbContext _dbContext;
@@ -15,8 +15,8 @@ public class AutoSettlementJob : IJob
     private readonly ILogger<AutoSettlementJob> _logger;
 
     public AutoSettlementJob(
-        AppDbContext dbContext, 
-        ISettlementService settlementService, 
+        AppDbContext dbContext,
+        ISettlementService settlementService,
         ILogger<AutoSettlementJob> logger)
     {
         _dbContext = dbContext;
@@ -26,51 +26,55 @@ public class AutoSettlementJob : IJob
 
     public async Task Execute(IJobExecutionContext context)
     {
-        _logger.LogInformation("Bắt đầu chạy AutoSettlementJob...");
+        _logger.LogInformation("Bat dau chay AutoSettlementJob...");
 
         try
         {
             var thresholdTime = DateTimeOffset.UtcNow.AddHours(-48);
-            
-            var orderIdsToSettle = await _dbContext.Orders
-                .Where(o => o.Status == OrderStatus.Delivered 
-                            // SỬA LẠI THÀNH DeliveredAt (hoặc trường thời gian tương đương trong DB của bạn)
-                            && o.DeliveryAt <= thresholdTime 
-                            && o.IsDeleted == false)
-                .Select(o => o.Id)
+
+            // New order flow: Order.DeliveryAt is not set; delivery time lives on SellerOrder.DeliveryAt.
+            // Only auto-settle after 48h from the LAST delivery of the order (max DeliveryAt).
+            var orderIdsToSettle = await _dbContext.SellerOrders
+                .Where(so => so.IsDeleted == false
+                             && so.Status == OrderStatus.Delivered
+                             && so.DeliveryAt != null
+                             && so.Order.IsDeleted == false
+                             && so.Order.Status == OrderStatus.Delivered
+                             && so.Order.PaymentStatus == PaymentStatus.Paid)
+                .GroupBy(so => so.OrderId)
+                .Where(g => g.Max(so => so.DeliveryAt) <= thresholdTime)
+                .Select(g => g.Key)
                 .ToListAsync();
 
-            if (!orderIdsToSettle.Any())
+            if (orderIdsToSettle.Count == 0)
             {
-                _logger.LogInformation("Không có đơn hàng nào cần Auto-Settlement lúc này.");
-                return; 
+                _logger.LogInformation("Khong co don hang nao can Auto-Settlement luc nay.");
+                return;
             }
 
-            _logger.LogInformation($"Tìm thấy {orderIdsToSettle.Count} đơn hàng cần xử lý tự động.");
+            _logger.LogInformation("Tim thay {Count} don hang can xu ly tu dong.", orderIdsToSettle.Count);
 
             foreach (var orderId in orderIdsToSettle)
             {
-                try 
+                try
                 {
-                    bool isSuccess = await _settlementService.ProcessSettlementAsync(orderId);
-
+                    var isSuccess = await _settlementService.ProcessSettlementAsync(orderId);
                     if (isSuccess)
                     {
-                        _logger.LogInformation($"[SUCCESS] Đã tự động chốt đơn và chia tiền cho OrderId: {orderId}");
+                        _logger.LogInformation("[SUCCESS] Da tu dong settlement cho OrderId: {OrderId}", orderId);
                     }
-                    // (Tùy chọn) Chỗ này có thể inject INotificationService để gửi thông báo cho User
                 }
                 catch (Exception innerEx)
                 {
-                    _logger.LogError(innerEx, $"[FAIL] Lỗi khi xử lý Auto-Settlement cho OrderId: {orderId}");
+                    _logger.LogError(innerEx, "[FAIL] Loi khi xu ly Auto-Settlement cho OrderId: {OrderId}", orderId);
                 }
             }
 
-            _logger.LogInformation("Hoàn tất chạy AutoSettlementJob.");
+            _logger.LogInformation("Hoan tat chay AutoSettlementJob.");
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Lỗi nghiêm trọng khi thực thi AutoSettlementJob");
+            _logger.LogError(ex, "Loi nghiem trong khi thuc thi AutoSettlementJob");
         }
     }
 }

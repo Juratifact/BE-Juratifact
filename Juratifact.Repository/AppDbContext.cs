@@ -23,6 +23,7 @@ public class AppDbContext : DbContext
     public DbSet<PromotionPackage> PromotionPackages { get; set; }
     public DbSet<Report> Reports { get; set; }
     public DbSet<Role> Roles { get; set; }
+    public DbSet<SellerOrder> SellerOrders { get; set; }
     public DbSet<SellerReview> SellerReviews { get; set; }
     public DbSet<Transaction> Transactions { get; set; }
     public DbSet<User> Users { get; set; }
@@ -93,6 +94,46 @@ public class AppDbContext : DbContext
             .HasOne(t => t.UserPromotionSubscription)
             .WithOne(s => s.Transaction)
             .HasForeignKey<UserPromotionSubscription>(s => s.TransactionId);
+
+        modelBuilder.Entity<SellerOrder>(builder =>
+        {
+            builder.HasOne(so => so.Order)
+                .WithMany(o => o.SellerOrders)
+                .HasForeignKey(so => so.OrderId);
+
+            builder.HasOne(so => so.Seller)
+                .WithMany()
+                .HasForeignKey(so => so.SellerId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            builder.HasOne(so => so.Shipper)
+                .WithMany()
+                .HasForeignKey(so => so.ShipperId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            builder.HasIndex(so => so.Code)
+                .IsUnique();
+        });
+
+        modelBuilder.Entity<OrderDetail>()
+            .HasOne(od => od.SellerOrder)
+            .WithMany(so => so.OrderDetails)
+            .HasForeignKey(od => od.SellerOrderId);
+
+        modelBuilder.Entity<Transaction>()
+            .HasOne(t => t.SellerOrder)
+            .WithMany(so => so.Transactions)
+            .HasForeignKey(t => t.SellerOrderId);
+
+        modelBuilder.Entity<Dispute>()
+            .HasOne(d => d.SellerOrder)
+            .WithMany(so => so.Disputes)
+            .HasForeignKey(d => d.SellerOrderId);
+
+        modelBuilder.Entity<SellerReview>()
+            .HasOne(sr => sr.SellerOrder)
+            .WithMany(so => so.SellerReviews)
+            .HasForeignKey(sr => sr.SellerOrderId);
         
         // 1. Khiếu nại của người mua
         modelBuilder.Entity<Dispute>()
@@ -114,6 +155,173 @@ public class AppDbContext : DbContext
     }
 
     private static void SeedData(ModelBuilder modelBuilder)
+    {
+        var now = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero);
+
+        var buyerRoleId = new Guid("00000000-0000-0000-0000-000000000001");
+        var sellerRoleId = new Guid("00000000-0000-0000-0000-000000000002");
+        var adminRoleId = new Guid("00000000-0000-0000-0000-000000000003");
+        var shipperRoleId = new Guid("00000000-0000-0000-0000-000000000004");
+
+        modelBuilder.Entity<Role>().HasData(
+            new Role { Id = buyerRoleId, Name = "Buyer", IsDeleted = false, CreatedAt = now },
+            new Role { Id = sellerRoleId, Name = "Seller", IsDeleted = false, CreatedAt = now },
+            new Role { Id = adminRoleId, Name = "Admin", IsDeleted = false, CreatedAt = now },
+            new Role { Id = shipperRoleId, Name = "Shipper", IsDeleted = false, CreatedAt = now }
+        );
+
+        var adminUserId = new Guid("00000000-0000-0000-0001-000000000001");
+        var buyerUserId = new Guid("00000000-0000-0000-0001-000000000002");
+        var shipperUserId = new Guid("00000000-0000-0000-0001-000000000003");
+
+        modelBuilder.Entity<User>().HasData(
+            new User
+            {
+                Id = adminUserId,
+                Email = "admin@juratifact.com",
+                HashedPassword = "eze6Lv1VCfFUF4bgfxzZ1g==:HH2e9+wzsnyPpOvyCaqCcg==",
+                FullName = "System Administrator",
+                PhoneNumber = "0900000001",
+                UserName = "admin",
+                IsVerify = true,
+                TrustScore = 0,
+                TotalTrustScore = 0,
+                SellerReviewAmount = 0,
+                IsDeleted = false,
+                CreatedAt = now
+            },
+            new User
+            {
+                Id = buyerUserId,
+                Email = "buyer@juratifact.com",
+                HashedPassword = "LUh6Fk4qUZC+t2FT4xN7dQ==:P7wyGoWX+dmPHlwLDQEMwQ==",
+                FullName = "Default Buyer",
+                PhoneNumber = "0900000002",
+                UserName = "buyer",
+                Address = "123 Buyer Street, Ho Chi Minh City",
+                IsVerify = true,
+                TrustScore = 0,
+                TotalTrustScore = 0,
+                SellerReviewAmount = 0,
+                IsDeleted = false,
+                CreatedAt = now
+            },
+            new User
+            {
+                Id = shipperUserId,
+                Email = "shipper@juratifact.com",
+                HashedPassword = "7UFM1vLmaQQvP34bNdYAtw==:yW1WTThpMvifMtUfKQbFmA==",
+                FullName = "Default Shipper",
+                PhoneNumber = "0900000003",
+                UserName = "shipper",
+                Address = "456 Shipper Street, Ho Chi Minh City",
+                IsVerify = true,
+                TrustScore = 0,
+                TotalTrustScore = 0,
+                SellerReviewAmount = 0,
+                IsDeleted = false,
+                CreatedAt = now
+            }
+        );
+
+        modelBuilder.Entity<UserRole>().HasData(
+            new UserRole
+            {
+                Id = new Guid("00000000-0000-0000-0003-000000000001"),
+                UserId = adminUserId,
+                RoleId = adminRoleId,
+                IsDeleted = false,
+                CreatedAt = now
+            },
+            new UserRole
+            {
+                Id = new Guid("00000000-0000-0000-0003-000000000002"),
+                UserId = buyerUserId,
+                RoleId = buyerRoleId,
+                IsDeleted = false,
+                CreatedAt = now
+            },
+            new UserRole
+            {
+                Id = new Guid("00000000-0000-0000-0003-000000000003"),
+                UserId = shipperUserId,
+                RoleId = shipperRoleId,
+                IsDeleted = false,
+                CreatedAt = now
+            }
+        );
+
+        modelBuilder.Entity<Wallet>().HasData(
+            new Wallet
+            {
+                Id = new Guid("00000000-0000-0000-0002-000000000002"),
+                UserId = buyerUserId,
+                Balance = 0,
+                PendingBalance = 0,
+                IsDeleted = false,
+                CreatedAt = now
+            },
+            new Wallet
+            {
+                Id = new Guid("00000000-0000-0000-0002-000000000003"),
+                UserId = shipperUserId,
+                Balance = 0,
+                PendingBalance = 0,
+                IsDeleted = false,
+                CreatedAt = now
+            }
+        );
+
+        modelBuilder.Entity<Cart>().HasData(
+            new Cart
+            {
+                Id = new Guid("00000000-0000-0000-0004-000000000001"),
+                UserId = buyerUserId,
+                IsDeleted = false,
+                CreatedAt = now
+            }
+        );
+
+        modelBuilder.Entity<Category>().HasData(
+            new Category
+            {
+                Id = new Guid("00000000-0000-0000-0005-000000000001"),
+                Name = "Electronics",
+                IsDeleted = false,
+                CreatedAt = now
+            },
+            new Category
+            {
+                Id = new Guid("00000000-0000-0000-0005-000000000002"),
+                Name = "Fashion",
+                IsDeleted = false,
+                CreatedAt = now
+            },
+            new Category
+            {
+                Id = new Guid("00000000-0000-0000-0005-000000000003"),
+                Name = "Home & Living",
+                IsDeleted = false,
+                CreatedAt = now
+            },
+            new Category
+            {
+                Id = new Guid("00000000-0000-0000-0005-000000000004"),
+                Name = "Books",
+                IsDeleted = false,
+                CreatedAt = now
+            },
+            new Category
+            {
+                Id = new Guid("00000000-0000-0000-0005-000000000005"),
+                Name = "Collectibles",
+                IsDeleted = false,
+                CreatedAt = now
+            }
+        );
+    }
+
+    private static void SeedLegacyData(ModelBuilder modelBuilder)
     {
         var now = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero);
 

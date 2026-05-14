@@ -7,9 +7,20 @@ public class Response
     public class ShipperResponse
     {
         public Guid OrderId { get; set; }
+        public Guid SellerOrderId { get; set; }
+        public Guid ParentOrderId { get; set; }
+        public string? Code { get; set; }
+        public OrderStatus Status { get; set; }
+        public PaymentStatus PaymentStatus { get; set; }
+        public Guid SellerId { get; set; }
+        public string? SellerName { get; set; }
         public string? AddressSeller { get; set; } 
         public string? AddressBuyer { get; set; }
+        public string? CustomerName { get; set; }
+        public string? CustomerPhone { get; set; }
+        public decimal ShippingFee { get; set; }
         public decimal TotalPrice { get; set; }
+        public List<OrderDetailDto> Items { get; set; } = new();
 
     }
     
@@ -17,6 +28,9 @@ public class Response
     {
         // --- IDENTITY ---
         public Guid OrderId { get; set; }
+        public Guid ParentOrderId { get; set; }
+        public Guid SellerId { get; set; }
+        public string? SellerName { get; set; }
         public string Name { get; set; }
         public OrderStatus Status { get; set; }
 

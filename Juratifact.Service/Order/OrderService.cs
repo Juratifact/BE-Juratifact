@@ -4,6 +4,7 @@ using Juratifact.Repository.Enum;
 using Juratifact.Service.Notification;
 using Juratifact.Service.Sepay;
 using Juratifact.Service.SettlementService;
+using Juratifact.Service.VietMap;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 
@@ -16,16 +17,18 @@ public class OrderService : IOrderService
     private readonly ISepayService _sepayService;
     private readonly ISettlementService _settlementService;
     private readonly INotificationService _notificationService;
+    private readonly IVietMapService _vietMapService;
 
 
     public OrderService(AppDbContext dbContext, IHttpContextAccessor httpContextAccessor, ISepayService sepayService,
-        ISettlementService settlementService, INotificationService notificationService)
+        ISettlementService settlementService, INotificationService notificationService, IVietMapService vietMapService)
     {
         _dbContext = dbContext;
         _httpContext = httpContextAccessor;
         _sepayService = sepayService;
         _settlementService = settlementService;
         _notificationService = notificationService;
+        _vietMapService = vietMapService;
     }
 
     public async Task<Response.CreateOrderResponse> CreateOrderProduct(Request.CheckoutRequest request)
@@ -50,14 +53,30 @@ public class OrderService : IOrderService
             var user = await _dbContext.Users.FirstOrDefaultAsync(u => u.Id == userIdGuid);
             if (user == null) throw new KeyNotFoundException("Account information not found.");
             var identityDocuments = await _dbContext.IdentityDocuments.FirstOrDefaultAsync(x => x.UserId == userIdGuid);
-            if (identityDocuments.Status != IdentityStatus.Verified)
+            if (identityDocuments == null || identityDocuments.Status != IdentityStatus.Verified)
             {
                 throw new Exception("Your identity document is not verified.");
             }
             
-            string? finalAddress = !string.IsNullOrWhiteSpace(request.ShippingAddress)
-                ? request.ShippingAddress
-                : user.Address;
+            string? finalAddress;
+            string? vietMapRefId = null;
+            double? shippingLatitude = null;
+            double? shippingLongitude = null;
+
+            if (!string.IsNullOrWhiteSpace(request.VietMapRefId))
+            {
+                var place = await _vietMapService.GetPlaceDetailAsync(request.VietMapRefId);
+                finalAddress = place.Display;
+                vietMapRefId = request.VietMapRefId;
+                shippingLatitude = place.Latitude;
+                shippingLongitude = place.Longitude;
+            }
+            else
+            {
+                finalAddress = !string.IsNullOrWhiteSpace(request.ShippingAddress)
+                    ? request.ShippingAddress
+                    : user.Address;
+            }
 
             if (string.IsNullOrWhiteSpace(finalAddress))
                 throw new InvalidOperationException(
@@ -72,10 +91,30 @@ public class OrderService : IOrderService
             if (cart == null || cart.CartDetails.All(cd => cd.IsDeleted))
                 throw new InvalidOperationException("Your cart is empty, cannot proceed to checkout.");
 
-            var activeItems = cart.CartDetails.Where(cd => cd.IsDeleted == false).ToList();
+            var selectedCartDetailIds = request.CartDetailIds?
+                .Where(id => id != Guid.Empty)
+                .Distinct()
+                .ToList();
+
+            var activeItems = cart.CartDetails
+                .Where(cd => cd.IsDeleted == false)
+                .ToList();
+
+            if (selectedCartDetailIds is { Count: > 0 })
+            {
+                activeItems = activeItems
+                    .Where(cd => selectedCartDetailIds.Contains(cd.Id))
+                    .ToList();
+
+                if (activeItems.Count != selectedCartDetailIds.Count)
+                    throw new InvalidOperationException("One or more selected cart items were not found in your cart.");
+            }
+
+            if (activeItems.Count == 0)
+                throw new InvalidOperationException("Please select at least one cart item to checkout.");
 
            
-            decimal totalAmount = 0;
+            decimal subtotalAmount = 0;
             foreach (var item in activeItems)
             {
                 if (item.Product.Status != ProductStatus.Available)
@@ -84,20 +123,31 @@ public class OrderService : IOrderService
 
                 item.Product.Status = ProductStatus.OnHold;
                 item.Product.UpdatedAt = DateTimeOffset.UtcNow;
-                totalAmount += item.Product.Price;
+                subtotalAmount += item.Product.Price * item.Quantity;
             }
 
-            if (totalAmount <= 0) throw new Exception("Invalid total order amount.");
+            if (subtotalAmount <= 0) throw new Exception("Invalid total order amount.");
+
+            var shippingFee = 0m;
+            var discountAmount = 0m;
+            var totalAmount = subtotalAmount + shippingFee - discountAmount;
+            var orderCode = $"ORD-{DateTimeOffset.UtcNow:yyyyMMddHHmmss}-{Guid.NewGuid().ToString("N")[..6].ToUpper()}";
+            const decimal platformFeeRate = 0.05m;
 
         
             var newOrder = new Repository.Entity.Order()
             {
                 Id = Guid.NewGuid(),
                 UserId = userIdGuid,
-                Name = user.FullName,
+                Name = orderCode,
                 ShippingAddress = finalAddress,
+                VietMapRefId = vietMapRefId,
+                ShippingLatitude = shippingLatitude,
+                ShippingLongitude = shippingLongitude,
+                SubtotalPrice = subtotalAmount,
                 TotalPrice = totalAmount,
-                ShippingPee = 0,
+                ShippingFee = shippingFee,
+                DiscountAmount = discountAmount,
                 Status = OrderStatus.PendingPayment,
                 PaymentStatus = PaymentStatus.UnPaid,
                 PaymentMethod = "Banking",
@@ -105,20 +155,54 @@ public class OrderService : IOrderService
             };
             _dbContext.Orders.Add(newOrder);
 
-          
-            foreach (var item in activeItems)
+            var sellerOrderIds = new List<Guid>();
+            var sellerGroups = activeItems
+                .GroupBy(item => item.Product.SellerId)
+                .ToList();
+
+            var sellerOrderIndex = 1;
+            foreach (var sellerGroup in sellerGroups)
             {
-                _dbContext.OrderDetails.Add(new OrderDetail()
+                var sellerSubtotal = sellerGroup.Sum(item => item.Product.Price * item.Quantity);
+                var sellerShippingFee = 0m;
+                var sellerDiscountAmount = 0m;
+                var platformFee = Math.Round(sellerSubtotal * platformFeeRate, 2);
+                var sellerOrder = new SellerOrder
                 {
                     Id = Guid.NewGuid(),
-                    OrderId = newOrder.Id, 
-                    ProductId = item.ProductId,
-                    Price = item.Product.Price,
+                    Code = $"{orderCode}-S{sellerOrderIndex:D2}",
+                    OrderId = newOrder.Id,
+                    SellerId = sellerGroup.Key,
+                    SubtotalPrice = sellerSubtotal,
+                    ShippingFee = sellerShippingFee,
+                    DiscountAmount = sellerDiscountAmount,
+                    TotalPrice = sellerSubtotal + sellerShippingFee - sellerDiscountAmount,
+                    PlatformFee = platformFee,
+                    SellerReceivableAmount = sellerSubtotal - platformFee,
+                    Status = OrderStatus.PendingPayment,
                     CreatedAt = DateTimeOffset.UtcNow,
-                });
+                };
 
-                item.IsDeleted = true;
-                item.UpdatedAt = DateTimeOffset.UtcNow;
+                _dbContext.SellerOrders.Add(sellerOrder);
+                sellerOrderIds.Add(sellerOrder.Id);
+                sellerOrderIndex++;
+
+                foreach (var item in sellerGroup)
+                {
+                    _dbContext.OrderDetails.Add(new OrderDetail()
+                    {
+                        Id = Guid.NewGuid(),
+                        OrderId = newOrder.Id,
+                        SellerOrderId = sellerOrder.Id,
+                        ProductId = item.ProductId,
+                        Price = item.Product.Price,
+                        Quantity = item.Quantity,
+                        CreatedAt = DateTimeOffset.UtcNow,
+                    });
+
+                    item.IsDeleted = true;
+                    item.UpdatedAt = DateTimeOffset.UtcNow;
+                }
             }
 
             // 8. Tạo Transaction
@@ -151,6 +235,7 @@ public class OrderService : IOrderService
             return new Response.CreateOrderResponse()
             {
                 OrderId = newOrder.Id,
+                SellerOrderIds = sellerOrderIds,
                 ReferenceCode = referenceCode,
                 QrUrl = qrUrl,
             };
@@ -209,6 +294,7 @@ public class OrderService : IOrderService
         var userIdGuid = Guid.Parse(userId!);
 
         var order = await _dbContext.Orders
+            .Include(o => o.SellerOrders)
             .FirstOrDefaultAsync(x => x.Id == orderId &&
                                       x.UserId == userIdGuid &&
                                       x.IsDeleted == false);
@@ -246,6 +332,7 @@ public class OrderService : IOrderService
         try
         {
             var order = await _dbContext.Orders
+                .Include(o => o.SellerOrders)
                 .Include(o => o.OrderDetails!)
                 .ThenInclude(od => od.Product)
                 .FirstOrDefaultAsync(x => x.Id == orderId
@@ -273,6 +360,13 @@ public class OrderService : IOrderService
             order.CancelReason = request.Reason;
             order.UpdatedAt = DateTimeOffset.UtcNow;
 
+            foreach (var sellerOrder in order.SellerOrders)
+            {
+                sellerOrder.Status = OrderStatus.Cancelled;
+                sellerOrder.CancelReason = request.Reason;
+                sellerOrder.UpdatedAt = DateTimeOffset.UtcNow;
+            }
+
             // 5. Process Refund (ONLY IF ALREADY PAID)
             if (order.PaymentStatus == PaymentStatus.Paid)
             {
@@ -282,7 +376,7 @@ public class OrderService : IOrderService
                     throw new Exception("Buyer's wallet not found for refund.");
 
                 
-                var totalRefund = order.OrderDetails!.Sum(d => d.Price);
+                var totalRefund = order.OrderDetails!.Sum(d => d.Price * d.Quantity);
 
              
                 wallet.Balance += totalRefund;
@@ -349,6 +443,7 @@ public class OrderService : IOrderService
         try
         {
             var order = await _dbContext.Orders
+                .Include(o => o.SellerOrders)
                 .Include(o => o.OrderDetails!)
                 .ThenInclude(od => od.Product)
                 .FirstOrDefaultAsync(x => x.Id == orderId
@@ -370,6 +465,13 @@ public class OrderService : IOrderService
             order.PaymentStatus = PaymentStatus.Failed; // Mark as failed because user aborted checkout
             order.CancelReason = "User cancelled checkout";
             order.UpdatedAt = DateTimeOffset.UtcNow;
+
+            foreach (var sellerOrder in order.SellerOrders)
+            {
+                sellerOrder.Status = OrderStatus.Cancelled;
+                sellerOrder.CancelReason = "User cancelled checkout";
+                sellerOrder.UpdatedAt = DateTimeOffset.UtcNow;
+            }
 
         
             var pendingTransactions = await _dbContext.Transactions
@@ -431,7 +533,8 @@ public class OrderService : IOrderService
                 Condition = od.Product.Condition,
             
                 
-                Price = od.Price, 
+                Price = od.Price * od.Quantity,
+                SellerOrderId = od.SellerOrderId,
             
                
                 SellerId = od.Product.SellerId,

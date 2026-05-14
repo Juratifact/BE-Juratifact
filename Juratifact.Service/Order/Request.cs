@@ -5,6 +5,8 @@ public class Request
     public class CheckoutRequest
     {
         public string? ShippingAddress { get; set; }
+        public string? VietMapRefId { get; set; }
+        public List<Guid>? CartDetailIds { get; set; }
     }
     
     public class CancelOrderRequest

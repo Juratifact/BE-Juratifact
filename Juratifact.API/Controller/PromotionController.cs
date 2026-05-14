@@ -1,5 +1,4 @@
 using Juratifact.API.Extensions;
-using Juratifact.Repository.Entity;
 using Juratifact.Service.Models;
 using Juratifact.Service.Promotion;
 using Microsoft.AspNetCore.Authorization;
@@ -8,8 +7,8 @@ using Microsoft.AspNetCore.Mvc;
 namespace Juratifact.API.Controller;
 
 [ApiController]
-[Route("api/[controller]")]
-public class PromotionController:ControllerBase
+[Route("api/promotions")]
+public class PromotionController : ControllerBase
 {
     private readonly IPromotionService _promotionService;
 
@@ -17,9 +16,9 @@ public class PromotionController:ControllerBase
     {
         _promotionService = promotionService;
     }
-    
+
     [Authorize(Policy = JwtExtensions.SellerPolicy)]
-    [HttpGet("promotion-packages/available")]
+    [HttpGet("packages/available")]
     public async Task<IActionResult> GetPromotionPackages()
     {
         var result = await _promotionService.GetPromotionPackages();
@@ -27,15 +26,15 @@ public class PromotionController:ControllerBase
     }
 
     [Authorize(Policy = JwtExtensions.SellerPolicy)]
-    [HttpGet("my-subscriptions")]
+    [HttpGet("subscriptions/me")]
     public async Task<IActionResult> GetSubscribedPromotions()
     {
         var result = await _promotionService.GetSubscribedPromotions();
         return Ok(ApiResponseFactory.SuccessResponse(result, "Get subscribed promotions successfully", HttpContext.TraceIdentifier));
     }
-    
+
     [Authorize(Policy = JwtExtensions.SellerPolicy)]
-    [HttpGet("product-promotions")]
+    [HttpGet("products")]
     public async Task<IActionResult> GetProductPromotion()
     {
         var result = await _promotionService.GetProductPromotion();
@@ -43,15 +42,15 @@ public class PromotionController:ControllerBase
     }
 
     [Authorize(Policy = JwtExtensions.AdminPolicy)]
-    [HttpPost("admin/promotion-packages")]
+    [HttpPost("packages")]
     public async Task<IActionResult> CreatePromotionPackage(Request.PromotionRequest request)
     {
         var promotion = await _promotionService.CreatePromotion(request);
-        return Ok(ApiResponseFactory.SuccessResponse(promotion, "Promotion created",HttpContext.TraceIdentifier));
+        return Ok(ApiResponseFactory.SuccessResponse(promotion, "Promotion created", HttpContext.TraceIdentifier));
     }
 
     [Authorize(Policy = JwtExtensions.SellerPolicy)]
-    [HttpPost("promotion-packages/subscribe/{packageId}")]
+    [HttpPost("packages/{packageId:guid}/subscriptions")]
     public async Task<IActionResult> SubscribeByPackageId(Guid packageId)
     {
         var result = await _promotionService.SubscribeByPackageId(packageId);
@@ -59,7 +58,7 @@ public class PromotionController:ControllerBase
     }
 
     [Authorize(Policy = JwtExtensions.SellerPolicy)]
-    [HttpPost("product-promotions/apply")]
+    [HttpPost("products/applications")]
     public async Task<IActionResult> ApplyProductPromotion(Request.ProductPromotionRequest request)
     {
         var result = await _promotionService.ApplyProductPromotion(request);
@@ -67,12 +66,10 @@ public class PromotionController:ControllerBase
     }
 
     [Authorize(Policy = JwtExtensions.SellerPolicy)]
-    [HttpPatch("product-promotions/{id}/toggle")]
+    [HttpPatch("products/{id:guid}/status")]
     public async Task<IActionResult> ChangeStatusPromotion(Guid id)
     {
         var result = await _promotionService.ChangeStatusPromotion(id);
         return Ok(ApiResponseFactory.SuccessResponse(result, "Change promotion status successfully", HttpContext.TraceIdentifier));
     }
-    
-    
 }

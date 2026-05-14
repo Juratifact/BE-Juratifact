@@ -6,9 +6,14 @@ namespace Juratifact.Repository.Entity;
 public class Order: BaseEntity<Guid>,IAuditableEntity
 {
     public required string Name { get; set; }
+    public decimal SubtotalPrice { get; set; }
     public decimal TotalPrice { get; set; }
-    public decimal ShippingPee { get; set; } //
+    public decimal ShippingFee { get; set; }
+    public decimal DiscountAmount { get; set; }
     public string? ShippingAddress { get; set; }
+    public string? VietMapRefId { get; set; }
+    public double? ShippingLatitude { get; set; }
+    public double? ShippingLongitude { get; set; }
     public string? ShipperPod1Url { get; set; }
     public string? ShipperPod2Url { get; set; }
     public string PaymentMethod { get; set; } = "Banking";
@@ -28,6 +33,7 @@ public class Order: BaseEntity<Guid>,IAuditableEntity
     public SellerReview SellerReview { get; set; }
     
     public ICollection<Transaction> Transactions { get; set; } = new List<Transaction>();
+    public ICollection<SellerOrder> SellerOrders { get; set; } = new List<SellerOrder>();
     public ICollection<OrderDetail> OrderDetails { get; set; } = new List<OrderDetail>();
     public ICollection<Dispute>  Disputes { get; set; } = new List<Dispute>();
     

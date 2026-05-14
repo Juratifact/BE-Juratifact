@@ -19,10 +19,12 @@ using Juratifact.Service.Product;
 using Juratifact.Service.Promotion;
 using Juratifact.Service.Report;
 using Juratifact.Service.Sepay;
+using Juratifact.Service.SellerOrders;
 using Juratifact.Service.SettlementService;
 using Juratifact.Service.Shipper;
 using Juratifact.Service.Transactionss;
 using Juratifact.Service.User;
+using Juratifact.Service.VietMap;
 using Juratifact.Service.Wallet;
 using Microsoft.EntityFrameworkCore;
 using Quartz;
@@ -81,6 +83,9 @@ builder.Services.AddScoped<IDisputeService, DisputeService>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddScoped<ICartService, CartService>();
 builder.Services.AddScoped<ITransactionServices, TransactionServices>();
+builder.Services.AddScoped<ISellerOrderService, SellerOrderService>();
+builder.Services.Configure<VietMapOptions>(builder.Configuration.GetSection("VietMap"));
+builder.Services.AddHttpClient<IVietMapService, VietMapService>();
 
 
 builder.Services.Configure<DiscordAlertOptions>(
@@ -141,4 +146,3 @@ app.UseAuthorization();
 app.MapControllers();
 
 app.Run();
-
