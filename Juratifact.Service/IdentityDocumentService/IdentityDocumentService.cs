@@ -75,7 +75,11 @@ public class IdentityDocumentService : IIdentityDocumentService
 
     public async Task<string> ReSubmitIdentityDocumentAsync(Request.ReUploadIdentityDocumentRequest request)
     {
-        var identityDocument = await _dbContext.IdentityDocuments.FirstOrDefaultAsync(x => x.Id == request.DocumentId );
+        var userId = _httpContext.HttpContext.User.Claims.FirstOrDefault(x => x.Type == "UserId")?.Value;
+        var userIdGuid = Guid.Parse(userId!);
+
+        var identityDocument = await _dbContext.IdentityDocuments
+            .FirstOrDefaultAsync(x => x.Id == request.DocumentId && x.UserId == userIdGuid);
 
         if (identityDocument == null)
         {
