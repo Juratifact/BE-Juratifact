@@ -89,6 +89,10 @@ namespace Juratifact.Repository.Migrations
                     FullName = table.Column<string>(type: "character varying(150)", maxLength: 150, nullable: false),
                     PhoneNumber = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
                     Address = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
+                    VietMapRefId = table.Column<string>(type: "text", nullable: true),
+                    VietMapDisplay = table.Column<string>(type: "text", nullable: true),
+                    Latitude = table.Column<double>(type: "double precision", nullable: true),
+                    Longitude = table.Column<double>(type: "double precision", nullable: true),
                     UserName = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
                     ProfilePicture = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
                     IsVerify = table.Column<bool>(type: "boolean", nullable: false),
@@ -815,12 +819,12 @@ namespace Juratifact.Repository.Migrations
             migrationBuilder.InsertData(
                 schema: "public",
                 table: "Users",
-                columns: new[] { "Id", "Address", "CreatedAt", "Email", "FullName", "HashedPassword", "IsDeleted", "IsVerify", "PhoneNumber", "ProfilePicture", "SellerReviewAmount", "TotalTrustScore", "TrustScore", "UpdatedAt", "UserName", "VerifyCode" },
+                columns: new[] { "Id", "Address", "CreatedAt", "Email", "FullName", "HashedPassword", "IsDeleted", "IsVerify", "Latitude", "Longitude", "PhoneNumber", "ProfilePicture", "SellerReviewAmount", "TotalTrustScore", "TrustScore", "UpdatedAt", "UserName", "VerifyCode", "VietMapDisplay", "VietMapRefId" },
                 values: new object[,]
                 {
-                    { new Guid("00000000-0000-0000-0001-000000000001"), null, new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), "admin@juratifact.com", "System Administrator", "eze6Lv1VCfFUF4bgfxzZ1g==:HH2e9+wzsnyPpOvyCaqCcg==", false, true, "0900000001", null, 0, 0m, 0m, null, "admin", null },
-                    { new Guid("00000000-0000-0000-0001-000000000002"), "123 Buyer Street, Ho Chi Minh City", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), "buyer@juratifact.com", "Default Buyer", "LUh6Fk4qUZC+t2FT4xN7dQ==:P7wyGoWX+dmPHlwLDQEMwQ==", false, true, "0900000002", null, 0, 0m, 0m, null, "buyer", null },
-                    { new Guid("00000000-0000-0000-0001-000000000003"), "456 Shipper Street, Ho Chi Minh City", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), "shipper@juratifact.com", "Default Shipper", "7UFM1vLmaQQvP34bNdYAtw==:yW1WTThpMvifMtUfKQbFmA==", false, true, "0900000003", null, 0, 0m, 0m, null, "shipper", null }
+                    { new Guid("00000000-0000-0000-0001-000000000001"), null, new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), "admin@juratifact.com", "System Administrator", "eze6Lv1VCfFUF4bgfxzZ1g==:HH2e9+wzsnyPpOvyCaqCcg==", false, true, null, null, "0900000001", null, 0, 0m, 0m, null, "admin", null, null, null },
+                    { new Guid("00000000-0000-0000-0001-000000000002"), "123 Buyer Street, Ho Chi Minh City", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), "buyer@juratifact.com", "Default Buyer", "LUh6Fk4qUZC+t2FT4xN7dQ==:P7wyGoWX+dmPHlwLDQEMwQ==", false, true, null, null, "0900000002", null, 0, 0m, 0m, null, "buyer", null, null, null },
+                    { new Guid("00000000-0000-0000-0001-000000000003"), "456 Shipper Street, Ho Chi Minh City", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), "shipper@juratifact.com", "Default Shipper", "7UFM1vLmaQQvP34bNdYAtw==:yW1WTThpMvifMtUfKQbFmA==", false, true, null, null, "0900000003", null, 0, 0m, 0m, null, "shipper", null, null, null }
                 });
 
             migrationBuilder.InsertData(
