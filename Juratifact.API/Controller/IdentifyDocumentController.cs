@@ -19,7 +19,7 @@ public class IdentifyDocumentController : ControllerBase
         _identityDocumentService = identityDocumentService;
     }
 
-    [Authorize(Policy = JwtExtensions.BuyerPolicy)]
+    [Authorize(Policy = JwtExtensions.BuyerOrShipperPolicy)]
     [HttpPost]
     public async Task<IActionResult> SubmitIdentityDocument(Request.UploadIdentityDocumentRequest request)
     {
@@ -27,7 +27,7 @@ public class IdentifyDocumentController : ControllerBase
         return Ok(ApiResponseFactory.SuccessResponse(null, "Summit successful", HttpContext.TraceIdentifier));
     }
 
-    [Authorize(Policy = JwtExtensions.BuyerPolicy)]
+    [Authorize(Policy = JwtExtensions.BuyerOrShipperPolicy)]
     [HttpPut("me")]
     public async Task<IActionResult> ReSubmitIdentityDocument(Request.ReUploadIdentityDocumentRequest request)
     {
@@ -50,7 +50,7 @@ public class IdentifyDocumentController : ControllerBase
         return Ok(ApiResponseFactory.SuccessResponse(document, "Get identity document successfully", HttpContext.TraceIdentifier));
     }
 
-    [Authorize(Policy = JwtExtensions.BuyerPolicy)]
+    [Authorize(Policy = JwtExtensions.BuyerOrShipperPolicy)]
     [HttpGet("me")]
     public async Task<IActionResult> GetMyDocument()
     {
