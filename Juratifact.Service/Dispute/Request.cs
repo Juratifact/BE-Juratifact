@@ -6,6 +6,7 @@ public class Request
 {
     public class CreateDisputeRequest
     {
+        public required Guid SellerOrderId { get; set; }
         public required string Reason { get; set; }
     }
 
