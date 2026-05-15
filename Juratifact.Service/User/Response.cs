@@ -20,4 +20,14 @@ public class Response
         public string? ProfilePicture { get; set; }
         
     }
+
+    public class GetMyRoleResponse
+    {
+        public List<UserRoles>? UserRoles { get; set; }
+    }
+
+    public class UserRoles
+    {
+        public required string RoleName { get; set; }
+    }
 }
