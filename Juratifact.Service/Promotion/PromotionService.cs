@@ -20,27 +20,41 @@ public class PromotionService : IPromotionService
         _sepayService = sepayService;
     }
 
-    public async Task<List<Response.PromotionPackageResponse>> GetPromotionPackages()
+    public async Task<Base.Response.PageResult<Response.PromotionPackageResponse>> GetPromotionPackages(int pageSize, int pageIndex)
     {
         var now = DateTimeOffset.UtcNow;
 
-        var promotionPackages = await _dbContext.PromotionPackages
-            .Where(pp => pp.AvailableFrom <= now && pp.AvailableTo >= now)
-            .Select(pp => new Response.PromotionPackageResponse
-            {
-                PackageId = pp.Id,
-                PackageName = pp.PackageName,
-                Price = pp.Price,
-                MaxProductCount = pp.MaxProductCount,
-                PromotionDaysPerSlot = pp.PromotionDaysPerSlot,
-                UsageLimitDays = pp.UsageLimitDays, //Tùy business
-                Description = pp.Description,
-                AvailableFrom = pp.AvailableFrom,
-                AvailableTo = pp.AvailableTo,
-            })
-            .ToListAsync();
+        var query = _dbContext.PromotionPackages
+            .Where(pp => pp.AvailableFrom <= now && pp.AvailableTo >= now && pp.IsDeleted == false);
+        
+        query = query.OrderByDescending(x => x.CreatedAt);
+        query = query.Skip((pageIndex - 1) * pageSize)
+                .Take(pageSize);
+        var selected = query.Select(pp => new Response.PromotionPackageResponse
+        {
+            PackageId = pp.Id,
+            PackageName = pp.PackageName,
+            Price = pp.Price,
+            MaxProductCount = pp.MaxProductCount,
+            PromotionDaysPerSlot = pp.PromotionDaysPerSlot,
+            UsageLimitDays = pp.UsageLimitDays, //Tùy business
+            Description = pp.Description,
+            AvailableFrom = pp.AvailableFrom,
+            AvailableTo = pp.AvailableTo,
+            CreatedAt = pp.CreatedAt,
+            UpdatedAt = pp.UpdatedAt
+        });
+        
+        var listResult = await selected.ToListAsync();
+        var totalItems = listResult.Count;
 
-        return promotionPackages;
+        var result = new Base.Response.PageResult<Response.PromotionPackageResponse>()
+        {
+            Items = listResult,
+            TotalItems = totalItems,
+        };
+        
+        return result;
     }
 
     public async Task<string> CreatePromotion(Request.PromotionRequest request)
@@ -63,6 +77,7 @@ public class PromotionService : IPromotionService
             AvailableFrom = request.AvailableFrom,
             AvailableTo = request.AvailableTo,
             UsageLimitDays = request.UsageLimitDays,
+            CreatedAt = DateTimeOffset.UtcNow
         };
         _dbContext.PromotionPackages.Add(promotion);
         await _dbContext.SaveChangesAsync();
@@ -75,7 +90,7 @@ public class PromotionService : IPromotionService
         var userId = _httpContext.HttpContext.User.Claims.FirstOrDefault(c => c.Type == "UserId")?.Value;
         var userIdGuid = Guid.Parse(userId!);
 
-        var package = await _dbContext.PromotionPackages.FirstOrDefaultAsync(p => p.Id == packageId);
+        var package = await _dbContext.PromotionPackages.FirstOrDefaultAsync(p => p.Id == packageId  && p.IsDeleted == false);
 
         if (package == null)
         {
@@ -158,7 +173,7 @@ public class PromotionService : IPromotionService
             .Where(p => p.PaymentStatus == PaymentStatus.Paid &&
                         p.PromotionPackage.AvailableTo > now &&
                         p.StartTime <= now && p.EndTime >= now &&
-                        (p.TotalSlot ?? 0) > (p.UsedSlot ?? 0));
+                        (p.TotalSlot ?? 0) > (p.UsedSlot ?? 0) && p.IsDeleted == false);
 
         var selected = promotionPackage.Select(p => new Response.PromotionSubscribeResponse()
         {
@@ -181,7 +196,7 @@ public class PromotionService : IPromotionService
     {
         // Kiểm tra gói promotion nào còn slot, còn hạn, phù hợp với productId này không
         // Nếu có, tăng UsedSlot lên 1
-        var product = _dbContext.Products.Where(x => x.Id == request.ProductId);
+        var product = _dbContext.Products.Where(x => x.Id == request.ProductId && x.IsDeleted == false);
 
         var existingProduct = await product.AnyAsync();
 
@@ -198,7 +213,7 @@ public class PromotionService : IPromotionService
                         x.PaymentStatus == PaymentStatus.Paid &&
                         x.PromotionPackage.AvailableTo > now &&
                         x.StartTime <= now && x.EndTime >= now && // kiểm tra xem promotion còn hạn ko
-                        (x.TotalSlot ?? 0) > (x.UsedSlot ?? 0))
+                        (x.TotalSlot ?? 0) > (x.UsedSlot ?? 0) && x.IsDeleted == false)
             .OrderBy(x => x.EndTime); // ưu tiên gói nào hết hạn gần nhất
 
         var subscription = await promotionPackage.FirstOrDefaultAsync();
@@ -248,7 +263,7 @@ public class PromotionService : IPromotionService
     {
         var productPromotion = await _dbContext.ProductPromotions
             .Include(x => x.UserPromotionSubscription)
-            .Where(x => x.Id == id)
+            .Where(x => x.Id == id && x.IsDeleted == false)
             .FirstOrDefaultAsync();
 
         if (productPromotion == null)
@@ -302,7 +317,7 @@ public class PromotionService : IPromotionService
         var userIdGuid = Guid.Parse(userId!);
         var productPromotions = _dbContext.ProductPromotions
             .Include(p => p.UserPromotionSubscription)
-            .Where(p => p.UserPromotionSubscription.UserId == userIdGuid)
+            .Where(p => p.UserPromotionSubscription.UserId == userIdGuid && p.IsDeleted == false)
             .Select(p => new Response.GetProductPromotionResponse()
             {
                 ProductPromotionId = p.Id,
