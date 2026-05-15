@@ -70,4 +70,13 @@ public class UserController : ControllerBase
         var result = await _userService.CreatShipper(request);
         return Ok(ApiResponseFactory.SuccessResponse(result, "Shipper created by Admin", HttpContext.TraceIdentifier));
     }
+
+    [Authorize]
+    [HttpGet("roles")]
+    public async Task<IActionResult> GetMyRole()
+    {
+        var result = await _userService.GetMyRole();
+        return Ok(ApiResponseFactory.SuccessResponse(result, "Get My Role", HttpContext.TraceIdentifier));
+    }
+        
 }
