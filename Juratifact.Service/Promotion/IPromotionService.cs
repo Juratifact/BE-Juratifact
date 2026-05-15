@@ -2,7 +2,7 @@ namespace Juratifact.Service.Promotion;
 
 public interface IPromotionService
 {
-    public Task<List<Response.PromotionPackageResponse>> GetPromotionPackages();
+    public Task<Base.Response.PageResult<Response.PromotionPackageResponse>> GetPromotionPackages(int pageSize, int pageIndex);
     public Task<string> CreatePromotion(Request.PromotionRequest request);
     public Task<Response.SubscribeResponse> SubscribeByPackageId(Guid packageId);
     public Task<List<Response.PromotionSubscribeResponse>> GetSubscribedPromotions();

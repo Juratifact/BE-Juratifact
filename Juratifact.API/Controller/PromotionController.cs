@@ -17,11 +17,11 @@ public class PromotionController : ControllerBase
         _promotionService = promotionService;
     }
 
-    [Authorize(Policy = JwtExtensions.SellerPolicy)]
+    [Authorize(Policy = JwtExtensions.AdminOrSellerPolicy)]
     [HttpGet("packages/available")]
-    public async Task<IActionResult> GetPromotionPackages()
+    public async Task<IActionResult> GetPromotionPackages(int pageSize = 10, int pageIndex = 1)
     {
-        var result = await _promotionService.GetPromotionPackages();
+        var result = await _promotionService.GetPromotionPackages(pageSize, pageIndex);
         return Ok(ApiResponseFactory.SuccessResponse(result, "Get promotion packages successfully", HttpContext.TraceIdentifier));
     }
 
