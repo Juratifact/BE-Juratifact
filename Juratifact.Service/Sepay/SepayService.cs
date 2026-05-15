@@ -168,21 +168,52 @@ public class SepayService: ISepayService
     private async Task HandlePromotionActivation(Transaction transaction)
     {
         var sub = transaction.UserPromotionSubscription;
-        if (sub != null && sub.PromotionPackage != null)
-        {
-            sub.PaymentStatus = PaymentStatus.Paid;
-            sub.StartTime = DateTime.Now; 
-        
-           
-            sub.EndTime = sub.StartTime.AddDays((double)sub.PromotionPackage.UsageLimitDays);
-        
-            
-            sub.TotalSlot = sub.PromotionPackage.MaxProductCount;
-            sub.UsedSlot = 0;
 
-            _logger.LogInformation("Đã kích hoạt gói {Name} cho User {User}", 
-                sub.PromotionPackage.PackageName, sub.UserId);
+        if (sub == null && transaction.UserPromotionSubscriptionId.HasValue)
+        {
+            sub = await _dbContext.UserPromotionSubscriptions
+                .Include(s => s.PromotionPackage)
+                .FirstOrDefaultAsync(s => s.Id == transaction.UserPromotionSubscriptionId.Value);
+
+            transaction.UserPromotionSubscription = sub;
         }
+
+        if (sub != null && sub.PromotionPackage == null)
+        {
+            await _dbContext.Entry(sub).Reference(s => s.PromotionPackage).LoadAsync();
+        }
+
+        if (sub == null)
+        {
+            _logger.LogWarning(
+                "Không tìm thấy subscription cho transaction {TransactionId} (UserPromotionSubscriptionId={SubscriptionId})",
+                transaction.Id, transaction.UserPromotionSubscriptionId);
+            return;
+        }
+
+        if (sub.PromotionPackage == null)
+        {
+            _logger.LogWarning("Subscription {SubscriptionId} không có PromotionPackage", sub.Id);
+            return;
+        }
+
+        var now = DateTimeOffset.UtcNow;
+        var usageLimitDays = sub.PromotionPackage.UsageLimitDays.GetValueOrDefault(30);
+        if (usageLimitDays <= 0)
+        {
+            usageLimitDays = 30;
+        }
+
+        sub.PaymentStatus = PaymentStatus.Paid;
+        sub.StartTime = now;
+        sub.EndTime = now.AddDays(usageLimitDays);
+        sub.TotalSlot = sub.PromotionPackage.MaxProductCount;
+        sub.UsedSlot = 0;
+        sub.TransactionId ??= transaction.Id;
+        sub.UpdatedAt = now;
+
+        _logger.LogInformation("Đã kích hoạt gói {Name} cho User {User}",
+            sub.PromotionPackage.PackageName, sub.UserId);
     }
     
     private async Task HandleOrderPayment(Transaction transaction)

@@ -118,11 +118,19 @@ public class PromotionService : IPromotionService
 
         // Check duplicate - tránh tạo 2 lần
         var existingTransaction = await _dbContext.Transactions
-            .Include(t => t.UserPromotionSubscription)
-            .ThenInclude(s => s.PromotionPackage)
-            .Where(t => t.UserPromotionSubscription!.UserId == userIdGuid
-                        && t.UserPromotionSubscription.PromotionPackageId == packageId
-                        && t.Status == TransactionStatus.Pending)
+            .Where(t => t.TransactionType == TransactionType.ServiceFee &&
+                        t.Status == TransactionStatus.Pending)
+            .Join(
+                _dbContext.UserPromotionSubscriptions,
+                t => t.UserPromotionSubscriptionId,
+                s => (Guid?)s.Id,
+                (t, s) => new { Transaction = t, Subscription = s }
+            )
+            .Where(x => x.Subscription.UserId == userIdGuid
+                        && x.Subscription.PromotionPackageId == packageId
+                        && x.Subscription.IsDeleted == false)
+            .OrderByDescending(x => x.Transaction.CreatedAt)
+            .Select(x => x.Transaction)
             .FirstOrDefaultAsync();
 
         if (existingTransaction != null)
@@ -143,26 +151,29 @@ public class PromotionService : IPromotionService
         
         var now = DateTimeOffset.UtcNow; // Chuẩn hóa thời gian
         // Tạo Subscription trước
+        var subscriptionId = Guid.NewGuid();
+        var transactionId = Guid.NewGuid();
+
         var subscription = new UserPromotionSubscription()
         {
-            Id = Guid.NewGuid(),
+            Id = subscriptionId,
             UserId = userIdGuid,
             PromotionPackageId = packageId,
             PaymentStatus = PaymentStatus.UnPaid,
             TotalSlot = package.MaxProductCount,
             UsedSlot = 0,
             StartTime = now,
-            EndTime = package.AvailableTo ?? now.AddDays(30),
+            EndTime = now.AddDays(package.UsageLimitDays ?? 30),
+            TransactionId = transactionId,
             CreatedAt = DateTimeOffset.UtcNow,
         };
         _dbContext.Add(subscription);
-        await _dbContext.SaveChangesAsync();
 
         // Tạo Transaction sau, gắn SubscriptionId
         var transaction = new Transaction()
         {
-            Id = Guid.NewGuid(),
-            UserPromotionSubscriptionId = subscription.Id,
+            Id = transactionId,
+            UserPromotionSubscriptionId = subscriptionId,
             TransactionType = TransactionType.ServiceFee,
             Status = TransactionStatus.Pending,
             ReferenceCode = referenceCode,
@@ -185,12 +196,20 @@ public class PromotionService : IPromotionService
 
     public async Task<List<Response.PromotionSubscribeResponse>> GetSubscribedPromotions()
     {
+        var userId = _httpContext.HttpContext.User.Claims.FirstOrDefault(c => c.Type == "UserId")?.Value;
+        var userIdGuid = Guid.Parse(userId!);
         var now = DateTimeOffset.UtcNow;
 
         var promotionPackage = _dbContext.UserPromotionSubscriptions
+            .AsNoTracking()
             .Include(s => s.PromotionPackage)
-            .Where(p => p.PaymentStatus == PaymentStatus.Paid &&
-                        p.PromotionPackage.AvailableTo > now &&
+            .Where(p => p.UserId == userIdGuid &&
+                        (p.PaymentStatus == PaymentStatus.Paid ||
+                         _dbContext.Transactions.Any(t =>
+                             t.TransactionType == TransactionType.ServiceFee &&
+                             t.Status == TransactionStatus.Success &&
+                             (t.UserPromotionSubscriptionId == p.Id ||
+                              (p.TransactionId != null && t.Id == p.TransactionId)))) &&
                         p.StartTime <= now && p.EndTime >= now &&
                         (p.TotalSlot ?? 0) > (p.UsedSlot ?? 0) && p.IsDeleted == false);
 
@@ -215,6 +234,8 @@ public class PromotionService : IPromotionService
     {
         // Kiểm tra gói promotion nào còn slot, còn hạn, phù hợp với productId này không
         // Nếu có, tăng UsedSlot lên 1
+        var userId = _httpContext.HttpContext.User.Claims.FirstOrDefault(c => c.Type == "UserId")?.Value;
+        var userIdGuid = Guid.Parse(userId!);
         var product = _dbContext.Products.Where(x => x.Id == request.ProductId && x.IsDeleted == false);
 
         var existingProduct = await product.AnyAsync();
@@ -228,9 +249,14 @@ public class PromotionService : IPromotionService
 
         var promotionPackage = _dbContext.UserPromotionSubscriptions
             .Include(x => x.PromotionPackage)
-            .Where(x => x.PromotionPackageId == request.PromotionPackageId && 
-                        x.PaymentStatus == PaymentStatus.Paid &&
-                        x.PromotionPackage.AvailableTo > now &&
+            .Where(x => x.UserId == userIdGuid &&
+                        x.PromotionPackageId == request.PromotionPackageId &&
+                        (x.PaymentStatus == PaymentStatus.Paid ||
+                         _dbContext.Transactions.Any(t =>
+                             t.TransactionType == TransactionType.ServiceFee &&
+                             t.Status == TransactionStatus.Success &&
+                             (t.UserPromotionSubscriptionId == x.Id ||
+                              (x.TransactionId != null && t.Id == x.TransactionId)))) &&
                         x.StartTime <= now && x.EndTime >= now && // kiểm tra xem promotion còn hạn ko
                         (x.TotalSlot ?? 0) > (x.UsedSlot ?? 0) && x.IsDeleted == false)
             .OrderBy(x => x.EndTime); // ưu tiên gói nào hết hạn gần nhất
@@ -269,7 +295,7 @@ public class PromotionService : IPromotionService
             UserPromotionSubscriptionId = subscription.Id,
             IsActive = true,
             ActiveAt = DateTimeOffset.UtcNow,
-            ExpiresAt = subscription.PromotionPackage.AvailableTo,
+            ExpiresAt = subscription.EndTime,
             CreatedAt = DateTimeOffset.UtcNow,
         };
         _dbContext.Add(productPromotion);
