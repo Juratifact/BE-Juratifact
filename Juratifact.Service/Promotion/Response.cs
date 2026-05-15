@@ -1,3 +1,5 @@
+using Juratifact.Repository.Enum;
+
 namespace Juratifact.Service.Promotion;
 
 public class Response
@@ -15,6 +17,7 @@ public class Response
         public DateTimeOffset? AvailableTo { get; set; }
         public DateTimeOffset? CreatedAt { get; set; }
         public DateTimeOffset? UpdatedAt { get; set; }
+        public PaymentStatus PaymentStatus { get; set; }
     }
     
     public class SubscribeResponse
@@ -27,6 +30,8 @@ public class Response
         public Guid PromotionPackageId { get; set; }
         public string PromotionPackageName { get; set; } = null!;
         public decimal Price { get; set; }
+        
+        public PaymentStatus PaymentStatus { get; set; }
         
         public int TotalSlot { get; set; }
         public int UsedSlot { get; set; }

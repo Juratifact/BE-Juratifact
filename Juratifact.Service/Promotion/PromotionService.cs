@@ -198,20 +198,12 @@ public class PromotionService : IPromotionService
     {
         var userId = _httpContext.HttpContext.User.Claims.FirstOrDefault(c => c.Type == "UserId")?.Value;
         var userIdGuid = Guid.Parse(userId!);
-        var now = DateTimeOffset.UtcNow;
 
         var promotionPackage = _dbContext.UserPromotionSubscriptions
             .AsNoTracking()
             .Include(s => s.PromotionPackage)
-            .Where(p => p.UserId == userIdGuid &&
-                        (p.PaymentStatus == PaymentStatus.Paid ||
-                         _dbContext.Transactions.Any(t =>
-                             t.TransactionType == TransactionType.ServiceFee &&
-                             t.Status == TransactionStatus.Success &&
-                             (t.UserPromotionSubscriptionId == p.Id ||
-                              (p.TransactionId != null && t.Id == p.TransactionId)))) &&
-                        p.StartTime <= now && p.EndTime >= now &&
-                        (p.TotalSlot ?? 0) > (p.UsedSlot ?? 0) && p.IsDeleted == false);
+            .Where(p => p.UserId == userIdGuid && p.IsDeleted == false)
+            .OrderByDescending(p => p.CreatedAt);
 
         var selected = promotionPackage.Select(p => new Response.PromotionSubscribeResponse()
         {
@@ -224,6 +216,7 @@ public class PromotionService : IPromotionService
             TotalSlot = p.TotalSlot ?? 0,
             UsedSlot = p.UsedSlot ?? 0,
             Price = p.PromotionPackage.Price,
+            PaymentStatus = p.PaymentStatus,
         });
 
         var list = await selected.ToListAsync();
