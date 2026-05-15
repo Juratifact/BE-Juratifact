@@ -266,6 +266,7 @@ public class PromotionService : IPromotionService
         if (subscription == null)
         {
             throw new Exception("Promotion package not found");
+            
         }
 
         // Chặn trùng
