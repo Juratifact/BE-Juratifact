@@ -270,9 +270,11 @@ public class OrderService : IOrderService
         return response;
     }
 
-    public async Task<List<Response.GetAllOrderResponse>> GetAllOrders()
+    public async Task<Base.Response.PageResult<Response.GetAllOrderResponse>>  GetAllOrders(int pageSize, int pageIndex)
     {
         var query = _dbContext.Orders.Where(x => x.IsDeleted == false);
+        query = query.Skip((pageIndex - 1) * pageSize)
+            .Take(pageSize);
         query = query.OrderByDescending(x => x.CreatedAt);
         var select = query.Select(x => new Response.GetAllOrderResponse()
         {
@@ -284,7 +286,16 @@ public class OrderService : IOrderService
             UpdatedAt = x.UpdatedAt
         });
 
-        var result = await select.ToListAsync();
+        var listResult = await select.ToListAsync();
+        var totalItems = listResult.Count;
+
+        var result = new Base.Response.PageResult<Response.GetAllOrderResponse>()
+        {
+            Items = listResult,
+            PageIndex = pageIndex,
+            PageSize = pageSize,
+            TotalItems = totalItems,
+        };
         return result;
     }
 
@@ -506,42 +517,54 @@ public class OrderService : IOrderService
         }
     }
 
-    public async Task<List<Response.GetMyOrderResponse>> GetMyOrder()
+    public async Task<Base.Response.PageResult<Response.GetMyOrderResponse>> GetMyOrder(int pageSize, int pageIndex)
     {
         var userId = _httpContext.HttpContext.User.Claims.FirstOrDefault(x => x.Type == "UserId")?.Value;
         if (string.IsNullOrEmpty(userId) || !Guid.TryParse(userId, out var userIdGuid))
             throw new UnauthorizedAccessException("You are not logged in or your session has expired.");
 
-       
-        var result = await _dbContext.Orders
-            .Where(x => x.UserId == userIdGuid && x.IsDeleted == false)
-            .OrderByDescending(x => x.CreatedAt)
+
+        var query = _dbContext.Orders
+            .Where(x => x.UserId == userIdGuid && x.IsDeleted == false);
+        
+             query = query.Skip((pageIndex - 1) * pageSize)
+                .Take(pageSize);
+            query = query.OrderByDescending(x => x.CreatedAt);
             // Dùng SelectMany để bóc mỗi OrderDetail thành 1 object GetMyOrderResponse riêng biệt
-            .SelectMany(order => order.OrderDetails.Select(od => new Response.GetMyOrderResponse()
+            var select = query.SelectMany(order => order.OrderDetails.Select(od => new Response.GetMyOrderResponse()
             {
-              
+
                 OrderId = order.Id,
                 Name = order.Name,
                 Status = order.Status,
                 PaymentStatus = order.PaymentStatus,
                 CreatedAt = order.CreatedAt,
                 UpdatedAt = order.UpdatedAt,
-            
-               
+
+
                 ProductId = od.ProductId,
                 Title = od.Product.Title,
                 Condition = od.Product.Condition,
-            
-                
+
+
                 Price = od.Price * od.Quantity,
                 SellerOrderId = od.SellerOrderId,
-            
-               
+
+
                 SellerId = od.Product.SellerId,
                 SellerName = od.Product.Seller.FullName,
                 UserName = od.Product.Seller.UserName
-            }))
-            .ToListAsync(); 
+            }));
+            var listResult = await select.ToListAsync();
+            var totalItems = listResult.Count;
+
+            var result = new Base.Response.PageResult<Response.GetMyOrderResponse>()
+            {
+                Items = listResult,
+                PageIndex = pageIndex,
+                PageSize = pageSize,
+                TotalItems = totalItems,
+            };
 
         return result;
     }
