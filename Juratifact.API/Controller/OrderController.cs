@@ -19,17 +19,17 @@ public class OrderController : ControllerBase
 
     [Authorize(Policy = JwtExtensions.AdminPolicy)]
     [HttpGet]
-    public async Task<IActionResult> GetAllOrder()
+    public async Task<IActionResult> GetAllOrder(int pageSize = 10, int pageIndex = 1)
     {
-        var result = await _orderService.GetAllOrders();
+        var result = await _orderService.GetAllOrders(pageSize, pageIndex);
         return Ok(ApiResponseFactory.SuccessResponse(result, "Get all order successfully", HttpContext.TraceIdentifier));
     }
 
     [Authorize(Policy = JwtExtensions.BuyerPolicy)]
     [HttpGet("me")]
-    public async Task<IActionResult> GetMyOrder()
+    public async Task<IActionResult> GetMyOrder(int pageSize = 10, int pageIndex = 1)
     {
-        var result = await _orderService.GetMyOrder();
+        var result = await _orderService.GetMyOrder(pageSize, pageIndex);
         return Ok(ApiResponseFactory.SuccessResponse(result, "Get my order successfully", HttpContext.TraceIdentifier));
     }
 
