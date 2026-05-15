@@ -1,5 +1,7 @@
 using System.Security.Claims;
+using System.Linq.Expressions;
 using Juratifact.Repository;
+using Juratifact.Repository.Entity;
 using Juratifact.Repository.Enum;
 using Juratifact.Service.Base;
 using Microsoft.AspNetCore.Http;
@@ -39,7 +41,7 @@ public class SellerOrderService : ISellerOrderService
             .OrderByDescending(so => so.CreatedAt)
             .Skip((pageIndex - 1) * pageSize)
             .Take(pageSize)
-            .Select(so => ToSellerOrderResponse(so))
+            .Select(SellerOrderProjection)
             .ToListAsync();
 
         return new Response.PageResult<SellerOrderResponse>
@@ -69,7 +71,7 @@ public class SellerOrderService : ISellerOrderService
         return await _dbContext.SellerOrders
             .Where(so => so.OrderId == orderId && so.IsDeleted == false)
             .OrderBy(so => so.Code)
-            .Select(so => ToSellerOrderResponse(so))
+            .Select(SellerOrderProjection)
             .ToListAsync();
     }
 
@@ -89,7 +91,7 @@ public class SellerOrderService : ISellerOrderService
                           so.Order.PaymentStatus == PaymentStatus.Paid &&
                           so.Status == OrderStatus.Paid &&
                           so.ShipperId == null))
-            .Select(so => ToSellerOrderResponse(so))
+            .Select(SellerOrderProjection)
             .FirstOrDefaultAsync();
 
         if (sellerOrder == null)
@@ -136,9 +138,8 @@ public class SellerOrderService : ISellerOrderService
             .ToListAsync();
     }
 
-    private static SellerOrderResponse ToSellerOrderResponse(Repository.Entity.SellerOrder so)
-    {
-        return new SellerOrderResponse
+    private static readonly Expression<Func<SellerOrder, SellerOrderResponse>> SellerOrderProjection = so =>
+        new SellerOrderResponse
         {
             Id = so.Id,
             Code = so.Code,
@@ -148,8 +149,17 @@ public class SellerOrderService : ISellerOrderService
             BuyerName = so.Order.User.FullName,
             BuyerPhone = so.Order.User.PhoneNumber,
             ShippingAddress = so.Order.ShippingAddress,
+            ShippingVietMapRefId = so.Order.VietMapRefId,
+            ShippingLatitude = so.Order.ShippingLatitude,
+            ShippingLongitude = so.Order.ShippingLongitude,
             SellerId = so.SellerId,
             SellerName = so.Seller.FullName,
+            SellerPhone = so.Seller.PhoneNumber,
+            SellerAddress = so.Seller.VietMapDisplay ?? so.Seller.Address,
+            SellerVietMapRefId = so.Seller.VietMapRefId,
+            SellerVietMapDisplay = so.Seller.VietMapDisplay,
+            SellerLatitude = so.Seller.Latitude,
+            SellerLongitude = so.Seller.Longitude,
             ShipperId = so.ShipperId,
             ShipperName = so.Shipper != null ? so.Shipper.FullName : null,
             SubtotalPrice = so.SubtotalPrice,
@@ -178,7 +188,6 @@ public class SellerOrderService : ISellerOrderService
                 TotalPrice = od.Price * od.Quantity
             }).ToList()
         };
-    }
 
     private Guid GetCurrentUserId()
     {
