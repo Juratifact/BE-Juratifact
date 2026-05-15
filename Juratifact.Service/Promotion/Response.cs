@@ -13,6 +13,8 @@ public class Response
         public string? Description { get; set; }
         public DateTimeOffset? AvailableFrom { get; set; }
         public DateTimeOffset? AvailableTo { get; set; }
+        public DateTimeOffset? CreatedAt { get; set; }
+        public DateTimeOffset? UpdatedAt { get; set; }
     }
     
     public class SubscribeResponse
