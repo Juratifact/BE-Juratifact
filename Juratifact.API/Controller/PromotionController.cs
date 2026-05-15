@@ -49,6 +49,14 @@ public class PromotionController : ControllerBase
         return Ok(ApiResponseFactory.SuccessResponse(promotion, "Promotion created", HttpContext.TraceIdentifier));
     }
 
+    [Authorize(Policy = JwtExtensions.AdminPolicy)]
+    [HttpDelete("packages/{packageId:guid}")]
+    public async Task<IActionResult> DeletePromotionPackage(Guid packageId)
+    {
+        var result = await _promotionService.SoftDeletePromotionPackage(packageId);
+        return Ok(ApiResponseFactory.SuccessResponse(result, "Promotion deleted", HttpContext.TraceIdentifier));
+    }
+
     [Authorize(Policy = JwtExtensions.SellerPolicy)]
     [HttpPost("packages/{packageId:guid}/subscriptions")]
     public async Task<IActionResult> SubscribeByPackageId(Guid packageId)

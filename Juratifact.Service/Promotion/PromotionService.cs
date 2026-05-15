@@ -85,6 +85,25 @@ public class PromotionService : IPromotionService
         return "Promotion created";
     }
 
+    public async Task<string> SoftDeletePromotionPackage(Guid packageId)
+    {
+        var package = await _dbContext.PromotionPackages
+            .FirstOrDefaultAsync(p => p.Id == packageId && p.IsDeleted == false);
+
+        if (package == null)
+        {
+            throw new KeyNotFoundException("Promotion package not found");
+        }
+
+        package.IsDeleted = true;
+        package.UpdatedAt = DateTimeOffset.UtcNow;
+
+        _dbContext.PromotionPackages.Update(package);
+        await _dbContext.SaveChangesAsync();
+
+        return "Promotion package deleted";
+    }
+
     public async Task<Response.SubscribeResponse> SubscribeByPackageId(Guid packageId)
     {
         var userId = _httpContext.HttpContext.User.Claims.FirstOrDefault(c => c.Type == "UserId")?.Value;
