@@ -26,62 +26,61 @@ public class DisputeService : IDisputeService
 
     public async Task<string> CreateDispute(Guid orderId, Request.CreateDisputeRequest request)
     {
-        // 1. Get UserId safely
-        var userId = _httpContext.HttpContext.User.Claims.FirstOrDefault(x => x.Type == "UserId")?.Value;
-        if (string.IsNullOrEmpty(userId))
-        {
-            throw new UnauthorizedAccessException("You are not logged in or your session has expired.");
-        }
+        var userIdGuid = GetCurrentUserId();
 
-        var userIdGuid = Guid.Parse(userId);
-
-        // Begin transaction
-        using var transaction = await _dbContext.Database.BeginTransactionAsync();
+        await using var transaction = await _dbContext.Database.BeginTransactionAsync();
 
         try
         {
-            // 2. Load Order
-            var order = await _dbContext.Orders.FirstOrDefaultAsync(x => x.Id == orderId &&
-                                                                         x.UserId == userIdGuid
-                                                                         && x.IsDeleted == false);
-            if (order == null)
+            var sellerOrder = await _dbContext.SellerOrders
+                .Include(so => so.Order)
+                    .ThenInclude(o => o.SellerOrders)
+                .FirstOrDefaultAsync(so => so.Id == request.SellerOrderId &&
+                                           so.OrderId == orderId &&
+                                           so.Order.UserId == userIdGuid &&
+                                           so.IsDeleted == false &&
+                                           so.Order.IsDeleted == false);
+
+            if (sellerOrder == null)
             {
-                throw new Exception("Order not found or you do not have permission to access it.");
+                throw new Exception("Seller order not found or you do not have permission to access it.");
             }
 
-            // 3. Validate Status: Only allow dispute if order is delivered
-            if (order.Status != OrderStatus.Delivered)
+            if (sellerOrder.Status != OrderStatus.Delivered)
             {
-                throw new Exception("Disputes can only be opened for successfully delivered orders.");
+                throw new Exception("Disputes can only be opened for successfully delivered seller orders.");
             }
 
-            // Anti-Spam: Check if a dispute already exists for this order
-            var isAlreadyDisputed = await _dbContext.Disputes.AnyAsync(d => d.OrderId == orderId);
+            var isAlreadyDisputed = await _dbContext.Disputes.AnyAsync(d =>
+                d.SellerOrderId == sellerOrder.Id &&
+                d.Status != DisputeStatus.Resolved &&
+                d.IsDeleted == false);
+
             if (isAlreadyDisputed)
             {
-                throw new Exception("A dispute has already been submitted for this order and is pending resolution.");
+                throw new Exception("A dispute has already been submitted for this seller order and is pending resolution.");
             }
 
-            // 4. Update Status = Disputed (FREEZE THE ORDER)
-            order.Status = OrderStatus.Disputed;
-            order.UpdatedAt = DateTimeOffset.UtcNow;
-            // 5. Create Dispute Record
-            var dispute = new Repository.Entity.Dispute()
+            sellerOrder.Status = OrderStatus.Disputed;
+            sellerOrder.UpdatedAt = DateTimeOffset.UtcNow;
+            UpdateParentOrderStatus(sellerOrder.Order);
+
+            var dispute = new Repository.Entity.Dispute
             {
-                OrderId = order.Id,
+                OrderId = sellerOrder.OrderId,
+                SellerOrderId = sellerOrder.Id,
                 BuyerId = userIdGuid,
                 Reason = request.Reason,
-                Status = DisputeStatus.Open, // <--- Đặt trạng thái là Open
-                Resolution = DisputeResolution.None, // <--- BỔ SUNG: Khởi tạo kết quả phân xử là None
+                Status = DisputeStatus.Open,
+                Resolution = DisputeResolution.None,
                 CreatedAt = DateTimeOffset.UtcNow
             };
+
             _dbContext.Disputes.Add(dispute);
-            // 6. Save and Commit
             await _dbContext.SaveChangesAsync();
             await transaction.CommitAsync();
 
-            return
-                "Dispute submitted successfully. The order has been frozen and funds will be held until an administrator makes a decision.";
+            return "Dispute submitted successfully. The seller order has been frozen and funds will be held until an administrator makes a decision.";
         }
         catch (Exception)
         {
@@ -92,65 +91,52 @@ public class DisputeService : IDisputeService
 
     public async Task<Base.Response.PageResult<Response.DisputeResponse>> GetMyDispute(int pageSize, int pageIndex)
     {
-        var userId = _httpContext.HttpContext.User.Claims.FirstOrDefault(x => x.Type == "UserId")?.Value;
-        if (string.IsNullOrEmpty(userId))
-        {
-            throw new Exception("You are not logged in or your session has expired.");
-        }
-
-        var userIdGuid = Guid.Parse(userId);
-
+        var userIdGuid = GetCurrentUserId();
 
         var query = _dbContext.Disputes
-            .Where(x => x.BuyerId == userIdGuid && x.IsDeleted == false);
+            .Where(x => x.BuyerId == userIdGuid && x.IsDeleted == false)
+            .OrderByDescending(x => x.CreatedAt);
 
-        query = query.OrderByDescending(x => x.CreatedAt);
+        var totalItems = await query.CountAsync();
 
-        query = query.Skip((pageIndex - 1) * pageSize)
-            .Take(pageSize);
+        var listResult = await query
+            .Skip((pageIndex - 1) * pageSize)
+            .Take(pageSize)
+            .Select(x => new Response.DisputeResponse
+            {
+                DisputeId = x.Id,
+                OrderId = x.OrderId,
+                SellerOrderId = x.SellerOrderId,
+                BuyerId = x.BuyerId,
+                Reason = x.Reason,
+                Status = x.Status,
+                Resolution = x.Resolution,
+                AdminNote = x.AdminNote,
+                ResolvedByAdminId = x.ResolvedByAdminId,
+                CreatedAt = x.CreatedAt,
+                UpdatedAt = x.UpdatedAt
+            })
+            .ToListAsync();
 
-        var selected = query.Select(x => new Response.DisputeResponse()
-        {
-            DisputeId = x.Id,
-            OrderId = x.OrderId,
-            BuyerId = x.BuyerId,
-            Reason = x.Reason,
-            Status = x.Status,
-            Resolution = x.Resolution,
-            AdminNote = x.AdminNote,
-            ResolvedByAdminId = x.ResolvedByAdminId,
-            CreatedAt = x.CreatedAt,
-            UpdatedAt = x.UpdatedAt
-        });
-        var listResult = await selected.ToListAsync();
-        var totalItems = listResult.Count;
-
-        var result = new Base.Response.PageResult<Response.DisputeResponse>()
+        return new Base.Response.PageResult<Response.DisputeResponse>
         {
             Items = listResult,
             PageIndex = pageIndex,
             PageSize = pageSize,
-            TotalItems = totalItems,
+            TotalItems = totalItems
         };
-        return result;
     }
 
     public async Task<string> ResolveDispute(Guid disputeId, Request.ResolveDisputeRequest request)
     {
-        // 1. Get UserId safely
-        var userId = _httpContext.HttpContext?.User.Claims.FirstOrDefault(x => x.Type == "UserId")?.Value;
-        if (string.IsNullOrEmpty(userId))
-        {
-            throw new UnauthorizedAccessException("You are not logged in or your session has expired.");
-        }
+        var userIdGuid = GetCurrentUserId();
 
-        var userIdGuid = Guid.Parse(userId);
-        
-        // 2. Load Dispute along with Order, OrderDetails, and Products
         var dispute = await _dbContext.Disputes
             .Include(d => d.Order)
-            .ThenInclude(o => o!.OrderDetails!) // Dấu ! để bypass nullable warning
-            .ThenInclude(od => od.Product)
+                .ThenInclude(o => o!.SellerOrders)
+            .Include(d => d.SellerOrder)
+                .ThenInclude(so => so!.OrderDetails)
+                    .ThenInclude(od => od.Product)
             .FirstOrDefaultAsync(x => x.Id == disputeId && x.IsDeleted == false);
 
         if (dispute == null)
@@ -164,71 +150,32 @@ public class DisputeService : IDisputeService
         }
 
         var order = dispute.Order!;
+        var sellerOrder = dispute.SellerOrder;
 
-        // 3. RESOLUTION LOGIC
+        if (sellerOrder == null)
+        {
+            throw new InvalidOperationException("This dispute is not linked to a seller order.");
+        }
+
         if (request.Result == DisputeResolution.RefundBuyer)
         {
-            // === SCENARIO 1: BUYER WINS (RETURN & REFUND) ===
-
-            order.Status = OrderStatus.Cancelled;
-            order.UpdatedAt = DateTimeOffset.UtcNow;
-
-            // Process refund to the Buyer's wallet
-            if (order.PaymentStatus == PaymentStatus.Paid)
-            {
-                var buyerWallet = await _dbContext.Wallets.FirstOrDefaultAsync(w => w.UserId == dispute.BuyerId);
-                if (buyerWallet == null)
-                {
-                    throw new InvalidOperationException("Buyer's wallet not found for refund.");
-                }
-
-                // Sum up the price correctly
-                var totalRefund = order.OrderDetails.Sum(d => d.Price);
-                buyerWallet.Balance += totalRefund;
-                buyerWallet.UpdatedAt = DateTimeOffset.UtcNow;
-
-                // Log the Refund Transaction
-                string refundRefCode =
-                    $"RF-DISP-{DateTimeOffset.UtcNow:yyyyMMddHHmmss}-{order.Id.ToString()[..8].ToUpper()}";
-                var refundTx = new Transaction()
-                {
-                    Id = Guid.NewGuid(),
-                    OrderId = order.Id,
-                    WalletId = buyerWallet.Id,
-                    Amount = totalRefund,
-                    TransactionType = TransactionType.Refund, // Make sure you have this enum value
-                    Status = TransactionStatus.Success,
-                    ReferenceCode = refundRefCode,
-                    Description = $"Refund for dispute {dispute.Id}. Decided by Admin.",
-                    CreatedAt = DateTimeOffset.UtcNow
-                };
-
-                _dbContext.Transactions.Add(refundTx);
-                order.PaymentStatus = PaymentStatus.Refunded;
-            }
-
-            // Release product status back to Available for resale
-            foreach (var detail in order.OrderDetails)
-            {
-                detail.Product.Status = ProductStatus.Available;
-                detail.Product.UpdatedAt = DateTimeOffset.UtcNow;
-            }
+            await RefundSellerOrderAsync(dispute, sellerOrder, order);
         }
         else if (request.Result == DisputeResolution.PaySeller)
         {
-            // === SCENARIO 2: SELLER WINS (REJECT DISPUTE) ===
-            
-            // Vì Settlement Service sẽ tự động cập nhật Order thành Completed sau khi tính tiền.
+            sellerOrder.Status = OrderStatus.Delivered;
+            sellerOrder.UpdatedAt = DateTimeOffset.UtcNow;
+            UpdateParentOrderStatus(order);
+            await _dbContext.SaveChangesAsync();
 
-            bool isSettled = await _settlementService.ProcessSettlementAsync(order.Id);
+            var isSettled = await _settlementService.ProcessSettlementAsync(sellerOrder.Id);
             if (!isSettled)
             {
-                throw new InvalidOperationException("An error occurred while processing settlement for the seller.");
+                throw new InvalidOperationException("An error occurred while processing settlement for the seller order.");
             }
         }
         else if (request.Result == DisputeResolution.PartialRefund)
         {
-            // Placeholder for future partial refund scenario
             throw new NotImplementedException("The partial refund feature is currently under development.");
         }
         else
@@ -236,13 +183,12 @@ public class DisputeService : IDisputeService
             throw new ArgumentException("Invalid resolution result.");
         }
 
-        // 4. Close the Dispute
         dispute.Status = DisputeStatus.Resolved;
         dispute.Resolution = request.Result;
         dispute.AdminNote = request.AdminNote;
-        dispute.ResolvedByAdminId = userIdGuid; 
+        dispute.ResolvedByAdminId = userIdGuid;
         dispute.UpdatedAt = DateTimeOffset.UtcNow;
-        
+
         await _dbContext.SaveChangesAsync();
 
         return "Dispute resolved successfully.";
@@ -250,26 +196,20 @@ public class DisputeService : IDisputeService
 
     public async Task<string> CancelDispute(Guid disputeId)
     {
-        var userId = _httpContext.HttpContext.User.Claims.FirstOrDefault(x => x.Type == "UserId")?.Value;
-        if (string.IsNullOrEmpty(userId))
-        {
-            throw new UnauthorizedAccessException("User not authenticated.");
-        }
-
-        var userIdGuid = Guid.Parse(userId);
+        var userIdGuid = GetCurrentUserId();
 
         var dispute = await _dbContext.Disputes
             .Include(x => x.Order)
-            .FirstOrDefaultAsync(x => x.Id == disputeId &&
-                                      x.IsDeleted == false);
+                .ThenInclude(o => o!.SellerOrders)
+            .Include(x => x.SellerOrder)
+            .FirstOrDefaultAsync(x => x.Id == disputeId && x.IsDeleted == false);
 
         if (dispute == null)
         {
             throw new Exception("Dispute not found.");
         }
 
-        // 3. Verify Ownership: Only the Buyer of the order can cancel the dispute
-        if (dispute.Order.UserId != userIdGuid)
+        if (dispute.Order!.UserId != userIdGuid)
         {
             throw new Exception("You do not have permission to cancel this dispute.");
         }
@@ -279,23 +219,31 @@ public class DisputeService : IDisputeService
             throw new Exception("Cannot cancel a dispute that has already been resolved.");
         }
 
-        // 5. Update Dispute Status
+        if (dispute.SellerOrder == null)
+        {
+            throw new InvalidOperationException("This dispute is not linked to a seller order.");
+        }
+
         dispute.Status = DisputeStatus.Resolved;
         dispute.AdminNote = "Dispute withdrawn by the buyer.";
+        dispute.Resolution = DisputeResolution.PaySeller;
         dispute.UpdatedAt = DateTimeOffset.UtcNow;
 
-        // 6. Process Settlement
-        bool isSettlementSuccess = await _settlementService.ProcessSettlementAsync(dispute.OrderId);
+        dispute.SellerOrder.Status = OrderStatus.Delivered;
+        dispute.SellerOrder.UpdatedAt = DateTimeOffset.UtcNow;
+        UpdateParentOrderStatus(dispute.Order);
+        await _dbContext.SaveChangesAsync();
+
+        var isSettlementSuccess = await _settlementService.ProcessSettlementAsync(dispute.SellerOrder.Id);
 
         if (!isSettlementSuccess)
         {
-            throw new Exception("Failed to cancel dispute. Could not process settlement for the seller.");
+            throw new Exception("Failed to cancel dispute. Could not process settlement for the seller order.");
         }
 
-        // 7. Save changes (Dispute status update)
         await _dbContext.SaveChangesAsync();
 
-        return "Dispute cancelled successfully. The order is now completed and seller has been paid.";
+        return "Dispute cancelled successfully. The seller order is now completed and seller has been paid.";
     }
 
     public async Task<Base.Response.PageResult<Response.DisputeResponse>> GetDisputes(DisputeStatus? status,
@@ -304,7 +252,6 @@ public class DisputeService : IDisputeService
         var query = _dbContext.Disputes
             .Where(x => x.IsDeleted == false);
 
-
         if (status.HasValue)
         {
             query = query.Where(x => x.Status == status.Value);
@@ -312,45 +259,39 @@ public class DisputeService : IDisputeService
 
         query = query.OrderByDescending(x => x.CreatedAt);
 
-        query = query.Skip((pageIndex - 1) * pageSize)
-            .Take(pageSize);
+        var totalItems = await query.CountAsync();
 
-        var selected = query.Select(x => new Response.DisputeResponse()
-        {
-            DisputeId = x.Id,
-            OrderId = x.OrderId,
-            BuyerId = x.BuyerId,
-            Reason = x.Reason,
-            Status = x.Status,
-            Resolution = x.Resolution,
-            AdminNote = x.AdminNote,
-            ResolvedByAdminId = x.ResolvedByAdminId,
-            CreatedAt = x.CreatedAt,
-            UpdatedAt = x.UpdatedAt
-        });
-        var listResult = await selected.ToListAsync();
-        var totalItems = listResult.Count;
+        var listResult = await query
+            .Skip((pageIndex - 1) * pageSize)
+            .Take(pageSize)
+            .Select(x => new Response.DisputeResponse
+            {
+                DisputeId = x.Id,
+                OrderId = x.OrderId,
+                SellerOrderId = x.SellerOrderId,
+                BuyerId = x.BuyerId,
+                Reason = x.Reason,
+                Status = x.Status,
+                Resolution = x.Resolution,
+                AdminNote = x.AdminNote,
+                ResolvedByAdminId = x.ResolvedByAdminId,
+                CreatedAt = x.CreatedAt,
+                UpdatedAt = x.UpdatedAt
+            })
+            .ToListAsync();
 
-        var result = new Base.Response.PageResult<Response.DisputeResponse>()
+        return new Base.Response.PageResult<Response.DisputeResponse>
         {
             Items = listResult,
             PageIndex = pageIndex,
             PageSize = pageSize,
-            TotalItems = totalItems,
+            TotalItems = totalItems
         };
-        return result;
     }
 
     public async Task<string> AssignDispute(Guid disputeId, Request.AssignDisputeRequest request)
     {
-        var userId = _httpContext.HttpContext.User.Claims.FirstOrDefault(x => x.Type == "UserId")?.Value;
-        if (string.IsNullOrEmpty(userId))
-        {
-            throw new UnauthorizedAccessException("User not authenticated.");
-        }
-
-        var userIdGuid = Guid.Parse(userId);
-
+        var userIdGuid = GetCurrentUserId();
         var targetAdminId = request.AssignedAdminId ?? userIdGuid;
 
         var dispute = await _dbContext.Disputes
@@ -367,11 +308,130 @@ public class DisputeService : IDisputeService
         }
 
         dispute.Status = DisputeStatus.InProgress;
-
         dispute.ResolvedByAdminId = targetAdminId;
         dispute.UpdatedAt = DateTimeOffset.UtcNow;
         await _dbContext.SaveChangesAsync();
 
         return "Dispute assigned successfully.";
+    }
+
+    private async Task RefundSellerOrderAsync(Repository.Entity.Dispute dispute, SellerOrder sellerOrder, Repository.Entity.Order order)
+    {
+        if (order.PaymentStatus != PaymentStatus.Paid)
+        {
+            throw new InvalidOperationException("Only paid orders can be refunded.");
+        }
+
+        var buyerWallet = await _dbContext.Wallets.FirstOrDefaultAsync(w => w.UserId == dispute.BuyerId);
+        if (buyerWallet == null)
+        {
+            throw new InvalidOperationException("Buyer's wallet not found for refund.");
+        }
+
+        var totalRefund = sellerOrder.OrderDetails.Sum(d => d.Price * d.Quantity);
+        buyerWallet.Balance += totalRefund;
+        buyerWallet.UpdatedAt = DateTimeOffset.UtcNow;
+
+        var refundRefCode =
+            $"RF-DISP-{DateTimeOffset.UtcNow:yyyyMMddHHmmss}-{sellerOrder.Id.ToString()[..8].ToUpper()}";
+
+        _dbContext.Transactions.Add(new Transaction
+        {
+            Id = Guid.NewGuid(),
+            OrderId = order.Id,
+            SellerOrderId = sellerOrder.Id,
+            WalletId = buyerWallet.Id,
+            Amount = totalRefund,
+            TransactionType = TransactionType.Refund,
+            Status = TransactionStatus.Success,
+            ReferenceCode = refundRefCode,
+            Description = $"Refund for dispute {dispute.Id} on seller order {sellerOrder.Id}. Decided by Admin.",
+            CreatedAt = DateTimeOffset.UtcNow
+        });
+
+        sellerOrder.Status = OrderStatus.Cancelled;
+        sellerOrder.CancelReason = $"Refunded after dispute {dispute.Id}";
+        sellerOrder.UpdatedAt = DateTimeOffset.UtcNow;
+
+        foreach (var detail in sellerOrder.OrderDetails)
+        {
+            detail.Product.Status = ProductStatus.Available;
+            detail.Product.UpdatedAt = DateTimeOffset.UtcNow;
+        }
+
+        UpdateParentOrderStatus(order);
+    }
+
+    private Guid GetCurrentUserId()
+    {
+        var userId = _httpContext.HttpContext?.User.Claims.FirstOrDefault(x => x.Type == "UserId")?.Value;
+        if (string.IsNullOrEmpty(userId) || !Guid.TryParse(userId, out var userIdGuid))
+        {
+            throw new UnauthorizedAccessException("You are not logged in or your session has expired.");
+        }
+
+        return userIdGuid;
+    }
+
+    private static void UpdateParentOrderStatus(Repository.Entity.Order order)
+    {
+        var sellerOrders = order.SellerOrders
+            .Where(so => so.IsDeleted == false)
+            .ToList();
+
+        if (sellerOrders.Count == 0)
+        {
+            return;
+        }
+
+        if (sellerOrders.All(so => so.Status == OrderStatus.Cancelled))
+        {
+            order.Status = OrderStatus.Cancelled;
+            order.PaymentStatus = PaymentStatus.Refunded;
+            order.UpdatedAt = DateTimeOffset.UtcNow;
+            return;
+        }
+
+        if (sellerOrders.All(so => so.Status is OrderStatus.Completed or OrderStatus.Cancelled))
+        {
+            order.Status = OrderStatus.Completed;
+            order.PaymentStatus = PaymentStatus.Settled;
+            order.UpdatedAt = DateTimeOffset.UtcNow;
+            return;
+        }
+
+        if (sellerOrders.All(so => so.Status is OrderStatus.Disputed or OrderStatus.Completed or OrderStatus.Cancelled))
+        {
+            order.Status = OrderStatus.Disputed;
+            order.UpdatedAt = DateTimeOffset.UtcNow;
+            return;
+        }
+
+        if (sellerOrders.Any(so => so.Status == OrderStatus.Shipping))
+        {
+            order.Status = OrderStatus.Shipping;
+            order.UpdatedAt = DateTimeOffset.UtcNow;
+            return;
+        }
+
+        if (sellerOrders.Any(so => so.Status == OrderStatus.Assigned))
+        {
+            order.Status = OrderStatus.Assigned;
+            order.UpdatedAt = DateTimeOffset.UtcNow;
+            return;
+        }
+
+        if (sellerOrders.Any(so => so.Status == OrderStatus.Delivered))
+        {
+            order.Status = OrderStatus.Delivered;
+            order.UpdatedAt = DateTimeOffset.UtcNow;
+            return;
+        }
+
+        if (sellerOrders.All(so => so.Status == OrderStatus.Paid))
+        {
+            order.Status = OrderStatus.Paid;
+            order.UpdatedAt = DateTimeOffset.UtcNow;
+        }
     }
 }
