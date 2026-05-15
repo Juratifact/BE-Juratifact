@@ -15,6 +15,8 @@ public class Response
         public decimal? Price { get; set; }
 
         public ProductStatus Status { get; set; }
+        public bool IsPromoted { get; set; }
+        public DateTimeOffset? PromotionExpiresAt { get; set; }
         // public string ImageUrl { get; set; }
         // public string VideoUrl { get; set; }
         public DateTimeOffset? CreatedAt { get; set; }
