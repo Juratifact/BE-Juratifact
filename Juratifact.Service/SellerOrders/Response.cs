@@ -13,9 +13,18 @@ public class SellerOrderResponse
     public string BuyerName { get; set; } = string.Empty;
     public string BuyerPhone { get; set; } = string.Empty;
     public string? ShippingAddress { get; set; }
+    public string? ShippingVietMapRefId { get; set; }
+    public double? ShippingLatitude { get; set; }
+    public double? ShippingLongitude { get; set; }
 
     public Guid SellerId { get; set; }
     public string SellerName { get; set; } = string.Empty;
+    public string? SellerPhone { get; set; }
+    public string? SellerAddress { get; set; }
+    public string? SellerVietMapRefId { get; set; }
+    public string? SellerVietMapDisplay { get; set; }
+    public double? SellerLatitude { get; set; }
+    public double? SellerLongitude { get; set; }
 
     public Guid? ShipperId { get; set; }
     public string? ShipperName { get; set; }
