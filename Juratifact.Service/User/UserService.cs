@@ -531,6 +531,43 @@ public class UserService : IUserService
         return "User registered successfully!";
     }
 
+    public async Task<Response.GetMyRoleResponse> GetMyRole()
+    {
+        var userId = _httpContext.HttpContext?.User?.FindFirst("UserId")?.Value;
+
+        if (string.IsNullOrWhiteSpace(userId) || !Guid.TryParse(userId, out var userIdGuid))
+        {
+            throw new UnauthorizedAccessException("User not authenticated.");
+        }
+
+        var userRole = await _dbContext.Users
+            .AsNoTracking() //Tôi chỉ muốn lấy dữ liệu này ra để đọc/xem thôi
+            .Include(x => x.UserRoles)
+            .ThenInclude(x => x.Role)
+            .FirstOrDefaultAsync(x => x.Id == userIdGuid && x.IsDeleted == false);
+
+        if (userRole == null)
+        {
+            throw new UnauthorizedAccessException("User not found.");
+        }
+        
+        var query = userRole.UserRoles
+            .Where(ur => ur.Role! != null && !string.IsNullOrWhiteSpace(ur.Role.Name))
+            .Select(ur => ur.Role.Name)
+            .Distinct();
+        
+        var selectedList = query
+            .Select(roleName => new Response.UserRoles { RoleName = roleName })
+            .ToList();
+        
+        var response = new Response.GetMyRoleResponse()
+        {
+            UserRoles = selectedList
+        };
+        
+        return response;
+    }
+
     private bool IsValidEmail(string email)
     {
         try
