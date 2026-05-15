@@ -27,9 +27,13 @@ public class ProductService : IProductService
 
     public async Task<Base.Response.PageResult<Response.ProductResponse>> GetAll(int pageSize, int pageIndex)
     {
+        var now = DateTimeOffset.UtcNow;
         var query = _dbContext.Products.Where(x => x.Status == ProductStatus.Available && x.IsDeleted == false);
 
-        query = query.OrderByDescending(x => x.CreatedAt);
+        query = query
+            .OrderByDescending(x => x.ProductPromotions.Any(p =>
+                p.IsActive && p.IsDeleted == false && p.ExpiresAt >= now))
+            .ThenByDescending(x => x.CreatedAt);
         query = query.Skip((pageIndex - 1) * pageSize)
             .Take(pageSize);
         var selected = query.Select(x => new Response.ProductResponse()
@@ -41,6 +45,13 @@ public class ProductService : IProductService
             Price = x.Price,
             Status = x.Status,
             Condition = x.Condition,
+            IsPromoted = x.ProductPromotions.Any(p =>
+                p.IsActive && p.IsDeleted == false && p.ExpiresAt >= now),
+            PromotionExpiresAt = x.ProductPromotions
+                .Where(p => p.IsActive && p.IsDeleted == false && p.ExpiresAt >= now)
+                .OrderByDescending(p => p.ExpiresAt)
+                .Select(p => p.ExpiresAt)
+                .FirstOrDefault(),
             Video = x.ProductMedias.Where(m => m.Video != null).Select(m => m.Video!).ToList(),
             ImageUrl = x.ProductMedias.Where(m => !string.IsNullOrEmpty(m.ImageUrl)).Select(m => m.ImageUrl).ToList(),
             CreatedAt = x.CreatedAt,
@@ -69,13 +80,17 @@ public class ProductService : IProductService
         }
 
         var userIdGuid = Guid.Parse(userId);
+        var now = DateTimeOffset.UtcNow;
 
         var query = _dbContext.Products
             .Where(x => x.Status == ProductStatus.Available &&
                         x.SellerId == userIdGuid &&
                         x.IsDeleted == false);
 
-        query = query.OrderByDescending(x => x.CreatedAt);
+        query = query
+            .OrderByDescending(x => x.ProductPromotions.Any(p =>
+                p.IsActive && p.IsDeleted == false && p.ExpiresAt >= now))
+            .ThenByDescending(x => x.CreatedAt);
         query = query.Skip((pageIndex - 1) * pageSize)
             .Take(pageSize);
         var selected = query.Select(x => new Response.ProductResponse()
@@ -87,6 +102,13 @@ public class ProductService : IProductService
             Price = x.Price,
             Status = x.Status,
             Condition = x.Condition,
+            IsPromoted = x.ProductPromotions.Any(p =>
+                p.IsActive && p.IsDeleted == false && p.ExpiresAt >= now),
+            PromotionExpiresAt = x.ProductPromotions
+                .Where(p => p.IsActive && p.IsDeleted == false && p.ExpiresAt >= now)
+                .OrderByDescending(p => p.ExpiresAt)
+                .Select(p => p.ExpiresAt)
+                .FirstOrDefault(),
             Video = x.ProductMedias.Where(m => m.Video != null).Select(m => m.Video!).ToList(),
             ImageUrl = x.ProductMedias.Where(m => !string.IsNullOrEmpty(m.ImageUrl)).Select(m => m.ImageUrl).ToList(),
             CreatedAt = x.CreatedAt,
@@ -108,6 +130,7 @@ public class ProductService : IProductService
     public async Task<Base.Response.PageResult<Response.ProductResponse>> GetByTitle(string? searchTerm, int pageSize,
         int pageIndex)
     {
+        var now = DateTimeOffset.UtcNow;
         var query = _dbContext.Products.Where(x => x.Status == ProductStatus.Available && x.IsDeleted == false);
 
         if (searchTerm != null)
@@ -115,7 +138,10 @@ public class ProductService : IProductService
             query = query.Where(x => x.Title.Contains(searchTerm));
         }
 
-        query = query.OrderBy(x => x.Title);
+        query = query
+            .OrderByDescending(x => x.ProductPromotions.Any(p =>
+                p.IsActive && p.IsDeleted == false && p.ExpiresAt >= now))
+            .ThenBy(x => x.Title);
         query = query.Skip((pageIndex - 1) * pageSize)
             .Take(pageSize);
         var selected = query.Select(x => new Response.ProductResponse()
@@ -127,6 +153,13 @@ public class ProductService : IProductService
             Price = x.Price,
             Status = x.Status,
             Condition = x.Condition,
+            IsPromoted = x.ProductPromotions.Any(p =>
+                p.IsActive && p.IsDeleted == false && p.ExpiresAt >= now),
+            PromotionExpiresAt = x.ProductPromotions
+                .Where(p => p.IsActive && p.IsDeleted == false && p.ExpiresAt >= now)
+                .OrderByDescending(p => p.ExpiresAt)
+                .Select(p => p.ExpiresAt)
+                .FirstOrDefault(),
             Video = x.ProductMedias.Where(m => m.Video != null).Select(m => m.Video!).ToList(),
             ImageUrl = x.ProductMedias.Where(m => !string.IsNullOrEmpty(m.ImageUrl)).Select(m => m.ImageUrl).ToList(),
             CreatedAt = x.CreatedAt,
@@ -148,6 +181,7 @@ public class ProductService : IProductService
     public async Task<Base.Response.PageResult<Response.ProductResponse>> GetByCondition(string? searchTerm,
         int pageSize, int pageIndex)
     {
+        var now = DateTimeOffset.UtcNow;
         var query = _dbContext.Products
             .Where(x => x.Status == ProductStatus.Available &&
                         x.IsDeleted == false);
@@ -157,7 +191,10 @@ public class ProductService : IProductService
             query = query.Where(x => x.Condition.Contains(searchTerm));
         }
 
-        query = query.OrderBy(x => x.Condition);
+        query = query
+            .OrderByDescending(x => x.ProductPromotions.Any(p =>
+                p.IsActive && p.IsDeleted == false && p.ExpiresAt >= now))
+            .ThenBy(x => x.Condition);
         query = query.Skip((pageIndex - 1) * pageSize)
             .Take(pageSize);
         var selected = query.Select(x => new Response.ProductResponse()
@@ -169,6 +206,13 @@ public class ProductService : IProductService
             Price = x.Price,
             Status = x.Status,
             Condition = x.Condition,
+            IsPromoted = x.ProductPromotions.Any(p =>
+                p.IsActive && p.IsDeleted == false && p.ExpiresAt >= now),
+            PromotionExpiresAt = x.ProductPromotions
+                .Where(p => p.IsActive && p.IsDeleted == false && p.ExpiresAt >= now)
+                .OrderByDescending(p => p.ExpiresAt)
+                .Select(p => p.ExpiresAt)
+                .FirstOrDefault(),
             Video = x.ProductMedias.Where(m => m.Video != null).Select(m => m.Video!).ToList(),
             ImageUrl = x.ProductMedias.Where(m => !string.IsNullOrEmpty(m.ImageUrl)).Select(m => m.ImageUrl).ToList(),
             CreatedAt = x.CreatedAt,
@@ -627,6 +671,7 @@ public class ProductService : IProductService
     public async Task<Base.Response.PageResult<Response.ProductResponse>> GetByPrice(decimal? searchTerm, int pageSize,
         int pageIndex)
     {
+        var now = DateTimeOffset.UtcNow;
         var query = _dbContext.Products.Where(x => x.Status == ProductStatus.Available &&
                                                    x.IsDeleted == false);
 
@@ -635,17 +680,29 @@ public class ProductService : IProductService
             query = query.Where(x => x.Price <= searchTerm);
         }
 
-        query = query.OrderBy(x => x.Price);
+        query = query
+            .OrderByDescending(x => x.ProductPromotions.Any(p =>
+                p.IsActive && p.IsDeleted == false && p.ExpiresAt >= now))
+            .ThenBy(x => x.Price);
 
         query = query.Skip((pageIndex - 1) * pageSize)
             .Take(pageSize);
         var selected = query.Select(x => new Response.ProductResponse()
         {
+            ProductId = x.Id,
+            SellerId = x.SellerId,
             Title = x.Title,
             Description = x.Description,
             Price = x.Price,
             Status = x.Status,
             Condition = x.Condition,
+            IsPromoted = x.ProductPromotions.Any(p =>
+                p.IsActive && p.IsDeleted == false && p.ExpiresAt >= now),
+            PromotionExpiresAt = x.ProductPromotions
+                .Where(p => p.IsActive && p.IsDeleted == false && p.ExpiresAt >= now)
+                .OrderByDescending(p => p.ExpiresAt)
+                .Select(p => p.ExpiresAt)
+                .FirstOrDefault(),
             Video = x.ProductMedias.Where(m => m.Video != null).Select(m => m.Video!).ToList(),
             ImageUrl = x.ProductMedias.Where(m => !string.IsNullOrEmpty(m.ImageUrl)).Select(m => m.ImageUrl).ToList(),
             CreatedAt = x.CreatedAt,
@@ -666,6 +723,7 @@ public class ProductService : IProductService
 
     public async Task<Response.ProductCommentsResponse> GetProductCommentsByProductId(Guid productId)
     {
+        var now = DateTimeOffset.UtcNow;
         var product = await _dbContext.Products
             .Where(x => x.Id == productId
                         && x.Status == ProductStatus.Available
@@ -673,11 +731,19 @@ public class ProductService : IProductService
             .Select(x => new Response.ProductCommentsResponse
             {
                 ProductId = x.Id,
+                SellerId = x.SellerId,
                 Title = x.Title,
                 Description = x.Description,
                 Price = x.Price,
                 Status = x.Status,
                 Condition = x.Condition,
+                IsPromoted = x.ProductPromotions.Any(p =>
+                    p.IsActive && p.IsDeleted == false && p.ExpiresAt >= now),
+                PromotionExpiresAt = x.ProductPromotions
+                    .Where(p => p.IsActive && p.IsDeleted == false && p.ExpiresAt >= now)
+                    .OrderByDescending(p => p.ExpiresAt)
+                    .Select(p => p.ExpiresAt)
+                    .FirstOrDefault(),
                 Video = x.ProductMedias.Where(m => m.Video != null).Select(m => m.Video!).ToList(),
                 ImageUrl = x.ProductMedias.Where(m => !string.IsNullOrEmpty(m.ImageUrl)).Select(m => m.ImageUrl).ToList(),
                 CreatedAt = x.CreatedAt,
