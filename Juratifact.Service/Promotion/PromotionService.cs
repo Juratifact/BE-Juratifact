@@ -387,6 +387,52 @@ public class PromotionService : IPromotionService
         return productPromotions.ToListAsync();
     }
 
+    public async Task<List<Response.ProductWithoutPromotionResponse>> GetProductsWithoutPromotion()
+    {
+        var userId = _httpContext.HttpContext?.User.Claims
+            .FirstOrDefault(c => c.Type == "UserId")?.Value;
+
+        if (string.IsNullOrEmpty(userId))
+        {
+            throw new UnauthorizedAccessException("User not authenticated.");
+        }
+
+        var userIdGuid = Guid.Parse(userId);
+        var now = DateTimeOffset.UtcNow;
+
+        var products = await _dbContext.Products
+            .AsNoTracking()
+            .Where(p => p.SellerId == userIdGuid &&
+                        p.IsDeleted == false &&
+                        p.Status != ProductStatus.Sold &&
+                        !p.ProductPromotions.Any(pp =>
+                            pp.IsDeleted == false &&
+                            pp.IsActive &&
+                            pp.ExpiresAt >= now &&
+                            pp.UserPromotionSubscription.IsDeleted == false &&
+                            pp.UserPromotionSubscription.StartTime <= now &&
+                            pp.UserPromotionSubscription.EndTime >= now &&
+                            (pp.UserPromotionSubscription.PaymentStatus == PaymentStatus.Paid ||
+                             _dbContext.Transactions.Any(t =>
+                                 t.TransactionType == TransactionType.ServiceFee &&
+                                 t.Status == TransactionStatus.Success &&
+                                 (t.UserPromotionSubscriptionId == pp.UserPromotionSubscriptionId ||
+                                  (pp.UserPromotionSubscription.TransactionId != null &&
+                                   t.Id == pp.UserPromotionSubscription.TransactionId))))))
+            .OrderByDescending(p => p.CreatedAt)
+            .Select(p => new Response.ProductWithoutPromotionResponse
+            {
+                ProductId = p.Id,
+                ProductTitle = p.Title,
+                ProductPrice = p.Price,
+                ProductStatus = p.Status,
+                CreatedAt = p.CreatedAt
+            })
+            .ToListAsync();
+
+        return products;
+    }
+
     public async Task<List<Response.PromotionProductResponse>> GetProductsByPromotionPackageId(Guid promotionPackageId)
     {
         var userId = _httpContext.HttpContext?.User.Claims

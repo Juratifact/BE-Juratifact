@@ -65,4 +65,13 @@ public class Response
         public DateTimeOffset? ActiveAt { get; set; }
         public DateTimeOffset? ExpiresAt { get; set; }
     }
+
+    public class ProductWithoutPromotionResponse
+    {
+        public Guid ProductId { get; set; }
+        public string ProductTitle { get; set; } = null!;
+        public decimal ProductPrice { get; set; }
+        public ProductStatus ProductStatus { get; set; }
+        public DateTimeOffset CreatedAt { get; set; }
+    }
 }

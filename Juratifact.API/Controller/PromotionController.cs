@@ -88,6 +88,15 @@ public class PromotionController : ControllerBase
     }
 
     [Authorize(Policy = JwtExtensions.SellerPolicy)]
+    [HttpGet("products/without-promotion")]
+    public async Task<IActionResult> GetProductsWithoutPromotion()
+    {
+        var result = await _promotionService.GetProductsWithoutPromotion();
+        return Ok(ApiResponseFactory.SuccessResponse(result, "Get products without valid promotion successfully",
+            HttpContext.TraceIdentifier));
+    }
+
+    [Authorize(Policy = JwtExtensions.SellerPolicy)]
     [HttpGet("products/{promotionPackageId:guid}")]
     public async Task<IActionResult> GetProductsByPromotionPackageId([FromRoute] Guid promotionPackageId)
     {
