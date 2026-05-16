@@ -450,25 +450,30 @@ public class PromotionService : IPromotionService
         var userIdGuid = Guid.Parse(userId);
         var now = DateTimeOffset.UtcNow;
 
+        var activePromotedProductIds = _dbContext.ProductPromotions
+            .AsNoTracking()
+            .Where(pp => pp.IsDeleted == false &&
+                         pp.IsActive &&
+                         pp.ExpiresAt >= now &&
+                         pp.UserPromotionSubscription.IsDeleted == false &&
+                         pp.UserPromotionSubscription.UserId == userIdGuid &&
+                         pp.UserPromotionSubscription.StartTime <= now &&
+                         pp.UserPromotionSubscription.EndTime >= now &&
+                         (pp.UserPromotionSubscription.PaymentStatus == PaymentStatus.Paid ||
+                          _dbContext.Transactions.Any(t =>
+                              t.TransactionType == TransactionType.ServiceFee &&
+                              t.Status == TransactionStatus.Success &&
+                              (t.UserPromotionSubscriptionId == pp.UserPromotionSubscriptionId ||
+                               (pp.UserPromotionSubscription.TransactionId != null &&
+                                t.Id == pp.UserPromotionSubscription.TransactionId)))))
+            .Select(pp => pp.ProductId);
+
         var products = await _dbContext.Products
             .AsNoTracking()
             .Where(p => p.SellerId == userIdGuid &&
                         p.IsDeleted == false &&
                         p.Status != ProductStatus.Sold &&
-                        !p.ProductPromotions.Any(pp =>
-                            pp.IsDeleted == false &&
-                            pp.IsActive &&
-                            pp.ExpiresAt >= now &&
-                            pp.UserPromotionSubscription.IsDeleted == false &&
-                            pp.UserPromotionSubscription.StartTime <= now &&
-                            pp.UserPromotionSubscription.EndTime >= now &&
-                            (pp.UserPromotionSubscription.PaymentStatus == PaymentStatus.Paid ||
-                             _dbContext.Transactions.Any(t =>
-                                 t.TransactionType == TransactionType.ServiceFee &&
-                                 t.Status == TransactionStatus.Success &&
-                                 (t.UserPromotionSubscriptionId == pp.UserPromotionSubscriptionId ||
-                                  (pp.UserPromotionSubscription.TransactionId != null &&
-                                   t.Id == pp.UserPromotionSubscription.TransactionId))))))
+                        !activePromotedProductIds.Contains(p.Id))
             .OrderByDescending(p => p.CreatedAt)
             .Select(p => new Response.ProductWithoutPromotionResponse
             {
@@ -476,7 +481,11 @@ public class PromotionService : IPromotionService
                 ProductTitle = p.Title,
                 ProductPrice = p.Price,
                 ProductStatus = p.Status,
-                CreatedAt = p.CreatedAt
+                CreatedAt = p.CreatedAt,
+                UrlImage = p.ProductMedias
+                    .Where(m => !string.IsNullOrEmpty(m.ImageUrl))
+                    .Select(m => m.ImageUrl)
+                    .ToList()
             })
             .ToListAsync();
 
@@ -514,6 +523,10 @@ public class PromotionService : IPromotionService
                 ProductId = p.ProductId,
                 ProductTitle = p.Product.Title,
                 ProductPrice = p.Product.Price,
+                ImageUrl = p.Product.ProductMedias
+                    .Where(m => !string.IsNullOrEmpty(m.ImageUrl))
+                    .Select(m => m.ImageUrl)
+                    .ToList(),
                 IsActive = p.IsActive,
                 ActiveAt = p.ActiveAt,
                 ExpiresAt = p.ExpiresAt,

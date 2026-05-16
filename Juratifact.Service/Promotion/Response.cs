@@ -62,6 +62,7 @@ public class Response
         public string ProductTitle { get; set; } = null!;
         public decimal ProductPrice { get; set; }
         public bool IsActive { get; set; }
+        public List<string> ImageUrl { get; set; } = new();
         public DateTimeOffset? ActiveAt { get; set; }
         public DateTimeOffset? ExpiresAt { get; set; }
     }
@@ -73,5 +74,6 @@ public class Response
         public decimal ProductPrice { get; set; }
         public ProductStatus ProductStatus { get; set; }
         public DateTimeOffset CreatedAt { get; set; }
+        public List<string> UrlImage { get; set; } = new();
     }
 }
