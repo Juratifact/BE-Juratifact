@@ -14,6 +14,7 @@ public static class JwtExtensions
     public const string ShipperPolicy = "ShipperPolicy";
     public const string BuyerOrShipperPolicy = "BuyerOrShipperPolicy";
     public const string AdminOrSellerPolicy = "AdminOrSellerPolicy";
+    public const string  SellerAndBuyerOrAdminPolicy = "SellerAndBuyerOrAdminPolicy";
 
     public static void AddJwtServices(this IServiceCollection services, IConfiguration configuration)
     {
@@ -64,6 +65,19 @@ public static class JwtExtensions
             // [Authorize(Policy = JwtExtensions.SellerOrAdminPolicy)]
             options.AddPolicy(AdminOrSellerPolicy, policy =>
                 policy.RequireRole("Admin", "Seller"));
+
+            options.AddPolicy(SellerAndBuyerOrAdminPolicy, policy =>
+            {
+                policy.RequireAuthenticatedUser();
+
+                policy.RequireAssertion(context =>
+                    context.User.IsInRole("Admin") ||
+                    (
+                        context.User.IsInRole("Seller") &&
+                        context.User.IsInRole("Buyer")
+                    )
+                );
+            });
         });
     }
 }
