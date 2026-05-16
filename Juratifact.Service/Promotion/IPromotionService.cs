@@ -10,4 +10,5 @@ public interface IPromotionService
     public Task<string> ApplyProductPromotion(Request.ProductPromotionRequest request);
     public Task<string> ChangeStatusPromotion(Guid id);
     public Task<List<Response.GetProductPromotionResponse>> GetProductPromotion();
+    public Task<List<Response.PromotionProductResponse>> GetProductsByPromotionPackageId(Guid promotionPackageId);
 }

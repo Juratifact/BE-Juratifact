@@ -386,4 +386,55 @@ public class PromotionService : IPromotionService
 
         return productPromotions.ToListAsync();
     }
+
+    public async Task<List<Response.PromotionProductResponse>> GetProductsByPromotionPackageId(Guid promotionPackageId)
+    {
+        var userId = _httpContext.HttpContext?.User.Claims
+            .FirstOrDefault(c => c.Type == "UserId")?.Value;
+
+        if (string.IsNullOrEmpty(userId))
+        {
+            throw new UnauthorizedAccessException("User not authenticated.");
+        }
+
+        var userIdGuid = Guid.Parse(userId);
+
+        var productPromotions = await _dbContext.ProductPromotions
+            .AsNoTracking()
+            .Where(p => p.UserPromotionSubscription.UserId == userIdGuid &&
+                        p.UserPromotionSubscription.PromotionPackageId == promotionPackageId &&
+                        p.UserPromotionSubscription.IsDeleted == false &&
+                        p.Product.IsDeleted == false &&
+                        p.Product.Status != ProductStatus.Sold &&
+                        p.IsDeleted == false)
+            .OrderByDescending(p => p.IsActive)
+            .ThenByDescending(p => p.ActiveAt)
+            .ThenByDescending(p => p.CreatedAt)
+            .Select(p => new Response.PromotionProductResponse()
+            {
+                ProductPromotionId = p.Id,
+                PromotionPackageId = promotionPackageId,
+                UserPromotionSubscriptionId = p.UserPromotionSubscriptionId,
+                ProductId = p.ProductId,
+                ProductTitle = p.Product.Title,
+                ProductPrice = p.Product.Price,
+                IsActive = p.IsActive,
+                ActiveAt = p.ActiveAt,
+                ExpiresAt = p.ExpiresAt,
+            })
+            .ToListAsync();
+
+        var seenProductIds = new HashSet<Guid>();
+        var unique = new List<Response.PromotionProductResponse>(productPromotions.Count);
+
+        foreach (var item in productPromotions)
+        {
+            if (seenProductIds.Add(item.ProductId))
+            {
+                unique.Add(item);
+            }
+        }
+
+        return unique;
+    }
 }
