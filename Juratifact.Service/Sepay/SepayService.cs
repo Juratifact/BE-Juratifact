@@ -229,6 +229,7 @@ public class SepayService: ISepayService
 
             if (order != null)
             {
+                var now = DateTimeOffset.UtcNow;
                
                 if (order.Status == OrderStatus.Completed)
                 {
@@ -251,12 +252,12 @@ public class SepayService: ISepayService
                 
                 order.Status = OrderStatus.Paid;
                 order.PaymentStatus = PaymentStatus.Paid;
-                order.UpdatedAt = DateTimeOffset.UtcNow; 
+                order.UpdatedAt = now; 
 
                 foreach (var sellerOrder in order.SellerOrders.Where(so => so.Status == OrderStatus.PendingPayment))
                 {
                     sellerOrder.Status = OrderStatus.Paid;
-                    sellerOrder.UpdatedAt = DateTimeOffset.UtcNow;
+                    sellerOrder.UpdatedAt = now;
                 }
 
                 
@@ -271,6 +272,29 @@ public class SepayService: ISepayService
                 foreach (var product in products)
                 {
                     product.Status = ProductStatus.Sold; 
+                }
+
+                var soldProductPromotions = await _dbContext.ProductPromotions
+                    .Include(pp => pp.UserPromotionSubscription)
+                    .Where(pp => productIds.Contains(pp.ProductId) && pp.IsDeleted == false)
+                    .ToListAsync();
+
+                foreach (var productPromotion in soldProductPromotions)
+                {
+                    if (productPromotion.IsActive)
+                    {
+                        productPromotion.IsActive = false;
+
+                        var subscription = productPromotion.UserPromotionSubscription;
+                        if (subscription != null)
+                        {
+                            subscription.UsedSlot = Math.Max((subscription.UsedSlot ?? 0) - 1, 0);
+                            subscription.UpdatedAt = now;
+                        }
+                    }
+
+                    productPromotion.IsDeleted = true;
+                    productPromotion.UpdatedAt = now;
                 }
 
                 _logger.LogInformation("Đơn hàng {OrderId} đã thanh toán. Đã cập nhật trạng thái {Count} sản phẩm thành Sold.", 

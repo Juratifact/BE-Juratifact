@@ -33,6 +33,7 @@ public class Response
         public string? SellerName { get; set; }
         public string? SellerPhone { get; set; }
         public string? SellerAddress { get; set; }
+        // public string? SellerAddressVietMap { get; set; }
         public string Name { get; set; }
         public OrderStatus Status { get; set; }
 
