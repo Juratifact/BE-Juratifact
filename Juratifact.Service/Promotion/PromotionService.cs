@@ -356,7 +356,11 @@ public class PromotionService : IPromotionService
         var userIdGuid = Guid.Parse(userId!);
         var productPromotions = _dbContext.ProductPromotions
             .Include(p => p.UserPromotionSubscription)
-            .Where(p => p.UserPromotionSubscription.UserId == userIdGuid && p.IsDeleted == false)
+            .Include(p => p.Product)
+            .Where(p => p.UserPromotionSubscription.UserId == userIdGuid &&
+                        p.Product.IsDeleted == false &&
+                        p.Product.Status != ProductStatus.Sold &&
+                        p.IsDeleted == false)
             .Select(p => new Response.GetProductPromotionResponse()
             {
                 ProductPromotionId = p.Id,
