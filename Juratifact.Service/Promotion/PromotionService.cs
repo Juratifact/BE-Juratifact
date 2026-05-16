@@ -525,30 +525,20 @@ public class PromotionService : IPromotionService
         var userIdGuid = Guid.Parse(userId);
         var now = DateTimeOffset.UtcNow;
 
-        var activePromotedProductIds = _dbContext.ProductPromotions
-            .AsNoTracking()
-            .Where(pp => pp.IsDeleted == false &&
-                         pp.IsActive &&
-                         pp.ExpiresAt >= now &&
-                         pp.UserPromotionSubscription.IsDeleted == false &&
-                         pp.UserPromotionSubscription.UserId == userIdGuid &&
-                         pp.UserPromotionSubscription.StartTime <= now &&
-                         pp.UserPromotionSubscription.EndTime >= now &&
-                         (pp.UserPromotionSubscription.PaymentStatus == PaymentStatus.Paid ||
-                          _dbContext.Transactions.Any(t =>
-                              t.TransactionType == TransactionType.ServiceFee &&
-                              t.Status == TransactionStatus.Success &&
-                              (t.UserPromotionSubscriptionId == pp.UserPromotionSubscriptionId ||
-                               (pp.UserPromotionSubscription.TransactionId != null &&
-                                t.Id == pp.UserPromotionSubscription.TransactionId)))))
-            .Select(pp => pp.ProductId);
-
         var products = await _dbContext.Products
             .AsNoTracking()
             .Where(p => p.SellerId == userIdGuid &&
                         p.IsDeleted == false &&
                         p.Status != ProductStatus.Sold &&
-                        !activePromotedProductIds.Contains(p.Id))
+                        !p.ProductPromotions.Any(pp =>
+                            pp.IsActive == pp.IsActive &&
+                            pp.IsDeleted == false &&
+                            pp.IsActive &&
+                            pp.ExpiresAt >= now &&
+                            pp.UserPromotionSubscription.IsDeleted == false &&
+                            pp.UserPromotionSubscription.UserId == userIdGuid &&
+                            pp.UserPromotionSubscription.StartTime <= now &&
+                            pp.UserPromotionSubscription.EndTime >= now))
             .OrderByDescending(p => p.CreatedAt)
             .Select(p => new Response.ProductWithoutPromotionResponse
             {
@@ -586,6 +576,7 @@ public class PromotionService : IPromotionService
                         p.UserPromotionSubscription.IsDeleted == false &&
                         p.Product.IsDeleted == false &&
                         p.Product.Status != ProductStatus.Sold &&
+                        p.IsActive &&
                         p.IsDeleted == false)
             .OrderByDescending(p => p.IsActive)
             .ThenByDescending(p => p.ActiveAt)
