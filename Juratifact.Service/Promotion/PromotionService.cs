@@ -299,6 +299,68 @@ public class PromotionService : IPromotionService
 
         var now = DateTimeOffset.UtcNow;
 
+        var hasActivePromotion = await _dbContext.ProductPromotions
+            .AnyAsync(p => p.ProductId == request.ProductId &&
+                           p.IsDeleted == false &&
+                           p.IsActive &&
+                           p.ExpiresAt >= now &&
+                           p.UserPromotionSubscription.IsDeleted == false &&
+                           p.UserPromotionSubscription.UserId == userIdGuid &&
+                           p.UserPromotionSubscription.StartTime <= now &&
+                           p.UserPromotionSubscription.EndTime >= now &&
+                           (p.UserPromotionSubscription.PaymentStatus == PaymentStatus.Paid ||
+                            _dbContext.Transactions.Any(t =>
+                                t.TransactionType == TransactionType.ServiceFee &&
+                                t.Status == TransactionStatus.Success &&
+                                (t.UserPromotionSubscriptionId == p.UserPromotionSubscriptionId ||
+                                 (p.UserPromotionSubscription.TransactionId != null &&
+                                  t.Id == p.UserPromotionSubscription.TransactionId)))));
+
+        if (hasActivePromotion)
+        {
+            throw new Exception("This product already has an active promotion");
+        }
+
+        var inactivePromotion = await _dbContext.ProductPromotions
+            .Include(p => p.UserPromotionSubscription)
+            .Where(p => p.ProductId == request.ProductId &&
+                        p.IsDeleted == false &&
+                        p.IsActive == false &&
+                        p.ExpiresAt >= now &&
+                        p.UserPromotionSubscription.IsDeleted == false &&
+                        p.UserPromotionSubscription.UserId == userIdGuid &&
+                        p.UserPromotionSubscription.PromotionPackageId == request.PromotionPackageId &&
+                        p.UserPromotionSubscription.StartTime <= now &&
+                        p.UserPromotionSubscription.EndTime >= now &&
+                        (p.UserPromotionSubscription.PaymentStatus == PaymentStatus.Paid ||
+                         _dbContext.Transactions.Any(t =>
+                             t.TransactionType == TransactionType.ServiceFee &&
+                             t.Status == TransactionStatus.Success &&
+                             (t.UserPromotionSubscriptionId == p.UserPromotionSubscriptionId ||
+                              (p.UserPromotionSubscription.TransactionId != null &&
+                               t.Id == p.UserPromotionSubscription.TransactionId)))))
+            .OrderBy(p => p.ExpiresAt)
+            .FirstOrDefaultAsync();
+
+        if (inactivePromotion != null)
+        {
+            var existingSubscription = inactivePromotion.UserPromotionSubscription;
+
+            if ((existingSubscription.UsedSlot ?? 0) >= (existingSubscription.TotalSlot ?? 0))
+            {
+                throw new Exception("Promotion package used slot  is too large");
+            }
+
+            inactivePromotion.IsActive = true;
+            inactivePromotion.ActiveAt = now;
+            inactivePromotion.UpdatedAt = now;
+            existingSubscription.UsedSlot = (existingSubscription.UsedSlot ?? 0) + 1;
+            existingSubscription.UpdatedAt = now;
+
+            await _dbContext.SaveChangesAsync();
+            return "Apply product promotion successfully";
+        }
+
         var promotionPackage = _dbContext.UserPromotionSubscriptions
             .Include(x => x.PromotionPackage)
             .Where(x => x.UserId == userIdGuid &&
@@ -322,16 +384,6 @@ public class PromotionService : IPromotionService
         }
 
         // Chặn trùng
-        var isDuplicate = await _dbContext.ProductPromotions
-            .AnyAsync(p => p.ProductId == request.ProductId &&
-                           p.UserPromotionSubscriptionId == subscription.Id &&
-                           p.IsActive == true);
-
-        if (isDuplicate)
-        {
-            throw new Exception("This product is already promoted with this package");
-        }
-
         // dùng được luôn
 
         if ((subscription.UsedSlot ?? 0) >= (subscription.TotalSlot ?? 0))
@@ -347,9 +399,9 @@ public class PromotionService : IPromotionService
             ProductId = request.ProductId,
             UserPromotionSubscriptionId = subscription.Id,
             IsActive = true,
-            ActiveAt = DateTimeOffset.UtcNow,
+            ActiveAt = now,
             ExpiresAt = subscription.EndTime,
-            CreatedAt = DateTimeOffset.UtcNow,
+            CreatedAt = now,
         };
         _dbContext.Add(productPromotion);
         await _dbContext.SaveChangesAsync();
@@ -394,6 +446,29 @@ public class PromotionService : IPromotionService
             if (productPromotion.ExpiresAt < now)
             {
                 throw new Exception("Promotion package is expired");
+            }
+
+            var hasOtherActivePromotion = await _dbContext.ProductPromotions
+                .AnyAsync(p => p.Id != productPromotion.Id &&
+                               p.ProductId == productPromotion.ProductId &&
+                               p.IsDeleted == false &&
+                               p.IsActive &&
+                               p.ExpiresAt >= now &&
+                               p.UserPromotionSubscription.IsDeleted == false &&
+                               p.UserPromotionSubscription.UserId == userIdGuid &&
+                               p.UserPromotionSubscription.StartTime <= now &&
+                               p.UserPromotionSubscription.EndTime >= now &&
+                               (p.UserPromotionSubscription.PaymentStatus == PaymentStatus.Paid ||
+                                _dbContext.Transactions.Any(t =>
+                                    t.TransactionType == TransactionType.ServiceFee &&
+                                    t.Status == TransactionStatus.Success &&
+                                    (t.UserPromotionSubscriptionId == p.UserPromotionSubscriptionId ||
+                                     (p.UserPromotionSubscription.TransactionId != null &&
+                                      t.Id == p.UserPromotionSubscription.TransactionId)))));
+
+            if (hasOtherActivePromotion)
+            {
+                throw new Exception("This product already has another active promotion");
             }
 
             if ((subscription.UsedSlot ?? 0) >= (subscription.TotalSlot ?? 0))
