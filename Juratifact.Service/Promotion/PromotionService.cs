@@ -202,6 +202,56 @@ public class PromotionService : IPromotionService
         return result;
     }
 
+    public async Task<string> CancelSubscriptionPayment(Guid packageId)
+    {
+        var userId = _httpContext.HttpContext?.User.Claims
+            .FirstOrDefault(c => c.Type == "UserId")?.Value;
+
+        if (string.IsNullOrEmpty(userId))
+        {
+            throw new UnauthorizedAccessException("User not authenticated.");
+        }
+
+        var userIdGuid = Guid.Parse(userId);
+        var now = DateTimeOffset.UtcNow;
+
+        var pendingTransactions = await _dbContext.Transactions
+            .Include(t => t.UserPromotionSubscription)
+            .Where(t => t.TransactionType == TransactionType.ServiceFee &&
+                        t.Status == TransactionStatus.Pending &&
+                        t.IsDeleted == false &&
+                        t.UserPromotionSubscription != null &&
+                        t.UserPromotionSubscription.UserId == userIdGuid &&
+                        t.UserPromotionSubscription.PromotionPackageId == packageId &&
+                        t.UserPromotionSubscription.IsDeleted == false)
+            .OrderByDescending(t => t.CreatedAt)
+            .ToListAsync();
+
+        if (pendingTransactions.Count == 0)
+        {
+            throw new KeyNotFoundException("No pending subscription payment found for this package.");
+        }
+
+        foreach (var transaction in pendingTransactions)
+        {
+            transaction.Status = TransactionStatus.Expired;
+            transaction.Description = "Payment canceled by user";
+            transaction.UpdatedAt = now;
+
+            if (transaction.UserPromotionSubscription == null)
+            {
+                continue;
+            }
+
+            transaction.UserPromotionSubscription.PaymentStatus = PaymentStatus.Failed;
+            transaction.UserPromotionSubscription.IsDeleted = true;
+            transaction.UserPromotionSubscription.UpdatedAt = now;
+        }
+
+        await _dbContext.SaveChangesAsync();
+        return "Cancel subscription payment successfully";
+    }
+
     public async Task<List<Response.PromotionSubscribeResponse>> GetSubscribedPromotions()
     {
         var userId = _httpContext.HttpContext.User.Claims.FirstOrDefault(c => c.Type == "UserId")?.Value;
@@ -385,5 +435,102 @@ public class PromotionService : IPromotionService
             });
 
         return productPromotions.ToListAsync();
+    }
+
+    public async Task<List<Response.ProductWithoutPromotionResponse>> GetProductsWithoutPromotion()
+    {
+        var userId = _httpContext.HttpContext?.User.Claims
+            .FirstOrDefault(c => c.Type == "UserId")?.Value;
+
+        if (string.IsNullOrEmpty(userId))
+        {
+            throw new UnauthorizedAccessException("User not authenticated.");
+        }
+
+        var userIdGuid = Guid.Parse(userId);
+        var now = DateTimeOffset.UtcNow;
+
+        var products = await _dbContext.Products
+            .AsNoTracking()
+            .Where(p => p.SellerId == userIdGuid &&
+                        p.IsDeleted == false &&
+                        p.Status != ProductStatus.Sold &&
+                        !p.ProductPromotions.Any(pp =>
+                            pp.IsDeleted == false &&
+                            pp.IsActive &&
+                            pp.ExpiresAt >= now &&
+                            pp.UserPromotionSubscription.IsDeleted == false &&
+                            pp.UserPromotionSubscription.StartTime <= now &&
+                            pp.UserPromotionSubscription.EndTime >= now &&
+                            (pp.UserPromotionSubscription.PaymentStatus == PaymentStatus.Paid ||
+                             _dbContext.Transactions.Any(t =>
+                                 t.TransactionType == TransactionType.ServiceFee &&
+                                 t.Status == TransactionStatus.Success &&
+                                 (t.UserPromotionSubscriptionId == pp.UserPromotionSubscriptionId ||
+                                  (pp.UserPromotionSubscription.TransactionId != null &&
+                                   t.Id == pp.UserPromotionSubscription.TransactionId))))))
+            .OrderByDescending(p => p.CreatedAt)
+            .Select(p => new Response.ProductWithoutPromotionResponse
+            {
+                ProductId = p.Id,
+                ProductTitle = p.Title,
+                ProductPrice = p.Price,
+                ProductStatus = p.Status,
+                CreatedAt = p.CreatedAt
+            })
+            .ToListAsync();
+
+        return products;
+    }
+
+    public async Task<List<Response.PromotionProductResponse>> GetProductsByPromotionPackageId(Guid promotionPackageId)
+    {
+        var userId = _httpContext.HttpContext?.User.Claims
+            .FirstOrDefault(c => c.Type == "UserId")?.Value;
+
+        if (string.IsNullOrEmpty(userId))
+        {
+            throw new UnauthorizedAccessException("User not authenticated.");
+        }
+
+        var userIdGuid = Guid.Parse(userId);
+
+        var productPromotions = await _dbContext.ProductPromotions
+            .AsNoTracking()
+            .Where(p => p.UserPromotionSubscription.UserId == userIdGuid &&
+                        p.UserPromotionSubscription.PromotionPackageId == promotionPackageId &&
+                        p.UserPromotionSubscription.IsDeleted == false &&
+                        p.Product.IsDeleted == false &&
+                        p.Product.Status != ProductStatus.Sold &&
+                        p.IsDeleted == false)
+            .OrderByDescending(p => p.IsActive)
+            .ThenByDescending(p => p.ActiveAt)
+            .ThenByDescending(p => p.CreatedAt)
+            .Select(p => new Response.PromotionProductResponse()
+            {
+                ProductPromotionId = p.Id,
+                PromotionPackageId = promotionPackageId,
+                UserPromotionSubscriptionId = p.UserPromotionSubscriptionId,
+                ProductId = p.ProductId,
+                ProductTitle = p.Product.Title,
+                ProductPrice = p.Product.Price,
+                IsActive = p.IsActive,
+                ActiveAt = p.ActiveAt,
+                ExpiresAt = p.ExpiresAt,
+            })
+            .ToListAsync();
+
+        var seenProductIds = new HashSet<Guid>();
+        var unique = new List<Response.PromotionProductResponse>(productPromotions.Count);
+
+        foreach (var item in productPromotions)
+        {
+            if (seenProductIds.Add(item.ProductId))
+            {
+                unique.Add(item);
+            }
+        }
+
+        return unique;
     }
 }

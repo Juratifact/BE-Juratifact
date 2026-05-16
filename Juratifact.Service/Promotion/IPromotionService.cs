@@ -10,4 +10,7 @@ public interface IPromotionService
     public Task<string> ApplyProductPromotion(Request.ProductPromotionRequest request);
     public Task<string> ChangeStatusPromotion(Guid id);
     public Task<List<Response.GetProductPromotionResponse>> GetProductPromotion();
+    public Task<List<Response.PromotionProductResponse>> GetProductsByPromotionPackageId(Guid promotionPackageId);
+    public Task<List<Response.ProductWithoutPromotionResponse>> GetProductsWithoutPromotion();
+    public Task<string> CancelSubscriptionPayment(Guid packageId);
 }
