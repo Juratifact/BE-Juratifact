@@ -1,5 +1,6 @@
 using Juratifact.Service.Identity;
 using Juratifact.Service.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Juratifact.API.Controller;
@@ -20,5 +21,13 @@ public class IdentityController : ControllerBase
     {
         var result = await _indentityService.Login(request);
         return Ok(ApiResponseFactory.SuccessResponse(result, "Login successful", HttpContext.TraceIdentifier));
+    }
+
+    [Authorize]
+    [HttpPost("refresh")]
+    public async Task<IActionResult> RefreshAccessToken()
+    {
+        var result = await _indentityService.RefreshAccessToken();
+        return Ok(ApiResponseFactory.SuccessResponse(result, "Refresh access token successful", HttpContext.TraceIdentifier));
     }
 }
