@@ -17,7 +17,7 @@ public class PromotionController : ControllerBase
         _promotionService = promotionService;
     }
 
-    [Authorize(Policy = JwtExtensions.SellerAndBuyerOrAdminPolicy)]
+    [Authorize(Policy = JwtExtensions.SellerOrBuyerOrAdminPolicy)]
     [HttpGet("packages/available")]
     public async Task<IActionResult> GetPromotionPackages(int pageSize = 10, int pageIndex = 1)
     {
