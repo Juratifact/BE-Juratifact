@@ -288,7 +288,9 @@ public class SepayService: ISepayService
                         var subscription = productPromotion.UserPromotionSubscription;
                         if (subscription != null)
                         {
-                            subscription.UsedSlot = Math.Max((subscription.UsedSlot ?? 0) - 1, 0);
+                            var remainingActiveSlots = Math.Max((subscription.UsedSlot ?? 0) - 1, 0);
+                            subscription.UsedSlot = remainingActiveSlots;
+                            subscription.TotalSlot = Math.Max((subscription.TotalSlot ?? 0) - 1, remainingActiveSlots);
                             subscription.UpdatedAt = now;
                         }
                     }
