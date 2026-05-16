@@ -185,7 +185,11 @@ public class SellerOrderService : ISellerOrderService
                 Condition = od.Product.Condition,
                 UnitPrice = od.Price,
                 Quantity = od.Quantity,
-                TotalPrice = od.Price * od.Quantity
+                TotalPrice = od.Price * od.Quantity,
+                ImageUrl = od.Product.ProductMedias
+                    .Where(m => !string.IsNullOrEmpty(m.ImageUrl))
+                    .Select(m => m.ImageUrl)
+                    .ToList()
             }).ToList()
         };
 

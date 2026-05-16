@@ -264,6 +264,10 @@ public class ShipperService: IShipperService
                     ProductId   = od.ProductId,
                     ProductName = od.Product.Title,
                     Price       = od.Price,
+                    ImageUrl = od.Product.ProductMedias
+                        .Where(m => !string.IsNullOrEmpty(m.ImageUrl))
+                        .Select(m => m.ImageUrl)
+                        .ToList()
                 }).ToList()
             })
             .FirstOrDefaultAsync();

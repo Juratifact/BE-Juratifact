@@ -60,6 +60,7 @@ public class SellerOrderItemResponse
     public decimal UnitPrice { get; set; }
     public int Quantity { get; set; }
     public decimal TotalPrice { get; set; }
+    public List<string> ImageUrl { get; set; } = new();
 }
 
 public class SellerOrderTransactionResponse
