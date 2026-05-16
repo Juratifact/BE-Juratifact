@@ -12,4 +12,5 @@ public interface IPromotionService
     public Task<List<Response.GetProductPromotionResponse>> GetProductPromotion();
     public Task<List<Response.PromotionProductResponse>> GetProductsByPromotionPackageId(Guid promotionPackageId);
     public Task<List<Response.ProductWithoutPromotionResponse>> GetProductsWithoutPromotion();
+    public Task<string> CancelSubscriptionPayment(Guid packageId);
 }

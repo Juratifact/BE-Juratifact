@@ -202,6 +202,56 @@ public class PromotionService : IPromotionService
         return result;
     }
 
+    public async Task<string> CancelSubscriptionPayment(Guid packageId)
+    {
+        var userId = _httpContext.HttpContext?.User.Claims
+            .FirstOrDefault(c => c.Type == "UserId")?.Value;
+
+        if (string.IsNullOrEmpty(userId))
+        {
+            throw new UnauthorizedAccessException("User not authenticated.");
+        }
+
+        var userIdGuid = Guid.Parse(userId);
+        var now = DateTimeOffset.UtcNow;
+
+        var pendingTransactions = await _dbContext.Transactions
+            .Include(t => t.UserPromotionSubscription)
+            .Where(t => t.TransactionType == TransactionType.ServiceFee &&
+                        t.Status == TransactionStatus.Pending &&
+                        t.IsDeleted == false &&
+                        t.UserPromotionSubscription != null &&
+                        t.UserPromotionSubscription.UserId == userIdGuid &&
+                        t.UserPromotionSubscription.PromotionPackageId == packageId &&
+                        t.UserPromotionSubscription.IsDeleted == false)
+            .OrderByDescending(t => t.CreatedAt)
+            .ToListAsync();
+
+        if (pendingTransactions.Count == 0)
+        {
+            throw new KeyNotFoundException("No pending subscription payment found for this package.");
+        }
+
+        foreach (var transaction in pendingTransactions)
+        {
+            transaction.Status = TransactionStatus.Expired;
+            transaction.Description = "Payment canceled by user";
+            transaction.UpdatedAt = now;
+
+            if (transaction.UserPromotionSubscription == null)
+            {
+                continue;
+            }
+
+            transaction.UserPromotionSubscription.PaymentStatus = PaymentStatus.Failed;
+            transaction.UserPromotionSubscription.IsDeleted = true;
+            transaction.UserPromotionSubscription.UpdatedAt = now;
+        }
+
+        await _dbContext.SaveChangesAsync();
+        return "Cancel subscription payment successfully";
+    }
+
     public async Task<List<Response.PromotionSubscribeResponse>> GetSubscribedPromotions()
     {
         var userId = _httpContext.HttpContext.User.Claims.FirstOrDefault(c => c.Type == "UserId")?.Value;

@@ -70,6 +70,15 @@ public class PromotionController : ControllerBase
     }
 
     [Authorize(Policy = JwtExtensions.SellerPolicy)]
+    [HttpPut("packages/{packageId:guid}/subscriptions")]
+    public async Task<IActionResult> CancelSubscriptionPayment(Guid packageId)
+    {
+        var result = await _promotionService.CancelSubscriptionPayment(packageId);
+        return Ok(ApiResponseFactory.SuccessResponse(result, "Cancel subscription payment successfully",
+            HttpContext.TraceIdentifier));
+    }
+
+    [Authorize(Policy = JwtExtensions.SellerPolicy)]
     [HttpPost("products/applications")]
     public async Task<IActionResult> ApplyProductPromotion(Request.ProductPromotionRequest request)
     {
