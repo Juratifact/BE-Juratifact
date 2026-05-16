@@ -22,7 +22,8 @@ public class PromotionController : ControllerBase
     public async Task<IActionResult> GetPromotionPackages(int pageSize = 10, int pageIndex = 1)
     {
         var result = await _promotionService.GetPromotionPackages(pageSize, pageIndex);
-        return Ok(ApiResponseFactory.SuccessResponse(result, "Get promotion packages successfully", HttpContext.TraceIdentifier));
+        return Ok(ApiResponseFactory.SuccessResponse(result, "Get promotion packages successfully",
+            HttpContext.TraceIdentifier));
     }
 
     [Authorize(Policy = JwtExtensions.SellerPolicy)]
@@ -30,7 +31,8 @@ public class PromotionController : ControllerBase
     public async Task<IActionResult> GetSubscribedPromotions()
     {
         var result = await _promotionService.GetSubscribedPromotions();
-        return Ok(ApiResponseFactory.SuccessResponse(result, "Get subscribed promotions successfully", HttpContext.TraceIdentifier));
+        return Ok(ApiResponseFactory.SuccessResponse(result, "Get subscribed promotions successfully",
+            HttpContext.TraceIdentifier));
     }
 
     [Authorize(Policy = JwtExtensions.SellerPolicy)]
@@ -38,7 +40,8 @@ public class PromotionController : ControllerBase
     public async Task<IActionResult> GetProductPromotion()
     {
         var result = await _promotionService.GetProductPromotion();
-        return Ok(ApiResponseFactory.SuccessResponse(result, "Get product promotions successfully", HttpContext.TraceIdentifier));
+        return Ok(ApiResponseFactory.SuccessResponse(result, "Get product promotions successfully",
+            HttpContext.TraceIdentifier));
     }
 
     [Authorize(Policy = JwtExtensions.AdminPolicy)]
@@ -62,7 +65,17 @@ public class PromotionController : ControllerBase
     public async Task<IActionResult> SubscribeByPackageId(Guid packageId)
     {
         var result = await _promotionService.SubscribeByPackageId(packageId);
-        return Ok(ApiResponseFactory.SuccessResponse(result, "Subscribe package successfully", HttpContext.TraceIdentifier));
+        return Ok(ApiResponseFactory.SuccessResponse(result, "Subscribe package successfully",
+            HttpContext.TraceIdentifier));
+    }
+
+    [Authorize(Policy = JwtExtensions.SellerPolicy)]
+    [HttpPut("packages/{packageId:guid}/subscriptions")]
+    public async Task<IActionResult> CancelSubscriptionPayment(Guid packageId)
+    {
+        var result = await _promotionService.CancelSubscriptionPayment(packageId);
+        return Ok(ApiResponseFactory.SuccessResponse(result, "Cancel subscription payment successfully",
+            HttpContext.TraceIdentifier));
     }
 
     [Authorize(Policy = JwtExtensions.SellerPolicy)]
@@ -70,7 +83,8 @@ public class PromotionController : ControllerBase
     public async Task<IActionResult> ApplyProductPromotion(Request.ProductPromotionRequest request)
     {
         var result = await _promotionService.ApplyProductPromotion(request);
-        return Ok(ApiResponseFactory.SuccessResponse(result, "Apply promotion successfully", HttpContext.TraceIdentifier));
+        return Ok(ApiResponseFactory.SuccessResponse(result, "Apply promotion successfully",
+            HttpContext.TraceIdentifier));
     }
 
     [Authorize(Policy = JwtExtensions.SellerPolicy)]
@@ -78,6 +92,25 @@ public class PromotionController : ControllerBase
     public async Task<IActionResult> ChangeStatusPromotion(Guid id)
     {
         var result = await _promotionService.ChangeStatusPromotion(id);
-        return Ok(ApiResponseFactory.SuccessResponse(result, "Change promotion status successfully", HttpContext.TraceIdentifier));
+        return Ok(ApiResponseFactory.SuccessResponse(result, "Change promotion status successfully",
+            HttpContext.TraceIdentifier));
+    }
+
+    [Authorize(Policy = JwtExtensions.SellerPolicy)]
+    [HttpGet("products/without-promotion")]
+    public async Task<IActionResult> GetProductsWithoutPromotion()
+    {
+        var result = await _promotionService.GetProductsWithoutPromotion();
+        return Ok(ApiResponseFactory.SuccessResponse(result, "Get products without valid promotion successfully",
+            HttpContext.TraceIdentifier));
+    }
+
+    [Authorize(Policy = JwtExtensions.SellerPolicy)]
+    [HttpGet("products/{promotionPackageId:guid}")]
+    public async Task<IActionResult> GetProductsByPromotionPackageId([FromRoute] Guid promotionPackageId)
+    {
+        var result = await _promotionService.GetProductsByPromotionPackageId(promotionPackageId);
+        return Ok(ApiResponseFactory.SuccessResponse(result, "Get promotion products successfully",
+            HttpContext.TraceIdentifier));
     }
 }
