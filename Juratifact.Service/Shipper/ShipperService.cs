@@ -198,6 +198,7 @@ public class ShipperService: IShipperService
                 DeliveryAt = o.DeliveryAt,
                 CreatedAt  = o.CreatedAt,
                 ExpiresAt  = o.Order.ExpiresAt,
+                
 
                 ShipperPod1Url = o.ShipperPod1Url,
                 ShipperPod2Url = o.ShipperPod2Url,
@@ -207,6 +208,7 @@ public class ShipperService: IShipperService
                     ProductId   = od.ProductId,
                     ProductName = od.Product.Title,
                     Price       = od.Price,
+                    ImageUrl = od.Product.ProductMedias.Where(m => !string.IsNullOrEmpty(m.ImageUrl)).Select(m => m.ImageUrl).ToList()
                 }).ToList()
             })
             .ToListAsync();
