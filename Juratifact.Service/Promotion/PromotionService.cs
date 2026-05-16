@@ -309,6 +309,9 @@ public class PromotionService : IPromotionService
 
     public async Task<string> ChangeStatusPromotion(Guid id)
     {
+        var userId = _httpContext.HttpContext.User.Claims.FirstOrDefault(c => c.Type == "UserId")?.Value;
+        var userIdGuid = Guid.Parse(userId!);
+
         var productPromotion = await _dbContext.ProductPromotions
             .Include(x => x.UserPromotionSubscription)
             .Where(x => x.Id == id && x.IsDeleted == false)
@@ -319,17 +322,12 @@ public class PromotionService : IPromotionService
             throw new Exception("Product promotion not found");
         }
 
-        if (productPromotion.UserPromotionSubscription.UsedSlot >= productPromotion.UserPromotionSubscription.TotalSlot)
+        if (productPromotion.UserPromotionSubscription.UserId != userIdGuid)
         {
-            throw new Exception("Promotion package used slot  is too large");
+            throw new UnauthorizedAccessException("You don't have permission to change this promotion status");
         }
 
         var now = DateTimeOffset.UtcNow;
-
-        if (productPromotion.ExpiresAt < now)
-        {
-            throw new Exception("Promotion package is expired");
-        }
 
         var subscription = productPromotion.UserPromotionSubscription;
 
@@ -339,21 +337,27 @@ public class PromotionService : IPromotionService
         {
             // on -> off
             productPromotion.IsActive = false;
-            subscription.UsedSlot = (subscription.UsedSlot ?? 0) - 1; //turn back slot
+            subscription.UsedSlot = Math.Max((subscription.UsedSlot ?? 0) - 1, 0); // turn back slot
         }
         else
         {
+            if (productPromotion.ExpiresAt < now)
+            {
+                throw new Exception("Promotion package is expired");
+            }
+
             if ((subscription.UsedSlot ?? 0) >= (subscription.TotalSlot ?? 0))
             {
                 throw new Exception("Promotion package used slot  is too large");
             }
 
             productPromotion.IsActive = true;
+            productPromotion.ActiveAt = now;
             subscription.UsedSlot = (subscription.UsedSlot ?? 0) + 1; // increase slot
         }
 
-        productPromotion.UpdatedAt = DateTimeOffset.UtcNow;
-        subscription.UpdatedAt = DateTimeOffset.UtcNow;
+        productPromotion.UpdatedAt = now;
+        subscription.UpdatedAt = now;
         
         await _dbContext.SaveChangesAsync();
         return $"Update promotion status to {(productPromotion.IsActive ? "ON" : "OFF")} successfully";
