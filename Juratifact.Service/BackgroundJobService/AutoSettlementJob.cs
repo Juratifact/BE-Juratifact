@@ -32,41 +32,37 @@ public class AutoSettlementJob : IJob
         {
             var thresholdTime = DateTimeOffset.UtcNow.AddHours(-48);
 
-            // New order flow: Order.DeliveryAt is not set; delivery time lives on SellerOrder.DeliveryAt.
-            // Only auto-settle after 48h from the LAST delivery of the order (max DeliveryAt).
-            var orderIdsToSettle = await _dbContext.SellerOrders
+            var sellerOrderIdsToSettle = await _dbContext.SellerOrders
                 .Where(so => so.IsDeleted == false
                              && so.Status == OrderStatus.Delivered
                              && so.DeliveryAt != null
                              && so.Order.IsDeleted == false
-                             && so.Order.Status == OrderStatus.Delivered
                              && so.Order.PaymentStatus == PaymentStatus.Paid)
-                .GroupBy(so => so.OrderId)
-                .Where(g => g.Max(so => so.DeliveryAt) <= thresholdTime)
-                .Select(g => g.Key)
+                .Where(so => so.DeliveryAt <= thresholdTime)
+                .Select(so => so.Id)
                 .ToListAsync();
 
-            if (orderIdsToSettle.Count == 0)
+            if (sellerOrderIdsToSettle.Count == 0)
             {
-                _logger.LogInformation("Khong co don hang nao can Auto-Settlement luc nay.");
+                _logger.LogInformation("Khong co seller order nao can Auto-Settlement luc nay.");
                 return;
             }
 
-            _logger.LogInformation("Tim thay {Count} don hang can xu ly tu dong.", orderIdsToSettle.Count);
+            _logger.LogInformation("Tim thay {Count} seller order can xu ly tu dong.", sellerOrderIdsToSettle.Count);
 
-            foreach (var orderId in orderIdsToSettle)
+            foreach (var sellerOrderId in sellerOrderIdsToSettle)
             {
                 try
                 {
-                    var isSuccess = await _settlementService.ProcessSettlementAsync(orderId);
+                    var isSuccess = await _settlementService.ProcessSettlementAsync(sellerOrderId);
                     if (isSuccess)
                     {
-                        _logger.LogInformation("[SUCCESS] Da tu dong settlement cho OrderId: {OrderId}", orderId);
+                        _logger.LogInformation("[SUCCESS] Da tu dong settlement cho SellerOrderId: {SellerOrderId}", sellerOrderId);
                     }
                 }
                 catch (Exception innerEx)
                 {
-                    _logger.LogError(innerEx, "[FAIL] Loi khi xu ly Auto-Settlement cho OrderId: {OrderId}", orderId);
+                    _logger.LogError(innerEx, "[FAIL] Loi khi xu ly Auto-Settlement cho SellerOrderId: {SellerOrderId}", sellerOrderId);
                 }
             }
 
