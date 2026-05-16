@@ -109,6 +109,14 @@ public class PromotionService : IPromotionService
         var userId = _httpContext.HttpContext.User.Claims.FirstOrDefault(c => c.Type == "UserId")?.Value;
         var userIdGuid = Guid.Parse(userId!);
 
+        var hasAnyProduct = await _dbContext.Products
+            .AnyAsync(p => p.SellerId == userIdGuid && p.IsDeleted == false);
+
+        if (!hasAnyProduct)
+        {
+            throw new InvalidOperationException("Please create a product before subscribing to a promotion package");
+        }
+
         var package = await _dbContext.PromotionPackages.FirstOrDefaultAsync(p => p.Id == packageId  && p.IsDeleted == false);
 
         if (package == null)
@@ -229,9 +237,10 @@ public class PromotionService : IPromotionService
         // Nếu có, tăng UsedSlot lên 1
         var userId = _httpContext.HttpContext.User.Claims.FirstOrDefault(c => c.Type == "UserId")?.Value;
         var userIdGuid = Guid.Parse(userId!);
-        var product = _dbContext.Products.Where(x => x.Id == request.ProductId && x.IsDeleted == false);
-
-        var existingProduct = await product.AnyAsync();
+        var existingProduct = await _dbContext.Products.AnyAsync(x =>
+            x.Id == request.ProductId &&
+            x.SellerId == userIdGuid &&
+            x.IsDeleted == false);
 
         if (!existingProduct)
         {
