@@ -75,5 +75,6 @@ public class Response
         public ProductStatus ProductStatus { get; set; }
         public DateTimeOffset CreatedAt { get; set; }
         public List<string> UrlImage { get; set; } = new();
+        public bool IsActive { get; set; }
     }
 }
