@@ -22,15 +22,21 @@ public class PromotionService : IPromotionService
 
     public async Task<Base.Response.PageResult<Response.PromotionPackageResponse>> GetPromotionPackages(int pageSize, int pageIndex)
     {
+        pageSize = Math.Max(pageSize, 1);
+        pageIndex = Math.Max(pageIndex, 1);
+
         var now = DateTimeOffset.UtcNow;
 
         var query = _dbContext.PromotionPackages
             .Where(pp => pp.AvailableFrom <= now && pp.AvailableTo >= now && pp.IsDeleted == false);
-        
-        query = query.OrderByDescending(x => x.CreatedAt);
-        query = query.Skip((pageIndex - 1) * pageSize)
-                .Take(pageSize);
-        var selected = query.Select(pp => new Response.PromotionPackageResponse
+
+        var totalItems = await query.CountAsync();
+
+        var selected = query
+            .OrderByDescending(x => x.CreatedAt)
+            .Skip((pageIndex - 1) * pageSize)
+            .Take(pageSize)
+            .Select(pp => new Response.PromotionPackageResponse
         {
             PackageId = pp.Id,
             PackageName = pp.PackageName,
@@ -46,12 +52,13 @@ public class PromotionService : IPromotionService
         });
         
         var listResult = await selected.ToListAsync();
-        var totalItems = listResult.Count;
 
         var result = new Base.Response.PageResult<Response.PromotionPackageResponse>()
         {
             Items = listResult,
             TotalItems = totalItems,
+            PageSize = pageSize,
+            PageIndex = pageIndex,
         };
         
         return result;
