@@ -19,7 +19,7 @@ public class PromotionController : ControllerBase
 
     [Authorize(Policy = JwtExtensions.SellerOrBuyerOrAdminPolicy)]
     [HttpGet("packages/available")]
-    public async Task<IActionResult> GetPromotionPackages(int pageSize = 10, int pageIndex = 1)
+    public async Task<IActionResult> GetPromotionPackages([FromQuery] int pageSize = 10, [FromQuery] int pageIndex = 1)
     {
         var result = await _promotionService.GetPromotionPackages(pageSize, pageIndex);
         return Ok(ApiResponseFactory.SuccessResponse(result, "Get promotion packages successfully",
