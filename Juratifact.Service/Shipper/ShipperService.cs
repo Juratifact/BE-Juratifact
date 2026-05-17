@@ -143,19 +143,29 @@ public class ShipperService: IShipperService
             .Include(o => o.SellerOrders)
             .FirstOrDefaultAsync(o => o.Id == query.OrderId);
 
-        if (parentOrder != null && parentOrder.SellerOrders.All(so => so.Status == OrderStatus.Delivered))
+        var activeSellerOrders = parentOrder?.SellerOrders
+            .Where(so => so.Status != OrderStatus.Cancelled)
+            .ToList() ?? new List<Repository.Entity.SellerOrder>();
+        var allSellerOrdersDelivered = activeSellerOrders.Count > 0 &&
+                                       activeSellerOrders.All(so => so.Status == OrderStatus.Delivered);
+
+        if (allSellerOrdersDelivered)
         {
-            parentOrder.Status = OrderStatus.Delivered;
+            parentOrder!.Status = OrderStatus.Delivered;
             parentOrder.UpdatedAt = DateTimeOffset.UtcNow;
         }
 
         await _dbContext.SaveChangesAsync();
-        
-        await _notificationService.SendNotification(new Notification.Request.SendNotificationRequest() {
-            UserId = query.Order.UserId,
-            Type = NotificationType.OrderDelivered,
-            Data = query.Code, 
-        });
+
+        if (allSellerOrdersDelivered)
+        {
+            await _notificationService.SendNotification(new Notification.Request.SendNotificationRequest()
+            {
+                UserId = query.Order.UserId,
+                Type = NotificationType.OrderDelivered,
+                Data = parentOrder!.Name,
+            });
+        }
         
         return  "Successfully";
     }

@@ -301,8 +301,9 @@ public class OrderService : IOrderService
 
     public async Task<string> ConfirmReceipt(Guid orderId)
     {
-        var userId = _httpContext.HttpContext.User.Claims.FirstOrDefault(x => x.Type == "UserId")?.Value;
-        var userIdGuid = Guid.Parse(userId!);
+        var userId = _httpContext.HttpContext?.User.Claims.FirstOrDefault(x => x.Type == "UserId")?.Value;
+        if (string.IsNullOrEmpty(userId) || !Guid.TryParse(userId, out var userIdGuid))
+            throw new UnauthorizedAccessException("You are not logged in or your session has expired.");
 
         var order = await _dbContext.Orders
             .Include(o => o.SellerOrders)
@@ -315,13 +316,34 @@ public class OrderService : IOrderService
             throw new Exception("Order not found or you do not have permission to access it.");
         }
 
-        // 3. Validate order status
-        if (order.Status != OrderStatus.Delivered)
+        if (order.PaymentStatus != PaymentStatus.Paid)
         {
-            throw new Exception("Order is not delivered yet, cannot confirm receipt.");
+            throw new InvalidOperationException("Order payment has not been completed, cannot confirm receipt.");
         }
 
-        // 4. Process settlement (This also updates the status to Completed internally)
+        var activeSellerOrders = order.SellerOrders
+            .Where(so => so.Status != OrderStatus.Cancelled)
+            .ToList();
+
+        if (activeSellerOrders.Count == 0)
+        {
+            throw new InvalidOperationException("Order has no active seller orders to confirm receipt.");
+        }
+
+        var deliveredCount = activeSellerOrders.Count(so => so.Status == OrderStatus.Delivered);
+        if (deliveredCount != activeSellerOrders.Count)
+        {
+            throw new InvalidOperationException(
+                $"Cannot confirm receipt until all seller orders are delivered. Delivered {deliveredCount}/{activeSellerOrders.Count} seller orders.");
+        }
+
+        if (order.Status != OrderStatus.Delivered)
+        {
+            order.Status = OrderStatus.Delivered;
+            order.UpdatedAt = DateTimeOffset.UtcNow;
+            await _dbContext.SaveChangesAsync();
+        }
+
         bool isSuccess = await _settlementService.ProcessSettlementAsync(orderId);
 
         if (!isSuccess)
