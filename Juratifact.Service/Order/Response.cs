@@ -52,6 +52,10 @@ public class Response
         public string? Description { get; set; }
         public string Condition { get; set; }
         public decimal? Price { get; set; }
+        public string? ShippingAddress { get; set; }
+        public string? VietMapRefId { get; set; }
+        public double? ShippingLatitude { get; set; }
+        public double? ShippingLongitude { get; set; }
         public List<string> ImageUrl { get; set; }
         public List<string> Video { get; set; }
     }

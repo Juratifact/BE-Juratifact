@@ -658,6 +658,7 @@ public class OrderService : IOrderService
     public async Task<Response.ProductListResponse> GetProductbyOrderId(Guid orderId, Guid productId)
     {
         var query = _dbContext.OrderDetails
+            .Include(od => od.Order)
             .Include(od => od.Product)
             .ThenInclude(p => p.ProductMedias)
             .Where(od => od.OrderId == orderId && od.ProductId == productId);
@@ -670,6 +671,10 @@ public class OrderService : IOrderService
             Price = x.Price,
             Description = x.Product.Description,
             Condition = x.Product.Condition,
+            ShippingAddress = x.Order.ShippingAddress,
+            VietMapRefId = x.Order.VietMapRefId,
+            ShippingLatitude = x.Order.ShippingLatitude,
+            ShippingLongitude = x.Order.ShippingLongitude,
             ImageUrl = x.Product.ProductMedias.Select(m => m.ImageUrl).ToList(),
             Video = x.Product.ProductMedias.Select(m => m.Video!).ToList(),
 
