@@ -58,6 +58,14 @@ public class OrderController : ControllerBase
     }
 
     [Authorize(Policy = JwtExtensions.BuyerPolicy)]
+    [HttpPut("seller-orders/{sellerOrderId:guid}/confirm-receipt")]
+    public async Task<IActionResult> ConfirmSellerOrderReceipt(Guid sellerOrderId)
+    {
+        var result = await _orderService.ConfirmSellerOrderReceipt(sellerOrderId);
+        return Ok(ApiResponseFactory.SuccessResponse(result, "Confirm receipt seller order successfully", HttpContext.TraceIdentifier));
+    }
+
+    [Authorize(Policy = JwtExtensions.BuyerPolicy)]
     [HttpPut("{orderId:guid}/cancel")]
     public async Task<IActionResult> CancelOrder([FromRoute] Guid orderId, [FromBody] Request.CancelOrderRequest request)
     {

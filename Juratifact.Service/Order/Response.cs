@@ -37,12 +37,11 @@ public class Response
         public required string Condition { get; set; }
         public decimal Price { get; set; }
         public Guid? SellerOrderId { get; set; }
+        public OrderStatus ParentOrderStatus { get; set; }
+        public bool CanConfirmReceipt { get; set; }
         public Guid SellerId { get; set; }
         public string? UserName { get; set; }
         public required string SellerName { get; set; }
-        
-        public DateTimeOffset? CreatedAt { get; set; }
-        public DateTimeOffset? UpdatedAt { get; set; }
     }
     
     public class ProductListResponse

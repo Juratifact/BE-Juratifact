@@ -305,6 +305,19 @@ public class OrderService : IOrderService
         if (string.IsNullOrEmpty(userId) || !Guid.TryParse(userId, out var userIdGuid))
             throw new UnauthorizedAccessException("You are not logged in or your session has expired.");
 
+        var sellerOrder = await _dbContext.SellerOrders
+            .Include(so => so.Order)
+                .ThenInclude(o => o.SellerOrders)
+            .FirstOrDefaultAsync(so => so.Id == orderId &&
+                                       so.Order.UserId == userIdGuid &&
+                                       so.IsDeleted == false &&
+                                       so.Order.IsDeleted == false);
+
+        if (sellerOrder != null)
+        {
+            return await ConfirmSellerOrderReceiptInternal(sellerOrder);
+        }
+
         var order = await _dbContext.Orders
             .Include(o => o.SellerOrders)
             .FirstOrDefaultAsync(x => x.Id == orderId &&
@@ -351,6 +364,55 @@ public class OrderService : IOrderService
             throw new Exception("Failed to confirm receipt. Could not process settlement for the seller.");
         }
 
+
+        return "Receipt confirmed successfully.";
+    }
+
+    public async Task<string> ConfirmSellerOrderReceipt(Guid sellerOrderId)
+    {
+        var userId = _httpContext.HttpContext?.User.Claims.FirstOrDefault(x => x.Type == "UserId")?.Value;
+        if (string.IsNullOrEmpty(userId) || !Guid.TryParse(userId, out var userIdGuid))
+            throw new UnauthorizedAccessException("You are not logged in or your session has expired.");
+
+        var sellerOrder = await _dbContext.SellerOrders
+            .Include(so => so.Order)
+                .ThenInclude(o => o.SellerOrders)
+            .FirstOrDefaultAsync(so => so.Id == sellerOrderId &&
+                                       so.Order.UserId == userIdGuid &&
+                                       so.IsDeleted == false &&
+                                       so.Order.IsDeleted == false);
+
+        if (sellerOrder == null)
+        {
+            throw new Exception("Seller order not found or you do not have permission to access it.");
+        }
+
+        return await ConfirmSellerOrderReceiptInternal(sellerOrder);
+    }
+
+    private async Task<string> ConfirmSellerOrderReceiptInternal(SellerOrder sellerOrder)
+    {
+        if (sellerOrder.Order.PaymentStatus != PaymentStatus.Paid)
+        {
+            throw new InvalidOperationException("Order payment has not been completed, cannot confirm receipt.");
+        }
+
+        if (sellerOrder.Status == OrderStatus.Completed)
+        {
+            return "Receipt has already been confirmed for this seller order.";
+        }
+
+        if (sellerOrder.Status != OrderStatus.Delivered)
+        {
+            throw new InvalidOperationException("Only delivered seller orders can be confirmed as received.");
+        }
+
+        bool isSuccess = await _settlementService.ProcessSettlementAsync(sellerOrder.Id);
+
+        if (!isSuccess)
+        {
+            throw new Exception("Failed to confirm receipt. Could not process settlement for the seller.");
+        }
 
         return "Receipt confirmed successfully.";
     }
@@ -558,10 +620,12 @@ public class OrderService : IOrderService
 
                 OrderId = order.Id,
                 Name = order.Name,
-                Status = order.Status,
+                Status = od.SellerOrder != null ? od.SellerOrder.Status : order.Status,
+                ParentOrderStatus = order.Status,
+                CanConfirmReceipt = od.SellerOrder != null && od.SellerOrder.Status == OrderStatus.Delivered,
                 PaymentStatus = order.PaymentStatus,
                 CreatedAt = order.CreatedAt,
-                UpdatedAt = order.UpdatedAt,
+                UpdatedAt = od.SellerOrder != null ? od.SellerOrder.UpdatedAt : order.UpdatedAt,
 
 
                 ProductId = od.ProductId,
