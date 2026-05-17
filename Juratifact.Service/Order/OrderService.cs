@@ -627,6 +627,7 @@ public class OrderService : IOrderService
             throw new UnauthorizedAccessException("You are not logged in or your session has expired.");
 
         var order = await _dbContext.Orders
+            .Include(o => o.SellerOrders)
             .FirstOrDefaultAsync(x => x.Id == orderId
                                       && x.UserId == userIdGuid
                                       && x.IsDeleted == false);
@@ -642,9 +643,13 @@ public class OrderService : IOrderService
             throw new InvalidOperationException("Shipping address can only be updated for paid orders.");
         }
 
-        if ((int)order.Status >= (int)OrderStatus.Shipping)
+        if (order.SellerOrders.Any(so => so.IsDeleted == false &&
+                                         so.Status is OrderStatus.Assigned
+                                             or OrderStatus.Shipping
+                                             or OrderStatus.Delivered
+                                             or OrderStatus.Completed))
         {
-            throw new InvalidOperationException("Cannot update shipping address once the order has been handed over to the shipper.");
+            throw new InvalidOperationException("Cannot update shipping address once any seller order has been assigned to a shipper.");
         }
 
         
