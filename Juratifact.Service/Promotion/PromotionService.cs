@@ -43,7 +43,7 @@ public class PromotionService : IPromotionService
             Price = pp.Price,
             MaxProductCount = pp.MaxProductCount,
             PromotionDaysPerSlot = pp.PromotionDaysPerSlot,
-            UsageLimitDays = pp.UsageLimitDays, //Tùy business
+            UsageLimitDays = pp.UsageLimitDays, 
             Description = pp.Description,
             AvailableFrom = pp.AvailableFrom,
             AvailableTo = pp.AvailableTo,
