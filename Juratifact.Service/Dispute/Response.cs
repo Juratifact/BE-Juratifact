@@ -9,6 +9,7 @@ public class Response
         public Guid DisputeId { get; set; }
         public Guid OrderId { get; set; }
         public Guid? SellerOrderId { get; set; }
+        public Guid? ProductId { get; set; }
         public Guid BuyerId { get; set; }
         public string Reason { get; set; } = null!;
         public DisputeStatus Status { get; set; }

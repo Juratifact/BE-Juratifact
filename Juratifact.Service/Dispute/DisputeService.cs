@@ -107,6 +107,13 @@ public class DisputeService : IDisputeService
                 DisputeId = x.Id,
                 OrderId = x.OrderId,
                 SellerOrderId = x.SellerOrderId,
+                ProductId = x.SellerOrder == null
+                    ? null
+                    : x.SellerOrder.OrderDetails
+                        .Where(od => od.IsDeleted == false)
+                        .OrderBy(od => od.CreatedAt)
+                        .Select(od => (Guid?)od.ProductId)
+                        .FirstOrDefault(),
                 BuyerId = x.BuyerId,
                 Reason = x.Reason,
                 Status = x.Status,
@@ -269,6 +276,13 @@ public class DisputeService : IDisputeService
                 DisputeId = x.Id,
                 OrderId = x.OrderId,
                 SellerOrderId = x.SellerOrderId,
+                ProductId = x.SellerOrder == null
+                    ? null
+                    : x.SellerOrder.OrderDetails
+                        .Where(od => od.IsDeleted == false)
+                        .OrderBy(od => od.CreatedAt)
+                        .Select(od => (Guid?)od.ProductId)
+                        .FirstOrDefault(),
                 BuyerId = x.BuyerId,
                 Reason = x.Reason,
                 Status = x.Status,
