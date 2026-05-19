@@ -183,7 +183,7 @@ public class DisputeService : IDisputeService
         }
         else if (request.Result == DisputeResolution.PartialRefund)
         {
-            throw new NotImplementedException("The partial refund feature is currently under development.");
+            await PartialRefundSellerOrderAsync(dispute, sellerOrder, order);
         }
         else
         {
@@ -374,6 +374,139 @@ public class DisputeService : IDisputeService
         }
 
         UpdateParentOrderStatus(order);
+    }
+
+    private async Task PartialRefundSellerOrderAsync(Repository.Entity.Dispute dispute, SellerOrder sellerOrder,
+        Repository.Entity.Order order)
+    {
+        if (order.PaymentStatus != PaymentStatus.Paid)
+        {
+            throw new InvalidOperationException("Only paid orders can be partially refunded.");
+        }
+
+        if (sellerOrder.Status != OrderStatus.Disputed)
+        {
+            throw new InvalidOperationException("Only disputed seller orders can be partially refunded.");
+        }
+
+        var alreadySettled = await _dbContext.Transactions.AnyAsync(t =>
+            t.SellerOrderId == sellerOrder.Id &&
+            t.TransactionType == TransactionType.SellerSettlement &&
+            t.Status == TransactionStatus.Success);
+
+        if (alreadySettled)
+        {
+            throw new InvalidOperationException("This seller order has already been settled.");
+        }
+
+        var buyerWallet = await _dbContext.Wallets.FirstOrDefaultAsync(w => w.UserId == dispute.BuyerId);
+        if (buyerWallet == null)
+        {
+            throw new InvalidOperationException("Buyer's wallet not found for partial refund.");
+        }
+
+        var sellerWallet = await _dbContext.Wallets.FirstOrDefaultAsync(w => w.UserId == sellerOrder.SellerId);
+        if (sellerWallet == null)
+        {
+            sellerWallet = new Repository.Entity.Wallet
+            {
+                Id = Guid.NewGuid(),
+                UserId = sellerOrder.SellerId,
+                Balance = 0m,
+                PendingBalance = 0m,
+                IsDeleted = false,
+                CreatedAt = DateTimeOffset.UtcNow
+            };
+            _dbContext.Wallets.Add(sellerWallet);
+        }
+
+        var originalGross = GetSellerOrderGrossAmount(sellerOrder);
+        if (originalGross <= 0m)
+        {
+            throw new InvalidOperationException("Seller order amount must be greater than 0.");
+        }
+
+        const decimal refundPercent = 50m;
+        var refundAmount = Math.Round(originalGross * refundPercent / 100m, 2);
+        var successfulAmount = originalGross - refundAmount;
+        var platformFeeRate = sellerOrder.PlatformFee > 0m
+            ? sellerOrder.PlatformFee / originalGross
+            : 0.05m;
+        var platformFee = Math.Round(successfulAmount * platformFeeRate, 2);
+        var sellerReceivableAmount = successfulAmount - platformFee;
+        var now = DateTimeOffset.UtcNow;
+        var referenceSuffix = $"{now:yyyyMMddHHmmss}-{sellerOrder.Id.ToString()[..8].ToUpper()}";
+
+        buyerWallet.Balance += refundAmount;
+        buyerWallet.UpdatedAt = now;
+
+        sellerWallet.Balance += sellerReceivableAmount;
+        sellerWallet.UpdatedAt = now;
+
+        sellerOrder.SubtotalPrice = successfulAmount;
+        sellerOrder.TotalPrice = successfulAmount + sellerOrder.ShippingFee - sellerOrder.DiscountAmount;
+        sellerOrder.PlatformFee = platformFee;
+        sellerOrder.SellerReceivableAmount = sellerReceivableAmount;
+        sellerOrder.Status = OrderStatus.Completed;
+        sellerOrder.CancelReason = null;
+        sellerOrder.UpdatedAt = now;
+
+        _dbContext.Transactions.Add(new Transaction
+        {
+            Id = Guid.NewGuid(),
+            OrderId = order.Id,
+            SellerOrderId = sellerOrder.Id,
+            WalletId = buyerWallet.Id,
+            Amount = refundAmount,
+            TransactionType = TransactionType.Refund,
+            Status = TransactionStatus.Success,
+            ReferenceCode = $"RF-PART-{referenceSuffix}",
+            Description =
+                $"Partial refund {refundPercent}% for dispute {dispute.Id} on seller order {sellerOrder.Id}.",
+            CreatedAt = now
+        });
+
+        _dbContext.Transactions.Add(new Transaction
+        {
+            Id = Guid.NewGuid(),
+            OrderId = order.Id,
+            SellerOrderId = sellerOrder.Id,
+            WalletId = sellerWallet.Id,
+            Amount = sellerReceivableAmount,
+            FeeAmount = platformFee,
+            TransactionType = TransactionType.SellerSettlement,
+            Status = TransactionStatus.Success,
+            ReferenceCode = $"SETTLE-PART-{referenceSuffix}",
+            Description =
+                $"Seller settlement after partial refund for dispute {dispute.Id} on seller order {sellerOrder.Id}.",
+            CreatedAt = now
+        });
+
+        _dbContext.Transactions.Add(new Transaction
+        {
+            Id = Guid.NewGuid(),
+            OrderId = order.Id,
+            SellerOrderId = sellerOrder.Id,
+            Amount = platformFee,
+            TransactionType = TransactionType.CommisionDeduction,
+            Status = TransactionStatus.Success,
+            ReferenceCode = $"COMM-PART-{referenceSuffix}",
+            Description =
+                $"Platform commission after partial refund for dispute {dispute.Id} on seller order {sellerOrder.Id}.",
+            CreatedAt = now
+        });
+
+        UpdateParentOrderStatus(order);
+    }
+
+    private static decimal GetSellerOrderGrossAmount(SellerOrder sellerOrder)
+    {
+        if (sellerOrder.SubtotalPrice > 0m)
+        {
+            return sellerOrder.SubtotalPrice;
+        }
+
+        return sellerOrder.OrderDetails.Sum(d => d.Price * d.Quantity);
     }
 
     private Guid GetCurrentUserId()
